@@ -1,4 +1,4 @@
-
+import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
 import "@openzeppelin/contracts/token/ERC721/extensions/ERC721Enumerable.sol";
 import "@openzeppelin/contracts/token/ERC721/extensions/ERC721URIStorage.sol";
@@ -14,6 +14,26 @@ contract NOF_Alpha is ERC721, ERC721Enumerable, ERC721URIStorage, Ownable, Conte
     using Counters for Counters.Counter;
 
     Counters.Counter private _tokenIdCounter;
+
+    // NOF Alpha Custom Code --> 
+    struct Season {
+        uint    price;
+        uint    beginning;
+        uint    duration;
+    }
+
+    struct Card {
+        string  class;
+        string  collection;
+        string  season;
+        uint    number;
+    }
+
+    mapping (string => Season) public seasons;
+    mapping (uint => Card) public cards;
+
+    address public constant DAI_TOKEN = address(0x8f3Cf7ad23Cd3CaDbD9735AFf958023239c6A063); 
+    // <-- NOF Alpha Custom Code
 
     constructor() ERC721("NOF Alpha", "NOFA") {}
 
@@ -81,15 +101,17 @@ contract NOF_Alpha is ERC721, ERC721Enumerable, ERC721URIStorage, Ownable, Conte
         return ContextMixin.msgSender();
     }
 
-    uint[] public packs = [0, 1, 2, 3, 4, 5];
-
-    mapping (uint => address) public packOwner;
-
-    function buyPack() public payable {
-        require(msg.value > 100 wei);
-        uint index = uint(keccak256(abi.encodePacked(block.timestamp)))%packs.length;
-        packs[index] = packs[packs.length - 1];
-        packs.pop();
-        packOwner[index] = msg.sender;
+    // NOF Alpha Custom Code --> 
+    function buyPack(uint256 amount, string memory name) public {
+        require(seasons[name].beginning + seasons[name].duration < block.timestamp, "Season has not started yet");
+        require(seasons[name].price == amount, "Send exact price for Pack");
+        IERC20(DAI_TOKEN).transferFrom(msg.sender, address(this), amount);
     }
+
+    function newSeason(string memory name, uint beginning, uint duration, uint price) public onlyOwner {
+        seasons[name].price = price;
+        seasons[name].duration = duration;
+        seasons[name].beginning = beginning;
+    }
+    // <-- NOF Alpha Custom Code
 }
