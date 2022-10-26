@@ -16,31 +16,37 @@ contract NOF_Alpha is ERC721, ERC721Enumerable, ERC721URIStorage, Ownable, Conte
     Counters.Counter private _tokenIdCounter;
 
     // NOF Alpha Custom Code --> 
+    string public baseUri = "https://gateway.pinata.cloud/ipfs/QmZuSMk8d8Xru6J1PKMz5Gt6Qq8qVQ1Ak8p661zdGmGbGx/";
+
     struct Season {
         uint    price;
-        uint    beginning;
-        uint    duration;
+        uint[]  cards;
+        uint[]  albumns;
     }
 
     struct Card {
         string  class;
         string  collection;
         string  season;
-        uint    number;
+        uint    completion;
     }
 
     mapping (string => Season) public seasons;
     mapping (uint => Card) public cards;
 
-    address public constant DAI_TOKEN = address(0x8f3Cf7ad23Cd3CaDbD9735AFf958023239c6A063); 
+    address public constant DAI_TOKEN = address(0xd9145CCE52D386f254917e481eB44e9943F39138); 
+
+    uint nextCard;
     // <-- NOF Alpha Custom Code
 
-    constructor() ERC721("NOF Alpha", "NOFA") {}
+    constructor() ERC721("NOF Alpha", "NOFA") {
+        _tokenIdCounter.increment();
+    }
 
-    function safeMint(address to, string memory uri) public onlyOwner {
+    function mint(address to, string memory uri) internal {
         uint256 tokenId = _tokenIdCounter.current();
         _tokenIdCounter.increment();
-        _safeMint(to, tokenId);
+        _mint(to, tokenId);
         _setTokenURI(tokenId, uri);
     }
 
@@ -103,15 +109,71 @@ contract NOF_Alpha is ERC721, ERC721Enumerable, ERC721URIStorage, Ownable, Conte
 
     // NOF Alpha Custom Code --> 
     function buyPack(uint256 amount, string memory name) public {
-        require(seasons[name].beginning + seasons[name].duration < block.timestamp, "Season has not started yet");
+
         require(seasons[name].price == amount, "Send exact price for Pack");
         IERC20(DAI_TOKEN).transferFrom(msg.sender, address(this), amount);
+
+        //transfer albumn
+        {
+            uint index = uint(keccak256(abi.encodePacked(block.timestamp)))%seasons[name].albumns.length;
+            uint cardNum = seasons[name].albumns[index];
+            seasons[name].albumns[index] = seasons[name].albumns[seasons[name].albumns.length - 1];
+            seasons[name].albumns.pop();
+            mint(msg.sender, string.concat(baseUri, toString(cardNum)));
+        }
+        //transfer figus
+        for(uint i ; i < 5; i++) {
+            uint index = uint(keccak256(abi.encodePacked(block.timestamp)))%seasons[name].cards.length;
+            uint cardNum = seasons[name].cards[index];
+            seasons[name].cards[index] = seasons[name].cards[seasons[name].cards.length - 1];
+            seasons[name].cards.pop();
+            mint(msg.sender,  string.concat(baseUri, toString(cardNum)));
+        }
     }
 
-    function newSeason(string memory name, uint beginning, uint duration, uint price) public onlyOwner {
+    //Genera una nueva temporada con el nombre, precio de cartas y cantidad de cartas (debe ser multiplo de 6)
+    function newSeason(string memory name, uint price, uint amount) public onlyOwner {
         seasons[name].price = price;
-        seasons[name].duration = duration;
-        seasons[name].beginning = beginning;
+        for(uint i = 1; i <= amount; i++) {
+            if(i % 6 == 0) {
+                seasons[name].albumns.push(i);
+            } else {
+                seasons[name].cards.push(i);
+            }
+            
+        }
+    }
+
+    //Devuelve un array con las cartas disponibles
+    function getSeasonCards(string memory name) public view returns(uint[] memory) {
+        return seasons[name].cards;
+    }
+
+    //Devuelve un arrary con los albumns disponibles
+    function getSeasonAlbums(string memory name) public view returns(uint[] memory) {
+        return seasons[name].albumns;
+    }
+
+    function toString(uint256 value) internal pure returns (string memory) {
+        // Inspired by OraclizeAPI's implementation - MIT licence
+        // https://github.com/OpenZeppelin/openzeppelin-contracts/blob/master/contracts/utils/Strings.sol#L15-L35
+
+        if (value == 0) {
+            return "0";
+        }
+        uint256 temp = value;
+        uint256 digits;
+        while (temp != 0) {
+            digits++;
+            temp /= 10;
+        }
+        bytes memory buffer = new bytes(digits);
+        while (value != 0) {
+            digits -= 1;
+            buffer[digits] = bytes1(uint8(48 + uint256(value % 10)));
+            value /= 10;
+        }
+        return string(buffer);
     }
     // <-- NOF Alpha Custom Code
 }
