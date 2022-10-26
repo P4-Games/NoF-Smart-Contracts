@@ -193,5 +193,9 @@ contract NOF_Alpha is ERC721, ERC721URIStorage, Ownable, ContextMixin {
     function withdrawDAI(uint amount) public onlyOwner {
         IERC20(DAI_TOKEN).transferFrom(address(this), msg.sender, amount);
     }
+
+    function setBaseURI (string memory _baseURI) public onlyOwner {
+        baseUri = _baseURI;
+    }
     // <-- NOF Alpha Custom Code
 }
