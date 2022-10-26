@@ -31,7 +31,7 @@ contract NOF_Alpha is ERC721, ERC721URIStorage, Ownable, ContextMixin {
     mapping (string => Season) public seasons;
     mapping (uint => Card) public cards;
 
-    address public constant DAI_TOKEN = address(0xd9145CCE52D386f254917e481eB44e9943F39138); 
+    address public constant DAI_TOKEN = address(0xF995C0BB2f4F2138ba7d78F2cFA7D3E23ce05615); 
 
     uint nextCard;
     // <-- NOF Alpha Custom Code
