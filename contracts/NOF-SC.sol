@@ -176,7 +176,9 @@ contract NOF_Alpha is ERC721, ERC721URIStorage, Ownable, ContextMixin {
 
         if(cards[album].completion == 5){
             winners[cards[album].season].push(msg.sender);
-            IERC20(DAI_TOKEN).transferFrom(address(this), msg.sender, prizes[winners[cards[album].season].length - 1]);
+            if(winners[cards[album].season].length <= 7){
+                IERC20(DAI_TOKEN).transferFrom(address(this), msg.sender, prizes[winners[cards[album].season].length - 1]);
+            }
             _setTokenURI(album, string.concat(seasons[cards[album].season].folder,"/", toString(cards[album].number), "F"));
         }  
     }
