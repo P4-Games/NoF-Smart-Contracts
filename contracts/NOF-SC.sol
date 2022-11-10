@@ -1,6 +1,7 @@
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
 import "@openzeppelin/contracts/token/ERC721/extensions/ERC721URIStorage.sol";
+import "@openzeppelin/contracts/utils/Counters.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 
 import "./ContextMixin.sol";
@@ -9,14 +10,17 @@ import "./ContextMixin.sol";
 pragma solidity ^0.8.4;
 
 contract NOF_Alpha is ERC721, ERC721URIStorage, Ownable, ContextMixin {
-
+    using Counters for Counters.Counter;
+    Counters.Counter private _tokenIdCounter;
     // NOF Alpha Custom Code --> 
-    string public baseUri = "https://gateway.pinata.cloud/ipfs/QmZuSMk8d8Xru6J1PKMz5Gt6Qq8qVQ1Ak8p661zdGmGbGx/";
+    string public baseUri;
 
     struct Season {
         uint    price;
         uint[]  cards;
-        uint[]  albumns;
+        uint[]  albums;
+        mapping(address => bool) owners;
+        string folder;
     }
 
     struct Card {
@@ -24,26 +28,36 @@ contract NOF_Alpha is ERC721, ERC721URIStorage, Ownable, ContextMixin {
         uint  collection;
         string  season;
         uint    completion;
+        uint    number;
     }
 
-    uint public totalCardsCounter;
 
     mapping (string => Season) public seasons;
     mapping (uint => Card) public cards;
+    mapping (string => address[]) private winners;
+    uint64[7] private prizes = [2000000000000000000, 1400000000000000000, 1200000000000000000, 1000000000000000000, 800000000000000000, 600000000000000000, 500000000000000000];
 
     address public constant DAI_TOKEN = address(0xF995C0BB2f4F2138ba7d78F2cFA7D3E23ce05615); 
 
-    uint nextCard;
     // <-- NOF Alpha Custom Code
 
-    constructor() ERC721("NOF Alpha", "NOFA") {}
+    constructor(string memory __baseUri) ERC721("NOF Alpha V2", "NOFA") {
+        baseUri = __baseUri;
+    }
+
+    function _baseURI() internal view override returns (string memory) {
+        return baseUri;
+    }
 
     function mint(address to, string memory uri, uint _class, uint _collection, string memory _season, uint carNumber) internal {
-        cards[carNumber].class = _class;
-        cards[carNumber].collection = _collection;
-        cards[carNumber].season = _season;
-        _mint(to, carNumber);
-        _setTokenURI(carNumber, uri);
+        uint256 tokenId = _tokenIdCounter.current();
+        _tokenIdCounter.increment();
+        cards[tokenId].class = _class;
+        cards[tokenId].collection = _collection;
+        cards[tokenId].season = _season;
+        cards[tokenId].number = carNumber;
+        _mint(to, tokenId);
+        _setTokenURI(tokenId, uri);
     }
 
     // The following functions are overrides required by Solidity.
@@ -105,17 +119,17 @@ contract NOF_Alpha is ERC721, ERC721URIStorage, Ownable, ContextMixin {
 
     // NOF Alpha Custom Code --> 
     function buyPack(uint256 amount, string memory name) public {
-
+        require(!seasons[name].owners[msg.sender], "Ya tenes un pack wachin");
+        seasons[name].owners[msg.sender] = true;
         require(seasons[name].price == amount, "Send exact price for Pack");
         IERC20(DAI_TOKEN).transferFrom(msg.sender, address(this), amount);
-
-        //transfer albumn
+        //transfer album
         {
-            uint index = uint(keccak256(abi.encodePacked(block.timestamp)))%seasons[name].albumns.length;
-            uint cardNum = seasons[name].albumns[index];
-            seasons[name].albumns[index] = seasons[name].albumns[seasons[name].albumns.length - 1];
-            seasons[name].albumns.pop();
-            mint(msg.sender, string.concat(baseUri, toString(cardNum)), 0, cardNum/6-1, name, cardNum);
+            uint index = uint(keccak256(abi.encodePacked(block.timestamp)))%seasons[name].albums.length;
+            uint cardNum = seasons[name].albums[index];
+            seasons[name].albums[index] = seasons[name].albums[seasons[name].albums.length - 1];
+            seasons[name].albums.pop();
+            mint(msg.sender, string.concat(seasons[name].folder,"/",toString(cardNum)), 0, cardNum/6-1, name, cardNum);
         }
         //transfer figus
         for(uint i ; i < 5; i++) {
@@ -123,24 +137,22 @@ contract NOF_Alpha is ERC721, ERC721URIStorage, Ownable, ContextMixin {
             uint cardNum = seasons[name].cards[index];
             seasons[name].cards[index] = seasons[name].cards[seasons[name].cards.length - 1];
             seasons[name].cards.pop();
-            mint(msg.sender,  string.concat(baseUri, toString(cardNum)), 1, cardNum/6, name, cardNum);
+            mint(msg.sender,  string.concat(seasons[name].folder,"/",toString(cardNum)), 1, cardNum/6, name, cardNum);
         }
     }
 
     //Genera una nueva temporada con el nombre, precio de cartas y cantidad de cartas (debe ser multiplo de 6)
-    function newSeason(string memory name, uint price, uint amount) public onlyOwner {
+    function newSeason(string memory name, uint price, uint amount, string memory folder) public onlyOwner {
         seasons[name].price = price;
+        seasons[name].folder = folder;
         
         for(uint i = 1; i <= amount; i++) {
             if(i % 6 == 0) {
-                seasons[name].albumns.push(i+totalCardsCounter);
+                seasons[name].albums.push(i);
             } else {
-                seasons[name].cards.push(i+totalCardsCounter);
+                seasons[name].cards.push(i);
             }
-            
         }
-
-        totalCardsCounter = totalCardsCounter + amount;
     }
 
     //Devuelve un array con las cartas disponibles
@@ -148,24 +160,25 @@ contract NOF_Alpha is ERC721, ERC721URIStorage, Ownable, ContextMixin {
         return seasons[name].cards;
     }
 
-    //Devuelve un arrary con los albumns disponibles
+    //Devuelve un arrary con los albums disponibles
     function getSeasonAlbums(string memory name) public view returns(uint[] memory) {
-        return seasons[name].albumns;
+        return seasons[name].albums;
     }
 
-    function pasteCards(uint card, uint albumn) public {
+    function pasteCards(uint card, uint album) public {
         require(ownerOf(card) == msg.sender, "This is not your card");
-        require(ownerOf(albumn) == msg.sender, "This is not your albumn");
-        require(cards[card].collection == cards[albumn].collection, "cards is not from the same collection");
+        require(ownerOf(album) == msg.sender, "This is not your album");
+        require(cards[album].class == 0, "card is not an album");
+        require(cards[card].collection == cards[album].collection, "cards is not from the same collection");
 
         _burn(card);
-        cards[albumn].completion++;
+        cards[album].completion++;
 
-        if( cards[albumn].completion == 5){
-            _setTokenURI(albumn, string.concat(baseUri, toString(albumn), "F"));
-        }
-        
-
+        if(cards[album].completion == 5){
+            winners[cards[album].season].push(msg.sender);
+            IERC20(DAI_TOKEN).transferFrom(address(this), msg.sender, prizes[winners[cards[album].season].length - 1]);
+            _setTokenURI(album, string.concat(seasons[cards[album].season].folder,"/", toString(cards[album].number), "F"));
+        }  
     }
 
     function toString(uint256 value) internal pure returns (string memory) {
@@ -194,8 +207,8 @@ contract NOF_Alpha is ERC721, ERC721URIStorage, Ownable, ContextMixin {
         IERC20(DAI_TOKEN).transferFrom(address(this), msg.sender, amount);
     }
 
-    function setBaseURI (string memory _baseURI) public onlyOwner {
-        baseUri = _baseURI;
+    function setBaseURI (string memory __baseURI) public onlyOwner {
+        baseUri = __baseURI;
     }
     // <-- NOF Alpha Custom Code
 }
