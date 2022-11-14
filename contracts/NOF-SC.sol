@@ -37,12 +37,15 @@ contract NOF_Alpha is ERC721, ERC721URIStorage, Ownable, ContextMixin {
     mapping (string => address[]) private winners;
     uint8[7] private prizes = [20, 14, 12, 10, 8, 6, 5];
 
-    address public constant DAI_TOKEN = address(0xF995C0BB2f4F2138ba7d78F2cFA7D3E23ce05615); 
+    address public DAI_TOKEN; 
 
     // <-- NOF Alpha Custom Code
 
-    constructor(string memory __baseUri) ERC721("NOF Alpha V2", "NOFA") {
+    event Winner(address winner, string season, uint256 position);
+
+    constructor(string memory __baseUri, address _daiTokenAddress) ERC721("NOF Alpha V2", "NOFA") {
         baseUri = __baseUri;
+        DAI_TOKEN = _daiTokenAddress;
     }
 
     function _baseURI() internal view override returns (string memory) {
@@ -129,7 +132,7 @@ contract NOF_Alpha is ERC721, ERC721URIStorage, Ownable, ContextMixin {
             uint cardNum = seasons[name].albums[index];
             seasons[name].albums[index] = seasons[name].albums[seasons[name].albums.length - 1];
             seasons[name].albums.pop();
-            mint(msg.sender, string.concat(seasons[name].folder,"/",toString(cardNum)), 0, cardNum/6-1, name, cardNum);
+            mint(msg.sender, string.concat(seasons[name].folder, "/", toString(cardNum)), 0, cardNum/6-1, name, cardNum);
         }
         //transfer figus
         for(uint i ; i < 5; i++) {
@@ -137,13 +140,13 @@ contract NOF_Alpha is ERC721, ERC721URIStorage, Ownable, ContextMixin {
             uint cardNum = seasons[name].cards[index];
             seasons[name].cards[index] = seasons[name].cards[seasons[name].cards.length - 1];
             seasons[name].cards.pop();
-            mint(msg.sender,  string.concat(seasons[name].folder,"/",toString(cardNum)), 1, cardNum/6, name, cardNum);
+            mint(msg.sender,  string.concat(seasons[name].folder, "/", toString(cardNum)), 1, cardNum/6, name, cardNum);
         }
     }
 
     //Genera una nueva temporada con el nombre, precio de cartas y cantidad de cartas (debe ser multiplo de 6)
     function newSeason(string memory name, uint price, uint amount, string memory folder) public onlyOwner {
-        require(price > 0, "prize can't be 0");
+        require(price >= 100000000000000, "pack value must be at least 0.0001 DAI");
         seasons[name].price = price;
         seasons[name].folder = folder;
         
@@ -166,6 +169,10 @@ contract NOF_Alpha is ERC721, ERC721URIStorage, Ownable, ContextMixin {
         return seasons[name].albums;
     }
 
+    function getWinners(string calldata _seasonName) public view returns(address[] memory) {
+        return winners[_seasonName];
+    }
+
     function pasteCards(uint card, uint album) public {
         require(ownerOf(card) == msg.sender, "This is not your card");
         require(ownerOf(album) == msg.sender, "This is not your album");
@@ -176,11 +183,12 @@ contract NOF_Alpha is ERC721, ERC721URIStorage, Ownable, ContextMixin {
         cards[album].completion++;
 
         if(cards[album].completion == 5){
-            winners[cards[album].season].push(msg.sender);
-            if(winners[cards[album].season].length <= 7){
+            if(winners[cards[album].season].length < 7){
+                winners[cards[album].season].push(msg.sender);
                 IERC20(DAI_TOKEN).transferFrom(address(this), msg.sender, seasons[cards[album].season].price * prizes[winners[cards[album].season].length - 1] / 10);
             }
-            _setTokenURI(album, string.concat(seasons[cards[album].season].folder,"/", toString(cards[album].number), "F"));
+            _setTokenURI(album, string.concat(seasons[cards[album].season].folder, "/", toString(cards[album].number), "F"));
+            emit Winner(msg.sender, cards[album].season, winners[cards[album].season].length);
         }  
     }
 
