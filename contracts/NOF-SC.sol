@@ -173,6 +173,11 @@ contract NOF_Alpha is ERC721, ERC721URIStorage, Ownable, ContextMixin {
         return winners[_seasonName];
     }
 
+    function safeTransferFrom(address from, address to, uint256 tokenId) public virtual override {
+        require(seasons[cards[tokenId].season].owners[to], "Receiver is not playing this season");
+        safeTransferFrom(from, to, tokenId, "");
+    }
+
     function pasteCards(uint card, uint album) public {
         require(ownerOf(card) == msg.sender, "This is not your card");
         require(ownerOf(album) == msg.sender, "This is not your album");
