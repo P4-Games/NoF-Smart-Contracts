@@ -6,6 +6,10 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 
 import "./ContextMixin.sol";
 
+// 1000000000000000000 1
+// 10000000000000000000 10
+// 100000000000000000000 100
+
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.4;
 
@@ -233,6 +237,7 @@ contract NOF_Alpha is ERC721, ERC721URIStorage, Ownable, ContextMixin {
         if(cards[album].completion == 5){
             if(winners[cards[album].season].length < 7){
                 uint256 prize = seasons[cards[album].season].price * prizes[winners[cards[album].season].length - 1] / 10;
+                require(prize <= prizesBalance, "Prize must be lower or equal than prizes balance");
                 winners[cards[album].season].push(msg.sender);
                 prizesBalance -= prize;
                 IERC20(DAI_TOKEN).transferFrom(address(this), msg.sender, prize);
@@ -277,3 +282,6 @@ contract NOF_Alpha is ERC721, ERC721URIStorage, Ownable, ContextMixin {
     }
     // <-- NOF Alpha Custom Code
 }
+
+// user => season => cards[]
+// mapping (address => mapping(string => uint256[])) public cardsByUser;
