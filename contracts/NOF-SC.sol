@@ -6,10 +6,6 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 
 import "./ContextMixin.sol";
 
-// 1000000000000000000 1
-// 10000000000000000000 10
-// 100000000000000000000 100
-
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.4;
 
@@ -282,6 +278,3 @@ contract NOF_Alpha is ERC721, ERC721URIStorage, Ownable, ContextMixin {
     }
     // <-- NOF Alpha Custom Code
 }
-
-// user => season => cards[]
-// mapping (address => mapping(string => uint256[])) public cardsByUser;
