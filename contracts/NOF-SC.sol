@@ -33,6 +33,7 @@ contract NOF_Alpha is ERC721, ERC721URIStorage, Ownable, ContextMixin {
     }
 
 
+    address public balanceReceiver;
     mapping (string => Season) public seasons;
     mapping (uint => Card) public cards;// this uint is the tokenId
     mapping (string => address[]) private winners;
@@ -41,17 +42,18 @@ contract NOF_Alpha is ERC721, ERC721URIStorage, Ownable, ContextMixin {
     string[] public seasonNames;
     uint256[] public seasonPrices;
     uint256 public prizesBalance;
-    uint256 public profitBalance;
 
     address public DAI_TOKEN;
 
     // <-- NOF Alpha Custom Code
 
+    event BuyPack(address buyer, string seasonName);
     event Winner(address winner, string season, uint256 position);
 
-    constructor(string memory __baseUri, address _daiTokenAddress) ERC721("NOF Alpha V2", "NOFA") {
+    constructor(string memory __baseUri, address _daiTokenAddress, address _balanceReceiver) ERC721("NOF Alpha V2", "NOFA") {
         baseUri = __baseUri;
         DAI_TOKEN = _daiTokenAddress;
+        balanceReceiver = _balanceReceiver;
     }
 
     function _baseURI() internal view override returns (string memory) {
@@ -133,9 +135,11 @@ contract NOF_Alpha is ERC721, ERC721URIStorage, Ownable, ContextMixin {
         require(!seasons[name].owners[msg.sender], "Ya tenes un pack wachin");
         seasons[name].owners[msg.sender] = true;
         require(seasons[name].price == amount, "Send exact price for Pack");
-        IERC20(DAI_TOKEN).transferFrom(msg.sender, address(this), amount);
-        prizesBalance += amount * 75 / 100;
-        profitBalance += amount * 25 / 100;
+        uint256 prizesAmount = amount * 75 / 100;
+        prizesBalance += prizesAmount;
+        IERC20(DAI_TOKEN).transferFrom(msg.sender, address(this), prizesAmount);
+        IERC20(DAI_TOKEN).transferFrom(msg.sender, balanceReceiver, amount - prizesAmount);
+
         //transfer album
         {
             uint index = uint(keccak256(abi.encodePacked(block.timestamp)))%seasons[name].albums.length;
@@ -152,11 +156,14 @@ contract NOF_Alpha is ERC721, ERC721URIStorage, Ownable, ContextMixin {
             seasons[name].cards.pop();
             mint(msg.sender,  string(abi.encodePacked(bytes(seasons[name].folder), bytes("/"), bytes(toString(cardNum)))), 1, cardNum/6, name, cardNum);
         }
+
+        emit BuyPack(msg.sender, name);
     }
 
     //Genera una nueva temporada con el nombre, precio de cartas y cantidad de cartas (debe ser multiplo de 6)
     function newSeason(string memory name, uint price, uint amount, string memory folder) public onlyOwner {
         require(price >= 100000000000000, "pack value must be at least 0.0001 DAI");
+        require(amount % 6 == 0, "Amount must be multiple of 6");
         seasons[name].price = price;
         seasons[name].folder = folder;
         seasonNames.push(name);
@@ -207,10 +214,19 @@ contract NOF_Alpha is ERC721, ERC721URIStorage, Ownable, ContextMixin {
 
     // @dev override safeTransferFrom function para limitar la transferencia de figuritas a addresses
     // que ya compraron un pack y para transferir los cardNums
-    function safeTransferFrom(address from, address to, uint256 tokenId) public virtual override {
-        require(seasons[cards[tokenId].season].owners[to], "Receiver is not playing this season");
+    function safeTransferFrom(address from, address to, uint256 tokenId, bytes memory data) public virtual override {
+        require(getSeasonAlbums(cards[tokenId].season).length == 0, "There are albums available in this season"); // chequea que se hayan vendido los 10 albums primero
+        super.safeTransferFrom(from, to, tokenId, data); // chequea que el tokenId exista
+        if(cards[tokenId].class == 1){ // si es figurita, el jugador tiene que haber comprado un pack
+            require(seasons[cards[tokenId].season].owners[to], "Receiver is not playing this season");
+        } else {
+            require(cards[tokenId].completion == 5, "Only completed albums can be transferred"); // si es album, tiene que estar completo
+        }
         transferCardOwnership(from, to, tokenId);
-        safeTransferFrom(from, to, tokenId, "");
+    }
+
+    function transferFrom(address from, address to, uint256 tokenId) public virtual override {
+        safeTransferFrom(from, to, tokenId);
     }
 
     function pasteCards(uint card, uint album) public {
@@ -232,9 +248,9 @@ contract NOF_Alpha is ERC721, ERC721URIStorage, Ownable, ContextMixin {
 
         if(cards[album].completion == 5){
             if(winners[cards[album].season].length < 7){
+                winners[cards[album].season].push(msg.sender);
                 uint256 prize = seasons[cards[album].season].price * prizes[winners[cards[album].season].length - 1] / 10;
                 require(prize <= prizesBalance, "Prize must be lower or equal than prizes balance");
-                winners[cards[album].season].push(msg.sender);
                 prizesBalance -= prize;
                 IERC20(DAI_TOKEN).transferFrom(address(this), msg.sender, prize);
             }
@@ -265,12 +281,8 @@ contract NOF_Alpha is ERC721, ERC721URIStorage, Ownable, ContextMixin {
         return string(buffer);
     }
 
-    function withdrawDAI(uint amount) public onlyOwner {
-        IERC20(DAI_TOKEN).transferFrom(address(this), msg.sender, amount);
-    }
-
-    function withdrawProfit() public onlyOwner {
-        IERC20(DAI_TOKEN).transferFrom(address(this), msg.sender, profitBalance);
+    function setBalanceReceiver(address _newBalanceReceiver) public onlyOwner {
+        balanceReceiver = _newBalanceReceiver;
     }
 
     function setBaseURI (string memory __baseURI) public onlyOwner {
