@@ -139,7 +139,6 @@ contract NOF_Alpha is ERC721, ERC721URIStorage, Ownable, ContextMixin {
         IERC20(DAI_TOKEN).transferFrom(msg.sender, address(this), prizesAmount);
         IERC20(DAI_TOKEN).transferFrom(msg.sender, balanceReceiver, amount - prizesAmount);
 
-        //transfer album
         {
             uint index = uint(keccak256(abi.encodePacked(block.timestamp)))%seasons[name].albums.length;
             uint cardNum = seasons[name].albums[index];
@@ -147,7 +146,7 @@ contract NOF_Alpha is ERC721, ERC721URIStorage, Ownable, ContextMixin {
             seasons[name].albums.pop();
             mint(msg.sender, string(abi.encodePacked(bytes(toString(cardNum)), bytes(".png"))), 0, cardNum/6-1, name, cardNum);
         }
-        //transfer figus
+
         for(uint i ; i < 5; i++) {
             uint index = uint(keccak256(abi.encodePacked(block.timestamp)))%seasons[name].cards.length;
             uint cardNum = seasons[name].cards[index];
@@ -159,7 +158,6 @@ contract NOF_Alpha is ERC721, ERC721URIStorage, Ownable, ContextMixin {
         emit BuyPack(msg.sender, name);
     }
 
-    //Genera una nueva temporada con el nombre, precio de cartas y cantidad de cartas (debe ser multiplo de 6)
     function newSeason(string memory name, uint price, uint amount) public onlyOwner {
         require(price >= 100000000000000, "pack value must be at least 0.0001 DAI");
         require(amount % 6 == 0, "Amount must be multiple of 6");
@@ -210,15 +208,13 @@ contract NOF_Alpha is ERC721, ERC721URIStorage, Ownable, ContextMixin {
         cardsByUserBySeason[to][seasonName].push(cards[tokenId]);
     }
 
-    // @dev override safeTransferFrom function para limitar la transferencia de figuritas a addresses
-    // que ya compraron un pack y para transferir los cardNums
     function safeTransferFrom(address from, address to, uint256 tokenId, bytes memory data) public virtual override {
-        require(getSeasonAlbums(cards[tokenId].season).length == 0, "There are albums available in this season"); // chequea que se hayan vendido los 10 albums primero
-        super.safeTransferFrom(from, to, tokenId, data); // chequea que el tokenId exista
-        if(cards[tokenId].class == 1){ // si es figurita, el jugador tiene que haber comprado un pack
+        require(getSeasonAlbums(cards[tokenId].season).length == 0, "There are albums available in this season");
+        super.safeTransferFrom(from, to, tokenId, data);
+        if(cards[tokenId].class == 1){
             require(seasons[cards[tokenId].season].owners[to], "Receiver is not playing this season");
         } else {
-            require(cards[tokenId].completion == 5, "Only completed albums can be transferred"); // si es album, tiene que estar completo
+            require(cards[tokenId].completion == 5, "Only completed albums can be transferred");
         }
         transferCardOwnership(from, to, tokenId);
     }
