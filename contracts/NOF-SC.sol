@@ -246,7 +246,7 @@ contract NOF_Alpha is ERC721, ERC721URIStorage, Ownable, ContextMixin {
                 uint256 prize = seasons[cards[album].season].price * prizes[winners[cards[album].season].length - 1] / 10;
                 require(prize <= prizesBalance, "Prize must be lower or equal than prizes balance");
                 prizesBalance -= prize;
-                IERC20(DAI_TOKEN).transferFrom(address(this), msg.sender, prize);
+                IERC20(DAI_TOKEN).transfer(msg.sender, prize);
             }
             _setTokenURI(album, string(abi.encodePacked(bytes(toString(cards[album].number)), bytes("F.png"))));
             emit Winner(msg.sender, cards[album].season, winners[cards[album].season].length);
