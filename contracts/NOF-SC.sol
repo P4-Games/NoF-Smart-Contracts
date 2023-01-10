@@ -49,7 +49,7 @@ contract NOF_Alpha is ERC721, ERC721URIStorage, Ownable, ContextMixin {
     event BuyPack(address buyer, string seasonName);
     event Winner(address winner, string season, uint256 position);
 
-    constructor(string memory __baseUri, address _daiTokenAddress, address _balanceReceiver) ERC721("NOF Alpha V2", "NOFA") {
+    constructor(string memory __baseUri, address _daiTokenAddress, address _balanceReceiver) ERC721("NOF Alpha", "NOFA") {
         baseUri = __baseUri;
         DAI_TOKEN = _daiTokenAddress;
         balanceReceiver = _balanceReceiver;
@@ -144,7 +144,7 @@ contract NOF_Alpha is ERC721, ERC721URIStorage, Ownable, ContextMixin {
             uint cardNum = seasons[name].albums[index];
             seasons[name].albums[index] = seasons[name].albums[seasons[name].albums.length - 1];
             seasons[name].albums.pop();
-            mint(msg.sender, string(abi.encodePacked(bytes(toString(cardNum)), bytes(".png"))), 0, cardNum/6-1, name, cardNum);
+            mint(msg.sender, string(abi.encodePacked(bytes(toString(cardNum)), bytes(".json"))), 0, cardNum/6-1, name, cardNum);
         }
 
         for(uint i ; i < 5; i++) {
@@ -152,7 +152,7 @@ contract NOF_Alpha is ERC721, ERC721URIStorage, Ownable, ContextMixin {
             uint cardNum = seasons[name].cards[index];
             seasons[name].cards[index] = seasons[name].cards[seasons[name].cards.length - 1];
             seasons[name].cards.pop();
-            mint(msg.sender,  string(abi.encodePacked(bytes(toString(cardNum)), bytes(".png"))), 1, cardNum/6, name, cardNum);
+            mint(msg.sender,  string(abi.encodePacked(bytes(toString(cardNum)), bytes(".json"))), 1, cardNum/6, name, cardNum);
         }
 
         emit BuyPack(msg.sender, name);
@@ -248,7 +248,7 @@ contract NOF_Alpha is ERC721, ERC721URIStorage, Ownable, ContextMixin {
                 prizesBalance -= prize;
                 IERC20(DAI_TOKEN).transfer(msg.sender, prize);
             }
-            _setTokenURI(album, string(abi.encodePacked(bytes(toString(cards[album].number)), bytes("F.png"))));
+            _setTokenURI(album, string(abi.encodePacked(bytes(toString(cards[album].number)), bytes("F.json"))));
             emit Winner(msg.sender, cards[album].season, winners[cards[album].season].length);
         }  
     }
