@@ -20,6 +20,7 @@ contract NOF_Alpha is ERC721, ERC721URIStorage, Ownable, ContextMixin {
         uint[]  cards;
         uint[]  albums;
         mapping(address => bool) owners;
+        string folder;
     }
 
     struct Card {
@@ -74,11 +75,11 @@ contract NOF_Alpha is ERC721, ERC721URIStorage, Ownable, ContextMixin {
 
     // The following functions are overrides required by Solidity.
 
-    function _beforeTokenTransfer(address from, address to, uint256 tokenId)
+    function _beforeTokenTransfer(address from, address to, uint256 tokenId, uint256 batchSize)
         internal
         override(ERC721)
     {
-        super._beforeTokenTransfer(from, to, tokenId);
+        super._beforeTokenTransfer(from, to, tokenId, batchSize);
     }
 
     function _burn(uint256 tokenId) internal override(ERC721, ERC721URIStorage) {
@@ -144,7 +145,7 @@ contract NOF_Alpha is ERC721, ERC721URIStorage, Ownable, ContextMixin {
             uint cardNum = seasons[name].albums[index];
             seasons[name].albums[index] = seasons[name].albums[seasons[name].albums.length - 1];
             seasons[name].albums.pop();
-            mint(msg.sender, string(abi.encodePacked(bytes(toString(cardNum)), bytes(".json"))), 0, cardNum/6-1, name, cardNum);
+            mint(msg.sender, string(abi.encodePacked(bytes(seasons[name].folder), bytes("/"), bytes(toString(cardNum)), bytes(".json"))), 0, cardNum/6-1, name, cardNum);
         }
 
         for(uint i ; i < 5; i++) {
@@ -152,16 +153,17 @@ contract NOF_Alpha is ERC721, ERC721URIStorage, Ownable, ContextMixin {
             uint cardNum = seasons[name].cards[index];
             seasons[name].cards[index] = seasons[name].cards[seasons[name].cards.length - 1];
             seasons[name].cards.pop();
-            mint(msg.sender,  string(abi.encodePacked(bytes(toString(cardNum)), bytes(".json"))), 1, cardNum/6, name, cardNum);
+            mint(msg.sender,  string(abi.encodePacked(bytes(seasons[name].folder), bytes("/"), bytes(toString(cardNum)), bytes(".json"))), 1, cardNum/6, name, cardNum);
         }
 
         emit BuyPack(msg.sender, name);
     }
 
-    function newSeason(string memory name, uint price, uint amount) public onlyOwner {
+    function newSeason(string memory name, uint price, uint amount, string memory folder) public onlyOwner {
         require(price >= 100000000000000, "pack value must be at least 0.0001 DAI");
         require(amount % 6 == 0, "Amount must be multiple of 6");
         seasons[name].price = price;
+        seasons[name].folder = folder;
         seasonNames.push(name);
         seasonPrices.push(price);
 
@@ -248,7 +250,7 @@ contract NOF_Alpha is ERC721, ERC721URIStorage, Ownable, ContextMixin {
                 prizesBalance -= prize;
                 IERC20(DAI_TOKEN).transfer(msg.sender, prize);
             }
-            _setTokenURI(album, string(abi.encodePacked(bytes(toString(cards[album].number)), bytes("F.json"))));
+            _setTokenURI(album, string(abi.encodePacked(bytes(seasons[cards[album].season].folder), bytes("/"), bytes(toString(cards[album].number)), bytes("F.json"))));
             emit Winner(msg.sender, cards[album].season, winners[cards[album].season].length);
         }  
     }
