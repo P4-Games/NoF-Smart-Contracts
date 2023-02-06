@@ -16,6 +16,10 @@
 // - importante de la implementación que los albumes estén uniformemente repartidos en los sobres a lo largo del tiempo
 // - fee de transacción del 2.5%
 
+// buy pack: mint
+// transfer pack ?
+// open pack: llamar al contrato de cartas y quemar pack
+
 pragma solidity ^0.8.9;
 
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";

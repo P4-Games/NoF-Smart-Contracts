@@ -2,8 +2,8 @@
 
 // - 5000 copias de cada carta (120 personajes únicos) = 600.000 cartas de personajes
 // - se venden de a sobres a ciegas, trae 12 cartas y puede o no traer un album extra aleatoriamente
-// - los albumes de 120 figuritas son de toda la colección (los 120 personajes)
-// - los albumes de 60 figuritas son albumes de quema y no importa la figurita que pongan
+// - los albumes de 120 figuritas son de toda la colección (los 120 personajes) (#120)
+// - los albumes de 60 figuritas son albumes de quema y no importa la figurita que pongan (#121)
 // - la carta al pegarse en el album se quema
 // - en total van a haber 3000 albumes de 120 figuritas, 5000 albumes de 60 figuritas, 6000 figuritas, 600000 cartas en total, 50000 sobres.
 // - el album completo de 120 paga 15 dolares
@@ -15,6 +15,12 @@
 // - total profit neto si se venden todos los sobres y se completan todos los albumes 10000 menos gastos de gas
 // - importante de la implementación que los albumes estén uniformemente repartidos en los sobres a lo largo del tiempo
 // - fee de transacción del 2.5%
+
+// retrieve cards: con firma se mintean las cartas y album/s
+// paste cards en album de 120: burn
+// paste cards en album de 60: burn
+// entrega de premios con album lleno
+// transfer cards
 
 pragma solidity ^0.8.9;
 
@@ -35,6 +41,15 @@ contract GammaCards is ERC721, ERC721URIStorage, ERC721Burnable, Ownable {
     address public immutable signer;
     string public baseUri;
     mapping (uint256 => bool) public usedNonces;
+    mapping (uint256 => uint256) public usedCardNumbers; // maximos: 119 => 4999 (numero de carta y cantidades de cartas)
+
+    struct Card {
+        uint256 tokenId;
+        uint256 number;
+        bool isAlbum;
+        bool pasted;
+        bool completion;
+    }
 
     constructor(address _daiTokenAddress, string memory _baseUri, address _balanceReceiver, address _signer) ERC721("GammaCards", "NOF_GC") {
         DAI_TOKEN = _daiTokenAddress;
@@ -64,6 +79,11 @@ contract GammaCards is ERC721, ERC721URIStorage, ERC721Burnable, Ownable {
         _tokenIdCounter.increment();
         _safeMint(to, tokenId);
         _setTokenURI(tokenId, uri);
+    }
+
+    function pasteCard(uint256 cardTokenId, uint256 albumTokenId) public {
+        require(ownerOf(cardTokenId) == msg.sender && ownerOf(albumTokenId) == msg.sender, "La carta o el album no te pertenecen");
+        _burn(cardTokenId);
     }
 
     // The following functions are overrides required by Solidity.
