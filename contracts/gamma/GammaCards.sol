@@ -53,28 +53,33 @@ contract GammaCards is ERC721, ERC721URIStorage, ERC721Burnable, Ownable {
 
     constructor(address _daiTokenAddress, string memory _baseUri, address _balanceReceiver, address _signer) ERC721("GammaCards", "NOF_GC") {
         DAI_TOKEN = _daiTokenAddress;
+        baseUri = _baseUri;
         balanceReceiver = _balanceReceiver;
         signer = _signer;
     }
 
-    function retrieveCards(uint16[] memory classId, uint256[] memory cardNumbers, uint256 nonce, bytes calldata signature) external {
+    function retrieveCards(uint256 nonce, uint8[] memory packetData, uint256 packetNumber, bytes calldata signature) external {
         require(!usedNonces[nonce], "Signature already used");
         usedNonces[nonce] = true;
 
         // Recreates the message present in the `signature`
 
-        bytes32 message = keccak256(abi.encodePacked(msg.sender, classId, cardNumbers, nonce, address(this))).toEthSignedMessageHash();
+        bytes32 message = keccak256(abi.encodePacked(msg.sender, packetData, packetNumber, nonce, address(this))).toEthSignedMessageHash();
         require(message.recover(signature) == signer, "Invalid signature");
 
 
-        for(uint8 i=0;i<cardNumbers.length;i++){
-            string memory uri = string(abi.encodePacked(bytes(baseUri), bytes("/"), bytes(toString(cardNumbers[i]))));
-            safeMint(msg.sender, classId[i], uri);
+        for(uint8 i=0;i<packetData.length;i++){
+            string memory uri = string(abi.encodePacked(bytes(baseUri), bytes("/"), bytes(toString(packetData[i]))));
+            if(packetData[i] < 120){
+                safeMint(msg.sender, uri, false);
+            } else {
+                safeMint(msg.sender, uri, true);
+            }
         }
     }
 
     
-    function safeMint(address to, uint16 classId, string memory uri) internal {
+    function safeMint(address to, string memory uri, bool isAlbum) internal {
         uint256 tokenId = _tokenIdCounter.current();
         _tokenIdCounter.increment();
         _safeMint(to, tokenId);
