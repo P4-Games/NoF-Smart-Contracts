@@ -42,6 +42,7 @@ contract GammaCards is ERC721, ERC721URIStorage, ERC721Burnable, Ownable {
     string public baseUri;
     mapping (uint256 => bool) public usedNonces;
     mapping (uint256 => uint256) public usedCardNumbers; // maximos: 119 => 4999 (numero de carta y cantidades de cartas)
+    mapping (uint256 => Card) public cards;
 
     struct Card {
         uint256 tokenId;
@@ -64,26 +65,33 @@ contract GammaCards is ERC721, ERC721URIStorage, ERC721Burnable, Ownable {
 
         // Recreates the message present in the `signature`
 
-        bytes32 message = keccak256(abi.encodePacked(msg.sender, packetData, packetNumber, nonce, address(this))).toEthSignedMessageHash();
-        require(message.recover(signature) == signer, "Invalid signature");
+        bytes32 messageHash = keccak256(abi.encodePacked(msg.sender, packetData, packetNumber, nonce, address(this))).toEthSignedMessageHash();
+        require(messageHash.recover(signature) == signer, "Invalid signature");
 
 
         for(uint8 i=0;i<packetData.length;i++){
             string memory uri = string(abi.encodePacked(bytes(baseUri), bytes("/"), bytes(toString(packetData[i]))));
             if(packetData[i] < 120){
-                safeMint(msg.sender, uri, false);
+                safeMint(msg.sender, uri, packetData[i], false);
             } else {
-                safeMint(msg.sender, uri, true);
+                safeMint(msg.sender, uri, packetData[i], true);
             }
         }
     }
 
     
-    function safeMint(address to, string memory uri, bool isAlbum) internal {
+    function safeMint(address _to, string memory _uri, uint256 _number, bool _isAlbum) internal {
         uint256 tokenId = _tokenIdCounter.current();
         _tokenIdCounter.increment();
-        _safeMint(to, tokenId);
-        _setTokenURI(tokenId, uri);
+        cards[tokenId].tokenId = tokenId;
+        cards[tokenId].number = _number;
+        if(_isAlbum){
+          cards[tokenId].isAlbum = true;
+        } else {
+          cards[tokenId].isAlbum = false;
+        }
+        _safeMint(_to, tokenId);
+        _setTokenURI(tokenId, _uri);
     }
 
     function pasteCard(uint256 cardTokenId, uint256 albumTokenId) public {
