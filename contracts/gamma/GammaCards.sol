@@ -24,6 +24,7 @@
 
 pragma solidity ^0.8.9;
 
+import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
 import "@openzeppelin/contracts/token/ERC721/extensions/ERC721URIStorage.sol";
 import "@openzeppelin/contracts/token/ERC721/extensions/ERC721Burnable.sol";
@@ -40,19 +41,30 @@ contract GammaCards is ERC721, ERC721URIStorage, ERC721Burnable, Ownable {
     address public balanceReceiver;
     address public immutable signer;
     string public baseUri;
+    uint256 public mainAlbumPrize = 15000000000000000000; // 15 DAI por album principal completado
+    uint256 public secondaryAlbumPrize = 1000000000000000000; // 1 DAI por album secundario completado
     mapping (uint256 nonce => bool used) public usedNonces;
     mapping (uint256 cardNumber => uint256 amount) public cardsInventory; // maximos: 119 => 4999
+    mapping (uint256 albumNumber => uint256 amount) public albumsInventory; // definir maximos segun clase
     mapping (uint256 tokenId => Card) public cards;
+    mapping (uint256 tokenId => Album) public albums;
 
     struct Card {
         uint256 tokenId;
         uint256 number;
-        bool isAlbum;
         bool pasted;
-        bool completion;
+        uint256 completion;
     }
 
-    event packOpened(address player, uint8[] packData, uint256 packNumber);
+    struct Album {
+        uint256 tokenId;
+        uint256 number;
+        uint8 class; // 0 para 120 cartas, 1 para 60 cartas
+        uint256 completion;
+    }
+
+    event PackOpened(address player, uint8[] packData, uint256 packNumber);
+    event AlbumCompleted(address player, uint8 class);
 
     constructor(address _daiTokenAddress, string memory _baseUri, address _balanceReceiver, address _signer) ERC721("GammaCards", "NOF_GC") {
         DAI_TOKEN = _daiTokenAddress;
@@ -73,31 +85,56 @@ contract GammaCards is ERC721, ERC721URIStorage, ERC721Burnable, Ownable {
 
 
         for(uint8 i=0;i<packData.length;i++){
-            string memory uri = string(abi.encodePacked(bytes(baseUri), bytes("/"), bytes(toString(packData[i]))));
+            string memory uri = string(abi.encodePacked(bytes(baseUri), bytes("/"), bytes(toString(packData[i])))); // chequear la terminacion: .json o solo numero
             if(packData[i] < 120){
+                require(cardsInventory[packData[i]] < 4999, "Cantidad de copias de la carta excedida");
                 safeMint(msg.sender, uri, packData[i], false);
                 cardsInventory[packData[i]]++;
             } else {
                 safeMint(msg.sender, uri, packData[i], true);
-                // set albums inventory
+                // albums inventory? para chequear que que no se pase de la cantidad de sobres: 3000 de 120, 5000 de 60
             }
         }
 
-        emit packOpened(msg.sender, packData, packNumber);
+        emit PackOpened(msg.sender, packData, packNumber);
     }
     
     function safeMint(address _to, string memory _uri, uint256 _number, bool _isAlbum) internal {
         uint256 tokenId = _tokenIdCounter.current();
         _tokenIdCounter.increment();
-        cards[tokenId].tokenId = tokenId;
-        cards[tokenId].number = _number;
-        cards[tokenId].isAlbum = _isAlbum;
+        if(!_isAlbum){
+            cards[tokenId].tokenId = tokenId;
+            cards[tokenId].number = _number;
+        } else {
+            albums[tokenId].tokenId = tokenId;
+            albums[tokenId].number = _number;
+            if(_number == 120){
+                albums[tokenId].class = 0;
+            } else {
+                albums[tokenId].class = 1;
+            }
+        }
         _safeMint(_to, tokenId);
         _setTokenURI(tokenId, _uri);
     }
 
     function pasteCard(uint256 cardTokenId, uint256 albumTokenId) public {
         require(ownerOf(cardTokenId) == msg.sender && ownerOf(albumTokenId) == msg.sender, "La carta o el album no te pertenecen");
+        require(albums[albumTokenId].tokenId == albumTokenId, "Este ID no es un album"); // chequear que pasa si el tokenId es 0
+        require(cards[cardTokenId].tokenId == cardTokenId, "Este ID no es una carta");
+        albums[albumTokenId].completion++;
+        if(albums[albumTokenId].class == 0){
+            if(albums[albumTokenId].completion == 120){
+                IERC20(DAI_TOKEN).transfer(msg.sender, mainAlbumPrize);
+                emit AlbumCompleted(msg.sender, albums[albumTokenId].class);
+            }
+        } else if(albums[albumTokenId].class == 1){
+            if(albums[albumTokenId].completion == 60){
+                IERC20(DAI_TOKEN).transfer(msg.sender, secondaryAlbumPrize);
+                emit AlbumCompleted(msg.sender, albums[albumTokenId].class);
+            }
+        }
+
         _burn(cardTokenId);
     }
 

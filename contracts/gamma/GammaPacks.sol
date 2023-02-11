@@ -39,8 +39,8 @@ contract GammaPacks is ERC721, ERC721URIStorage, ERC721Burnable, Ownable {
     uint256 public constant totalSupply = 50000;
     address public balanceReceiver;
 
-    event packPurchase(address buyer, uint256 tokenId);
-    event newPrice(uint256 newPrice);
+    event PackPurchase(address buyer, uint256 tokenId);
+    event NewPrice(uint256 newPrice);
 
     constructor(
             address _daiTokenAddress,
@@ -69,12 +69,12 @@ contract GammaPacks is ERC721, ERC721URIStorage, ERC721Burnable, Ownable {
         _safeMint(to, tokenId);
         _setTokenURI(tokenId, uri);
         
-        emit packPurchase(msg.sender, tokenId);
+        emit PackPurchase(msg.sender, tokenId);
     }
 
     function changePrice(uint256 _newPrice) public onlyOwner {
         packPrice = _newPrice;
-        emit newPrice(_newPrice);
+        emit NewPrice(_newPrice);
     }
 
     // The following functions are overrides required by Solidity.
