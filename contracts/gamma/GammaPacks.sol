@@ -36,7 +36,9 @@ contract GammaPacks is ERC721, ERC721URIStorage, ERC721Burnable, Ownable {
     address public DAI_TOKEN;
     address public cardsContract;
     string public baseUri;
-    uint256 public packPrice;
+    uint256 public MAX_INT = 2**256-1;
+    uint256 public packPrice; // 1200000000000000000 --- 1.2 DAI
+    uint256 public prizesBalance;
     uint256 public constant totalSupply = 50000;
     address public balanceReceiver;
 
@@ -56,7 +58,10 @@ contract GammaPacks is ERC721, ERC721URIStorage, ERC721Burnable, Ownable {
     function buyPack(uint256 price) public {
         require(price == packPrice, "Debes enviar el precio exacto");
         safeMint(msg.sender, baseUri);
-        IERC20(DAI_TOKEN).transferFrom(msg.sender, balanceReceiver, packPrice);
+        uint256 prizesAmount = price - price / 6;
+        prizesBalance += prizesAmount;
+        IERC20(DAI_TOKEN).transferFrom(msg.sender, address(this), prizesAmount);
+        IERC20(DAI_TOKEN).transferFrom(msg.sender, balanceReceiver, price - prizesAmount);
     }
 
     function openPack(uint256 tokenId) public {
@@ -85,7 +90,7 @@ contract GammaPacks is ERC721, ERC721URIStorage, ERC721Burnable, Ownable {
 
     function approveCardsContract() public onlyOwner {
         require(cardsContract != address(0), "Can not approve address 0");
-        IERC20(DAI_TOKEN).approve(cardsContract, 2**256-1);
+        IERC20(DAI_TOKEN).approve(cardsContract, MAX_INT);
     }
 
     // The following functions are overrides required by Solidity.

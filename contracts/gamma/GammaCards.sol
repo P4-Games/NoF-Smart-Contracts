@@ -127,6 +127,7 @@ contract GammaCards is ERC721, ERC721URIStorage, ERC721Burnable, Ownable {
         albums[albumTokenId].completion++;
         if(albums[albumTokenId].class == 0){
             if(albums[albumTokenId].completion == 120){
+                // require que haya este balance, cambiar a interfaz y agregar funcion en packsContract para pagar premios?
                 IERC20(DAI_TOKEN).transferFrom(packsContract, msg.sender, mainAlbumPrize);
                 emit AlbumCompleted(msg.sender, albums[albumTokenId].class);
             }
