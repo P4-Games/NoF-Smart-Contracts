@@ -16,7 +16,7 @@
 // - importante de la implementación que los albumes estén uniformemente repartidos en los sobres a lo largo del tiempo
 // - fee de transacción del 2.5%
 
-// retrieve cards: con firma se mintean las cartas y album/s
+// open pack: con firma se mintean las cartas y album/s
 // paste cards en album de 120: burn
 // paste cards en album de 60: burn
 // entrega de premios con album lleno
@@ -40,9 +40,9 @@ contract GammaCards is ERC721, ERC721URIStorage, ERC721Burnable, Ownable {
     address public balanceReceiver;
     address public immutable signer;
     string public baseUri;
-    mapping (uint256 => bool) public usedNonces;
-    mapping (uint256 => uint256) public usedCardNumbers; // maximos: 119 => 4999 (numero de carta y cantidades de cartas)
-    mapping (uint256 => Card) public cards;
+    mapping (uint256 nonce => bool used) public usedNonces;
+    mapping (uint256 cardNumber => uint256 amount) public cardsInventory; // maximos: 119 => 4999
+    mapping (uint256 tokenId => Card) public cards;
 
     struct Card {
         uint256 tokenId;
@@ -52,6 +52,8 @@ contract GammaCards is ERC721, ERC721URIStorage, ERC721Burnable, Ownable {
         bool completion;
     }
 
+    event packOpened(address player, uint8[] packData, uint256 packNumber);
+
     constructor(address _daiTokenAddress, string memory _baseUri, address _balanceReceiver, address _signer) ERC721("GammaCards", "NOF_GC") {
         DAI_TOKEN = _daiTokenAddress;
         baseUri = _baseUri;
@@ -59,37 +61,37 @@ contract GammaCards is ERC721, ERC721URIStorage, ERC721Burnable, Ownable {
         signer = _signer;
     }
 
-    function retrieveCards(uint256 nonce, uint8[] memory packetData, uint256 packetNumber, bytes calldata signature) external {
+    function openPack(uint256 nonce, uint8[] memory packData, uint256 packNumber, bytes calldata signature) external {
+        // require que el sobre no haya sido abierto
         require(!usedNonces[nonce], "Signature already used");
         usedNonces[nonce] = true;
 
         // Recreates the message present in the `signature`
 
-        bytes32 messageHash = keccak256(abi.encodePacked(msg.sender, packetData, packetNumber, nonce, address(this))).toEthSignedMessageHash();
+        bytes32 messageHash = keccak256(abi.encodePacked(msg.sender, packData, packNumber, nonce, address(this))).toEthSignedMessageHash();
         require(messageHash.recover(signature) == signer, "Invalid signature");
 
 
-        for(uint8 i=0;i<packetData.length;i++){
-            string memory uri = string(abi.encodePacked(bytes(baseUri), bytes("/"), bytes(toString(packetData[i]))));
-            if(packetData[i] < 120){
-                safeMint(msg.sender, uri, packetData[i], false);
+        for(uint8 i=0;i<packData.length;i++){
+            string memory uri = string(abi.encodePacked(bytes(baseUri), bytes("/"), bytes(toString(packData[i]))));
+            if(packData[i] < 120){
+                safeMint(msg.sender, uri, packData[i], false);
+                cardsInventory[packData[i]]++;
             } else {
-                safeMint(msg.sender, uri, packetData[i], true);
+                safeMint(msg.sender, uri, packData[i], true);
+                // set albums inventory
             }
         }
-    }
 
+        emit packOpened(msg.sender, packData, packNumber);
+    }
     
     function safeMint(address _to, string memory _uri, uint256 _number, bool _isAlbum) internal {
         uint256 tokenId = _tokenIdCounter.current();
         _tokenIdCounter.increment();
         cards[tokenId].tokenId = tokenId;
         cards[tokenId].number = _number;
-        if(_isAlbum){
-          cards[tokenId].isAlbum = true;
-        } else {
-          cards[tokenId].isAlbum = false;
-        }
+        cards[tokenId].isAlbum = _isAlbum;
         _safeMint(_to, tokenId);
         _setTokenURI(tokenId, _uri);
     }
