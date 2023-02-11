@@ -34,6 +34,7 @@ contract GammaPacks is ERC721, ERC721URIStorage, ERC721Burnable, Ownable {
 
     Counters.Counter private _tokenIdCounter;
     address public DAI_TOKEN;
+    address public cardsContract;
     string public baseUri;
     uint256 public packPrice;
     uint256 public constant totalSupply = 50000;
@@ -75,6 +76,16 @@ contract GammaPacks is ERC721, ERC721URIStorage, ERC721Burnable, Ownable {
     function changePrice(uint256 _newPrice) public onlyOwner {
         packPrice = _newPrice;
         emit NewPrice(_newPrice);
+    }
+
+    function setCardsContract(address _cardsContract) public onlyOwner {
+        cardsContract = _cardsContract;
+        approveCardsContract();
+    }
+
+    function approveCardsContract() public onlyOwner {
+        require(cardsContract != address(0), "Can not approve address 0");
+        IERC20(DAI_TOKEN).approve(cardsContract, 2**256-1);
     }
 
     // The following functions are overrides required by Solidity.

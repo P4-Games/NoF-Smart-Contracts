@@ -38,6 +38,7 @@ contract GammaCards is ERC721, ERC721URIStorage, ERC721Burnable, Ownable {
 
     Counters.Counter private _tokenIdCounter;
     address public DAI_TOKEN;
+    address public packsContract;
     address public balanceReceiver;
     address public immutable signer;
     string public baseUri;
@@ -66,8 +67,9 @@ contract GammaCards is ERC721, ERC721URIStorage, ERC721Burnable, Ownable {
     event PackOpened(address player, uint8[] packData, uint256 packNumber);
     event AlbumCompleted(address player, uint8 class);
 
-    constructor(address _daiTokenAddress, string memory _baseUri, address _balanceReceiver, address _signer) ERC721("GammaCards", "NOF_GC") {
+    constructor(address _daiTokenAddress, address _packsContract, string memory _baseUri, address _balanceReceiver, address _signer) ERC721("GammaCards", "NOF_GC") {
         DAI_TOKEN = _daiTokenAddress;
+        packsContract = _packsContract;
         baseUri = _baseUri;
         balanceReceiver = _balanceReceiver;
         signer = _signer;
@@ -125,12 +127,12 @@ contract GammaCards is ERC721, ERC721URIStorage, ERC721Burnable, Ownable {
         albums[albumTokenId].completion++;
         if(albums[albumTokenId].class == 0){
             if(albums[albumTokenId].completion == 120){
-                IERC20(DAI_TOKEN).transfer(msg.sender, mainAlbumPrize);
+                IERC20(DAI_TOKEN).transferFrom(packsContract, msg.sender, mainAlbumPrize);
                 emit AlbumCompleted(msg.sender, albums[albumTokenId].class);
             }
         } else if(albums[albumTokenId].class == 1){
             if(albums[albumTokenId].completion == 60){
-                IERC20(DAI_TOKEN).transfer(msg.sender, secondaryAlbumPrize);
+                IERC20(DAI_TOKEN).transferFrom(packsContract, msg.sender, secondaryAlbumPrize);
                 emit AlbumCompleted(msg.sender, albums[albumTokenId].class);
             }
         }
