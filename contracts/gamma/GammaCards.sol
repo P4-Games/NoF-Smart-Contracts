@@ -32,14 +32,20 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/utils/Counters.sol";
 import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 
+interface IGammaPacks {
+    function ownerOf(uint256 tokenId) external view returns (address);
+}
+
 contract GammaCards is ERC721, ERC721URIStorage, ERC721Burnable, Ownable {
     using Counters for Counters.Counter;
     using ECDSA for bytes32;
 
+    IGammaPacks public packsContractInterface;
+
     Counters.Counter private _tokenIdCounter;
     address public DAI_TOKEN;
     address public packsContract;
-    address public balanceReceiver;
+    // address public balanceReceiver;
     address public immutable signer;
     string public baseUri;
     uint256 public mainAlbumPrize = 15000000000000000000; // 15 DAI por album principal completado
@@ -48,36 +54,36 @@ contract GammaCards is ERC721, ERC721URIStorage, ERC721Burnable, Ownable {
     mapping (uint256 cardNumber => uint256 amount) public cardsInventory; // maximos: 119 => 4999
     mapping (uint256 albumNumber => uint256 amount) public albumsInventory; // definir maximos segun clase
     mapping (uint256 tokenId => Card) public cards;
-    mapping (uint256 tokenId => Album) public albums;
+    mapping(uint256 albumTokenId => mapping (uint256 cardNum => bool pasted)) public albumsCompletion;
+    mapping(address user => uint256[] tokenId) public cardsByUser;
+
 
     struct Card {
         uint256 tokenId;
         uint256 number;
         bool pasted;
-        uint256 completion;
-    }
-
-    struct Album {
-        uint256 tokenId;
-        uint256 number;
-        uint8 class; // 0 para 120 cartas, 1 para 60 cartas
-        uint256 completion;
+        uint8 class; // 1 para cartas, 2 para album de 120, 3 para album de 60
+        uint256 completion; // solo se modifica en el caso de los albums
     }
 
     event PackOpened(address player, uint8[] packData, uint256 packNumber);
     event AlbumCompleted(address player, uint8 class);
+    event CardPasted(address player, uint256 cardTokenId, uint256 albumTokenId);
 
-    constructor(address _daiTokenAddress, address _packsContract, string memory _baseUri, address _balanceReceiver, address _signer) ERC721("GammaCards", "NOF_GC") {
+    constructor(address _daiTokenAddress, address _packsContract, string memory _baseUri, /* address _balanceReceiver */ address _signer) ERC721("GammaCards", "NOF_GC") {
+        packsContractInterface = IGammaPacks(_packsContract);
         DAI_TOKEN = _daiTokenAddress;
         packsContract = _packsContract;
         baseUri = _baseUri;
-        balanceReceiver = _balanceReceiver;
+        // balanceReceiver = _balanceReceiver;
         signer = _signer;
     }
 
     function openPack(uint256 nonce, uint8[] memory packData, uint256 packNumber, bytes calldata signature) external {
         // require que el sobre no haya sido abierto
-        require(!usedNonces[nonce], "Signature already used");
+        require(packsContractInterface.ownerOf(packNumber) == msg.sender, "Este sobre no es tuyo");
+        require(packData.length < 15, "Limite de cartas excedido");
+        require(!usedNonces[nonce], "Firma ya utilizada");
         usedNonces[nonce] = true;
 
         // Recreates the message present in the `signature`
@@ -90,54 +96,52 @@ contract GammaCards is ERC721, ERC721URIStorage, ERC721Burnable, Ownable {
             string memory uri = string(abi.encodePacked(bytes(baseUri), bytes("/"), bytes(toString(packData[i])))); // chequear la terminacion: .json o solo numero
             if(packData[i] < 120){
                 require(cardsInventory[packData[i]] < 4999, "Cantidad de copias de la carta excedida");
-                safeMint(msg.sender, uri, packData[i], false);
                 cardsInventory[packData[i]]++;
-            } else {
-                safeMint(msg.sender, uri, packData[i], true);
-                // albums inventory? para chequear que que no se pase de la cantidad de sobres: 3000 de 120, 5000 de 60
+                safeMint(msg.sender, uri, packData[i], 1);
+            } else if(packData[i] == 120){
+                require(albumsInventory[120] < 2999, "Cantidad de copias del album de 120 excedida");
+                albumsInventory[120]++;
+                safeMint(msg.sender, uri, packData[i], 2);
+            } else if(packData[i] == 121){
+                require(albumsInventory[121] < 4999, "Cantidad de copias del album de 60 excedida");
+                albumsInventory[121]++;
+                safeMint(msg.sender, uri, 121, 3);
             }
         }
 
         emit PackOpened(msg.sender, packData, packNumber);
     }
     
-    function safeMint(address _to, string memory _uri, uint256 _number, bool _isAlbum) internal {
+    function safeMint(address _to, string memory _uri, uint256 _number, uint8 _class) internal {
         uint256 tokenId = _tokenIdCounter.current();
         _tokenIdCounter.increment();
-        if(!_isAlbum){
-            cards[tokenId].tokenId = tokenId;
-            cards[tokenId].number = _number;
-        } else {
-            albums[tokenId].tokenId = tokenId;
-            albums[tokenId].number = _number;
-            if(_number == 120){
-                albums[tokenId].class = 0;
-            } else {
-                albums[tokenId].class = 1;
-            }
-        }
+        cards[tokenId].tokenId = tokenId;
+        cards[tokenId].number = _number;
+        cards[tokenId].class = _class;
+        cardsByUser[msg.sender].push(tokenId);
         _safeMint(_to, tokenId);
         _setTokenURI(tokenId, _uri);
     }
 
     function pasteCard(uint256 cardTokenId, uint256 albumTokenId) public {
         require(ownerOf(cardTokenId) == msg.sender && ownerOf(albumTokenId) == msg.sender, "La carta o el album no te pertenecen");
-        require(albums[albumTokenId].tokenId == albumTokenId, "Este ID no es un album"); // chequear que pasa si el tokenId es 0
-        require(cards[cardTokenId].tokenId == cardTokenId, "Este ID no es una carta");
-        albums[albumTokenId].completion++;
-        if(albums[albumTokenId].class == 0){
-            if(albums[albumTokenId].completion == 120){
-                // require que haya este balance, cambiar a interfaz y agregar funcion en packsContract para pagar premios?
-                IERC20(DAI_TOKEN).transferFrom(packsContract, msg.sender, mainAlbumPrize);
-                emit AlbumCompleted(msg.sender, albums[albumTokenId].class);
-            }
-        } else if(albums[albumTokenId].class == 1){
-            if(albums[albumTokenId].completion == 60){
-                IERC20(DAI_TOKEN).transferFrom(packsContract, msg.sender, secondaryAlbumPrize);
-                emit AlbumCompleted(msg.sender, albums[albumTokenId].class);
-            }
-        }
+        require(cards[albumTokenId].class > 1, "Este ID no es un album");
+        require(cards[cardTokenId].class == 1, "Este ID no es una carta");
+        cards[albumTokenId].completion++;
+        cards[cardTokenId].pasted = true;
 
+        emit CardPasted(msg.sender, cardTokenId, albumTokenId);
+        
+        if(cards[albumTokenId].class == 2 && cards[albumTokenId].completion == 120){
+            require(!albumsCompletion[albumTokenId][cards[cardTokenId].number], "Esta carta ya esta pegada");
+            albumsCompletion[albumTokenId][cards[cardTokenId].number] = true;
+            // require que haya este balance, cambiar a interfaz y agregar funcion en packsContract para pagar premios?
+            IERC20(DAI_TOKEN).transferFrom(packsContract, msg.sender, mainAlbumPrize);
+            emit AlbumCompleted(msg.sender, cards[albumTokenId].class);
+        } else if(cards[albumTokenId].class == 3 && cards[albumTokenId].completion == 60){
+            IERC20(DAI_TOKEN).transferFrom(packsContract, msg.sender, secondaryAlbumPrize);
+            emit AlbumCompleted(msg.sender, cards[albumTokenId].class);
+        }
         _burn(cardTokenId);
     }
 
