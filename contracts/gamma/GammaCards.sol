@@ -34,6 +34,7 @@ import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 
 interface IGammaPacks {
     function ownerOf(uint256 tokenId) external view returns (address);
+    function openPack(uint256 tokenId) external;
 }
 
 contract GammaCards is ERC721, ERC721URIStorage, ERC721Burnable, Ownable {
@@ -80,11 +81,11 @@ contract GammaCards is ERC721, ERC721URIStorage, ERC721Burnable, Ownable {
     }
 
     function openPack(uint256 nonce, uint8[] memory packData, uint256 packNumber, bytes calldata signature) external {
-        // require que el sobre no haya sido abierto
         require(packsContractInterface.ownerOf(packNumber) == msg.sender, "Este sobre no es tuyo");
         require(packData.length < 15, "Limite de cartas excedido");
         require(!usedNonces[nonce], "Firma ya utilizada");
         usedNonces[nonce] = true;
+        packsContractInterface.openPack(packNumber);
 
         // Recreates the message present in the `signature`
 

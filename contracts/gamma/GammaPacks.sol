@@ -65,7 +65,7 @@ contract GammaPacks is ERC721, ERC721URIStorage, ERC721Burnable, Ownable {
     }
 
     function openPack(uint256 tokenId) public {
-        burn(tokenId);
+        _burn(tokenId);
     }
 
     function safeMint(address to, string memory uri) internal {
