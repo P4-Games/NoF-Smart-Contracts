@@ -32,6 +32,8 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/utils/Counters.sol";
 import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 
+import "hardhat/console.sol";
+
 interface IGammaPacks {
     function ownerOf(uint256 tokenId) external view returns (address);
     function openPack(uint256 tokenId) external;
@@ -58,6 +60,10 @@ contract GammaCards is ERC721, ERC721URIStorage, ERC721Burnable, Ownable {
     mapping(uint256 albumTokenId => mapping (uint256 cardNum => bool pasted)) public albumsCompletion;
     mapping(address user => uint256[] tokenId) public cardsByUser;
 
+    bytes32 public msgHash; // testing
+    bytes32 public msgHashToEthSignedMessageHash; // testing
+    address public msgHashRecoverSignature; // testing
+
 
     struct Card {
         uint256 tokenId;
@@ -80,21 +86,19 @@ contract GammaCards is ERC721, ERC721URIStorage, ERC721Burnable, Ownable {
         signer = _signer;
     }
 
-    function openPack(uint256 nonce, uint8[] memory packData, uint256 packNumber, bytes calldata signature) external {
+    function openPack(uint256 packNumber, string calldata concatStringChecksum, uint8[] memory packData, bytes calldata signature) external {
         require(packsContractInterface.ownerOf(packNumber) == msg.sender, "Este sobre no es tuyo");
-        require(packData.length < 15, "Limite de cartas excedido");
-        require(!usedNonces[nonce], "Firma ya utilizada");
-        usedNonces[nonce] = true;
+        require(packData.length < 50, "Limite de cartas excedido"); // chequear este length
+        
         packsContractInterface.openPack(packNumber);
 
         // Recreates the message present in the `signature`
-
-        bytes32 messageHash = keccak256(abi.encodePacked(msg.sender, packData, packNumber, nonce, address(this))).toEthSignedMessageHash();
+        bytes32 messageHash = keccak256(abi.encodePacked(concatStringChecksum, msg.sender, address(this))).toEthSignedMessageHash();
         require(messageHash.recover(signature) == signer, "Invalid signature");
 
 
         for(uint8 i=0;i<packData.length;i++){
-            string memory uri = string(abi.encodePacked(bytes(baseUri), bytes("/"), bytes(toString(packData[i])))); // chequear la terminacion: .json o solo numero
+            string memory uri = string(abi.encodePacked(bytes(baseUri), bytes("/"), bytes(toString(packData[i])), bytes(".json"))); // chequear la terminacion: .json o solo numero
             if(packData[i] < 120){
                 require(cardsInventory[packData[i]] < 4999, "Cantidad de copias de la carta excedida");
                 cardsInventory[packData[i]]++;
@@ -136,11 +140,10 @@ contract GammaCards is ERC721, ERC721URIStorage, ERC721Burnable, Ownable {
         if(cards[albumTokenId].class == 2 && cards[albumTokenId].completion == 120){
             require(!albumsCompletion[albumTokenId][cards[cardTokenId].number], "Esta carta ya esta pegada");
             albumsCompletion[albumTokenId][cards[cardTokenId].number] = true;
-            // require que haya este balance, cambiar a interfaz y agregar funcion en packsContract para pagar premios?
-            IERC20(DAI_TOKEN).transferFrom(packsContract, msg.sender, mainAlbumPrize);
+            IERC20(DAI_TOKEN).transfer(msg.sender, mainAlbumPrize);
             emit AlbumCompleted(msg.sender, cards[albumTokenId].class);
         } else if(cards[albumTokenId].class == 3 && cards[albumTokenId].completion == 60){
-            IERC20(DAI_TOKEN).transferFrom(packsContract, msg.sender, secondaryAlbumPrize);
+            IERC20(DAI_TOKEN).transfer(msg.sender, secondaryAlbumPrize);
             emit AlbumCompleted(msg.sender, cards[albumTokenId].class);
         }
         _burn(cardTokenId);
