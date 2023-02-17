@@ -86,14 +86,14 @@ contract GammaCards is ERC721, ERC721URIStorage, ERC721Burnable, Ownable {
         signer = _signer;
     }
 
-    function openPack(uint256 packNumber, string calldata concatStringChecksum, uint8[] memory packData, bytes calldata signature) external {
+    function openPack(uint256 packNumber, uint8[] memory packData, bytes calldata signature) external {
         require(packsContractInterface.ownerOf(packNumber) == msg.sender, "Este sobre no es tuyo");
         require(packData.length < 50, "Limite de cartas excedido"); // chequear este length
         
         packsContractInterface.openPack(packNumber);
 
         // Recreates the message present in the `signature`
-        bytes32 messageHash = keccak256(abi.encodePacked(concatStringChecksum, msg.sender, address(this))).toEthSignedMessageHash();
+        bytes32 messageHash = keccak256(abi.encodePacked(msg.sender, packNumber, packData, address(this))).toEthSignedMessageHash();
         require(messageHash.recover(signature) == signer, "Invalid signature");
 
 
@@ -132,14 +132,17 @@ contract GammaCards is ERC721, ERC721URIStorage, ERC721Burnable, Ownable {
         require(ownerOf(cardTokenId) == msg.sender && ownerOf(albumTokenId) == msg.sender, "La carta o el album no te pertenecen");
         require(cards[albumTokenId].class > 1, "Este ID no es un album");
         require(cards[cardTokenId].class == 1, "Este ID no es una carta");
+        if(cards[albumTokenId].class == 2){
+            require(!albumsCompletion[albumTokenId][cards[cardTokenId].number], "Esta carta ya esta pegada");
+            albumsCompletion[albumTokenId][cards[cardTokenId].number] = true;
+        }
+
         cards[albumTokenId].completion++;
         cards[cardTokenId].pasted = true;
 
         emit CardPasted(msg.sender, cardTokenId, albumTokenId);
         
         if(cards[albumTokenId].class == 2 && cards[albumTokenId].completion == 120){
-            require(!albumsCompletion[albumTokenId][cards[cardTokenId].number], "Esta carta ya esta pegada");
-            albumsCompletion[albumTokenId][cards[cardTokenId].number] = true;
             IERC20(DAI_TOKEN).transfer(msg.sender, mainAlbumPrize);
             emit AlbumCompleted(msg.sender, cards[albumTokenId].class);
         } else if(cards[albumTokenId].class == 3 && cards[albumTokenId].completion == 60){

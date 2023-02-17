@@ -68,6 +68,7 @@ contract GammaPacks is ERC721, ERC721URIStorage, ERC721Burnable, Ownable {
     }
 
     function openPack(uint256 tokenId) public {
+        // agregar require para que solo pueda ser llamado por cardsContract
         _burn(tokenId);
     }
 
