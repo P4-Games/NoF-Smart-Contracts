@@ -38,12 +38,13 @@ contract GammaPacks is ERC721, ERC721URIStorage, ERC721Burnable, Ownable {
     string public baseUri;
     uint256 public MAX_INT = 2**256-1;
     uint256 public packPrice; // 1200000000000000000 --- 1.2 DAI
-    uint256 public prizesBalance;
+    // uint256 public prizesBalance;
     uint256 public constant totalSupply = 50000;
     address public balanceReceiver;
 
     event PackPurchase(address buyer, uint256 tokenId);
     event NewPrice(uint256 newPrice);
+    event NewCardsContract(address newCardsContract);
 
     constructor(
             address _daiTokenAddress,
@@ -62,7 +63,7 @@ contract GammaPacks is ERC721, ERC721URIStorage, ERC721Burnable, Ownable {
         require(price == packPrice, "Debes enviar el precio exacto");
         safeMint(msg.sender, baseUri);
         uint256 prizesAmount = price - price / 6;
-        prizesBalance += prizesAmount;
+        // prizesBalance += prizesAmount;
         IERC20(DAI_TOKEN).transferFrom(msg.sender, cardsContract, prizesAmount); // envia monto de premios al contrato de cartas
         IERC20(DAI_TOKEN).transferFrom(msg.sender, balanceReceiver, price - prizesAmount); // envia monto de profit a cuenta de NoF
     }
@@ -74,7 +75,7 @@ contract GammaPacks is ERC721, ERC721URIStorage, ERC721Burnable, Ownable {
 
     function safeMint(address to, string memory uri) internal {
         uint256 tokenId = _tokenIdCounter.current();
-        require(tokenId <= totalSupply, "Se acabaron los sobres");
+        require(tokenId < totalSupply, "Se acabaron los sobres");
         _tokenIdCounter.increment();
         _safeMint(to, tokenId);
         _setTokenURI(tokenId, uri);
@@ -89,6 +90,7 @@ contract GammaPacks is ERC721, ERC721URIStorage, ERC721Burnable, Ownable {
 
     function setCardsContract(address _cardsContract) public onlyOwner {
         cardsContract = _cardsContract;
+        emit NewCardsContract(_cardsContract);
     }
 
     // The following functions are overrides required by Solidity.
