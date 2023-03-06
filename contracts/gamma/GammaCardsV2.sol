@@ -43,11 +43,10 @@ contract GammaCardsV2 is ERC721, ERC721URIStorage, ERC721Burnable, Ownable {
     using Counters for Counters.Counter;
     using ECDSA for bytes32;
 
-    IGammaPacks public packsContractInterface;
+    IGammaPacks public packsContract;
 
     Counters.Counter private _tokenIdCounter;
     address public DAI_TOKEN;
-    address public packsContract;
     // address public balanceReceiver;
     address public immutable signer;
     uint256 public packPrice;
@@ -86,20 +85,20 @@ contract GammaCardsV2 is ERC721, ERC721URIStorage, ERC721Burnable, Ownable {
     event AlbumCompleted(address player, uint8 albumClass);
     event CardPasted(address player, uint256 cardTokenId, uint256 albumTokenId);
     event EmergencyWithdrawal(address receiver, uint256 amount);
+    event PrizesBalanceChanged(uint256 newPrizesBalance);
 
     constructor(address _daiTokenAddress, address _packsContract, string memory _baseUri, /* address _balanceReceiver */ address _signer) ERC721("GammaCards", "NOF_GC") {
-        packsContractInterface = IGammaPacks(_packsContract);
+        packsContract = IGammaPacks(_packsContract);
         DAI_TOKEN = _daiTokenAddress;
-        packsContract = _packsContract;
         baseUri = _baseUri;
         signer = _signer;
     }
 
     function openPack(uint256 packNumber, uint8[] memory packData, bytes calldata signature) external {
-        require(packsContractInterface.ownerOf(packNumber) == msg.sender, "Este sobre no es tuyo");
+        require(packsContract.ownerOf(packNumber) == msg.sender, "Este sobre no es tuyo");
         require(packData.length < 15, "Limite de cartas excedido"); // chequear este length
         
-        packsContractInterface.openPack(packNumber);
+        packsContract.openPack(packNumber);
         prizesBalance += packPrice - packPrice / 6; // mover como global variable?
 
         // Recreates the message present in the `signature`
@@ -109,7 +108,6 @@ contract GammaCardsV2 is ERC721, ERC721URIStorage, ERC721Burnable, Ownable {
 
 
         for(uint8 i=0;i<packData.length;i++){
-            string memory uri = string(abi.encodePacked(bytes(baseUri), bytes("/"), bytes(toString(packData[i])), bytes(".json"))); // chequear la terminacion: .json o solo numero
             if(packData[i] < 120){
                 require(cardsInventory[packData[i]] < 4999, "Cantidad de copias de la carta excedida");
                 cardsInventory[packData[i]]++;
@@ -173,7 +171,7 @@ contract GammaCardsV2 is ERC721, ERC721URIStorage, ERC721Burnable, Ownable {
 
         safeMint(msg.sender, uri, 120, 2);
 
-        // prizesBalance -= mainAlbumPrize;
+        prizesBalance -= mainAlbumPrize;
         // transfiere premio en DAI
         IERC20(DAI_TOKEN).transfer(msg.sender, mainAlbumPrize);
         emit AlbumCompleted(msg.sender, 1);
@@ -188,8 +186,14 @@ contract GammaCardsV2 is ERC721, ERC721URIStorage, ERC721Burnable, Ownable {
             cardsByUser[msg.sender][cardNumbers[i]]--;
         }
         if(burnedCards[msg.sender] % 60 == 0){
-            // transferir DAI
-            // mintear album de 60
+            string memory uri = string(abi.encodePacked(bytes(baseUri), bytes("/"), bytes("121"), bytes("F.json")));
+            // mintea album de 60
+            safeMint(msg.sender, uri, 121, 2);
+            
+            prizesBalance -= mainAlbumPrize;
+            // transfiere premio en DAI
+            IERC20(DAI_TOKEN).transfer(msg.sender, secondaryAlbumPrize);
+            emit AlbumCompleted(msg.sender, 2);
         }
     }
     
@@ -203,54 +207,18 @@ contract GammaCardsV2 is ERC721, ERC721URIStorage, ERC721Burnable, Ownable {
         _setTokenURI(tokenId, _uri);
     }
 
-    // function pasteCard(uint256 cardTokenId, uint256 albumTokenId) public {
-    //     require(ownerOf(cardTokenId) == msg.sender && ownerOf(albumTokenId) == msg.sender, "La carta o el album no te pertenecen");
-    //     require(cards[albumTokenId].class > 1, "Este ID no es un album");
-    //     require(cards[cardTokenId].class == 1, "Este ID no es una carta");
-    //     uint8 _class = cards[albumTokenId].class;
-    //     if(_class == 2){
-    //         require(!albumsCompletion[albumTokenId][cards[cardTokenId].number], "Esta carta ya esta pegada");
-    //         albumsCompletion[albumTokenId][cards[cardTokenId].number] = true;
-    //     }
+    function receivePrizesBalance(uint256 amount) external {
+        require(msg.sender == address(packsContract), "Solo el contrato de packs puede modificar el balance");
+        prizesBalance += amount;
+        emit PrizesBalanceChanged(prizesBalance);
+    }
 
-    //     cards[albumTokenId].completion++;
-    //     cards[cardTokenId].pasted = true;
+    function emergencyWithdraw(uint256 amount) public onlyOwner {
+        require(balanceOf(address(this)) >= amount);
+        prizesBalance -= amount;
+        IERC20(DAI_TOKEN).transfer(msg.sender, amount);
 
-    //     emit CardPasted(msg.sender, cardTokenId, albumTokenId);
-        
-    //     if(_class == 2 && cards[albumTokenId].completion == 120){
-    //         prizesBalance -= mainAlbumPrize;
-    //         IERC20(DAI_TOKEN).transfer(msg.sender, mainAlbumPrize);
-    //         emit AlbumCompleted(msg.sender, _class);
-    //     } else if(_class == 3 && cards[albumTokenId].completion == 60){
-    //         prizesBalance -= secondaryAlbumPrize;
-    //         IERC20(DAI_TOKEN).transfer(msg.sender, secondaryAlbumPrize);
-    //         emit AlbumCompleted(msg.sender, _class);
-    //     }
-
-    //     _burn(cardTokenId);
-    // }
-
-    // function transferCardOwnership(address from, address to, uint256 tokenId) internal {
-    //     for(uint i=0;i<cardsByUser[from].length;i++){
-    //         if(cardsByUser[from][i] == tokenId){
-    //             cardsByUser[from][i] = cardsByUser[from][cardsByUser[from].length - 1];
-    //             cardsByUser[from].pop();
-    //         }
-    //     }
-    //     cardsByUser[to].push(tokenId);
-    // }
-
-    // function safeTransferFrom(address from, address to, uint256 tokenId) public override {
-    //     transferCardOwnership(from, to, tokenId);
-    //     super.safeTransferFrom(from, to, tokenId);
-    // }
-
-    function emergencyWithdraw() public onlyOwner {
-        uint256 balance = balanceOf(address(this));
-        IERC20(DAI_TOKEN).transfer(msg.sender, balance);
-
-        emit EmergencyWithdrawal(msg.sender, balance);
+        emit EmergencyWithdrawal(msg.sender, amount);
     }
 
     // The following functions are overrides required by Solidity.

@@ -29,14 +29,18 @@ import "@openzeppelin/contracts/token/ERC721/extensions/ERC721Burnable.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/utils/Counters.sol";
 
+interface ICardsContract {
+    function receivePrizesBalance(uint256 amount) external;
+}
+
 contract GammaPacks is ERC721, ERC721URIStorage, ERC721Burnable, Ownable {
     using Counters for Counters.Counter;
 
     Counters.Counter private _tokenIdCounter;
     address public DAI_TOKEN;
-    address public cardsContract;
+    ICardsContract public cardsContract;
     string public baseUri;
-    uint256 public MAX_INT = 2**256-1;
+    uint256 private immutable MAX_INT = 2**256-1;
     uint256 public packPrice; // 1200000000000000000 --- 1.2 DAI
     // uint256 public prizesBalance;
     uint256 public constant totalSupply = 50000;
@@ -59,13 +63,14 @@ contract GammaPacks is ERC721, ERC721URIStorage, ERC721Burnable, Ownable {
     }
 
     function buyPack(uint256 price) public {
-        require(cardsContract != address(0), "Contrato de cartas no seteado");
-        require(price == packPrice, "Debes enviar el precio exacto");
+        require(address(cardsContract) != address(0), "Contrato de cartas no seteado"); // chequear tambien que el cards contract sea el correcto y no cualquiera
+         require(price == packPrice, "Debes enviar el precio exacto");
         safeMint(msg.sender, baseUri);
         uint256 prizesAmount = price - price / 6;
-        // prizesBalance += prizesAmount;
-        IERC20(DAI_TOKEN).transferFrom(msg.sender, cardsContract, prizesAmount); // envia monto de premios al contrato de cartas
+        cardsContract.receivePrizesBalance(prizesAmount);
+        IERC20(DAI_TOKEN).transferFrom(msg.sender, address(cardsContract), prizesAmount); // envia monto de premios al contrato de cartas
         IERC20(DAI_TOKEN).transferFrom(msg.sender, balanceReceiver, price - prizesAmount); // envia monto de profit a cuenta de NoF
+        // retornar tokenId
     }
 
     function openPack(uint256 tokenId) public {
@@ -89,7 +94,7 @@ contract GammaPacks is ERC721, ERC721URIStorage, ERC721Burnable, Ownable {
     }
 
     function setCardsContract(address _cardsContract) public onlyOwner {
-        cardsContract = _cardsContract;
+        cardsContract = ICardsContract(_cardsContract);
         emit NewCardsContract(_cardsContract);
     }
 
