@@ -61,6 +61,7 @@ contract GammaCardsV2 is ERC721, ERC721URIStorage, ERC721Burnable, Ownable {
     mapping (uint256 tokenId => Card) public cards;
     mapping(uint256 albumTokenId => mapping (uint256 cardNum => bool pasted)) public albumsCompletion;
     mapping(address user => mapping(uint8 cardNumber => uint8 amount)) public cardsByUser;
+    mapping(address user => uint256 amount) public burnedCards;
     
     // openPack hace que se revelen y se empiecen a completar los mappings de cartas
     // si no tenia ninguna del numero x, se suma 1 unidad a amountOfCards[msg.sender]
@@ -68,16 +69,7 @@ contract GammaCardsV2 is ERC721, ERC721URIStorage, ERC721Burnable, Ownable {
     // consultar por tener varios albums
     // si amountOfSecondaryCards llega a 60, se entrega el premio y se eliminan 60 cartas del mapping?
     // de esta manera seria automatico el pegado: la primera de cada numero va al principal y las demas van a los de 60
-    // que pasa si tengo mas de un album de 120? que pasa si tengo solo uno de 60?
-    // que pasa si tengo un album pero se lo mando a alguien?
-
-    // 1155 por que no? porque de todas maneras hay que mintear aunque sean en batch
-
-    // opciones de pegado automatico:
-    // 1. se pegan automaticamente en los de 120 y 60? cuales tienen prioridad? todos los de 120 por sobre los de 60 o el primero de 120 y despues los de 60?
-    // 2. se pegan automaticamente en el de 120 y las demas van al mazo para poder pegar en el de 60?
-
-    // en los albums de 120 si tengo una carta de cada numero se van llenando todos a la vez y despues "entrego" el que yo decida.
+    
     // en los de 60 el proceso es manual para que el usuario decida cuando quemar sus cartas.
     // funcion para mintear la carta en particular
 
@@ -163,6 +155,7 @@ contract GammaCardsV2 is ERC721, ERC721URIStorage, ERC721Burnable, Ownable {
         require(cardsByUser[msg.sender][120] > 0, "No tienes ningun album");
 
         // chequea que tenga al menos una carta de cada numero
+        // chequear si es necesaria esta parte porque la resta de cartas haria underflow si esta en 0
         bool finished = true;
         for(uint8 i=0;i<120;i++){
             if(cardsByUser[msg.sender][i] == 0) finished = false;
@@ -188,7 +181,16 @@ contract GammaCardsV2 is ERC721, ERC721URIStorage, ERC721Burnable, Ownable {
 
     // user should call this function if they want to 'paste' selected cards in the 60 cards album to 'burn' them
     function burnCards(uint8[] calldata cardNumbers) public {
-
+        require(cardsByUser[msg.sender][121] > 0, "No tienes album de quema");
+        cardsByUser[msg.sender][121]--;
+        burnedCards[msg.sender] += cardNumbers.length;
+        for(uint8 i=0;i<cardNumbers.length;i++){
+            cardsByUser[msg.sender][cardNumbers[i]]--;
+        }
+        if(burnedCards[msg.sender] % 60 == 0){
+            // transferir DAI
+            // mintear album de 60
+        }
     }
     
     function safeMint(address _to, string memory _uri, uint256 _number, uint8 _class) internal {
