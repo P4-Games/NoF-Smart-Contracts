@@ -16,12 +16,6 @@
 // - importante de la implementación que los albumes estén uniformemente repartidos en los sobres a lo largo del tiempo
 // - fee de transacción del 2.5%
 
-// open pack: con firma se mintean las cartas y album/s
-// paste cards en album de 120: burn
-// paste cards en album de 60: burn
-// entrega de premios con album lleno
-// transfer cards
-
 pragma solidity ^0.8.9;
 
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
@@ -47,8 +41,7 @@ contract GammaCardsV2 is ERC721, ERC721URIStorage, ERC721Burnable, Ownable {
 
     Counters.Counter private _tokenIdCounter;
     address public DAI_TOKEN;
-    // address public balanceReceiver;
-    address public immutable signer;
+    address public signer;
     uint256 public packPrice;
     uint256 public prizesBalance;
     string public baseUri;
@@ -62,15 +55,7 @@ contract GammaCardsV2 is ERC721, ERC721URIStorage, ERC721Burnable, Ownable {
     mapping(address user => mapping(uint8 cardNumber => uint8 amount)) public cardsByUser;
     mapping(address user => uint256 amount) public burnedCards;
     
-    // openPack hace que se revelen y se empiecen a completar los mappings de cartas
-    // si no tenia ninguna del numero x, se suma 1 unidad a amountOfCards[msg.sender]
-    // si ya tenia de ese numero, se suma 1 unidad a amountOfSecondaryCards[msg.sender]
-    // consultar por tener varios albums
-    // si amountOfSecondaryCards llega a 60, se entrega el premio y se eliminan 60 cartas del mapping?
-    // de esta manera seria automatico el pegado: la primera de cada numero va al principal y las demas van a los de 60
-    
-    // en los de 60 el proceso es manual para que el usuario decida cuando quemar sus cartas.
-    // funcion para mintear la carta en particular
+    // setSigner
 
 
     struct Card {
@@ -209,9 +194,9 @@ contract GammaCardsV2 is ERC721, ERC721URIStorage, ERC721Burnable, Ownable {
 
     function mintCard(uint8 cardNum) public {
         require(cardsByUser[msg.sender][cardNum] > 0, "No tienes esta carta");
-        // quitar carta del listado
-        // uri
-        // safeMint
+        cardsByUser[msg.sender][cardNum]--;
+        string memory uri = string(abi.encodePacked(bytes(baseUri), bytes("/"), bytes(toString(cardNum)), bytes(".json")));
+        safeMint(msg.sender, uri, cardNum, 1);
     }
 
     function receivePrizesBalance(uint256 amount) external {
