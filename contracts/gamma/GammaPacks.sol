@@ -31,6 +31,7 @@ import "@openzeppelin/contracts/utils/Counters.sol";
 
 interface ICardsContract {
     function receivePrizesBalance(uint256 amount) external;
+    function changePackPrice(uint256 amount) external;
 }
 
 contract GammaPacks is ERC721, ERC721URIStorage, ERC721Burnable, Ownable {
@@ -90,6 +91,7 @@ contract GammaPacks is ERC721, ERC721URIStorage, ERC721Burnable, Ownable {
 
     function changePrice(uint256 _newPrice) public onlyOwner {
         packPrice = _newPrice;
+        cardsContract.changePackPrice(_newPrice);
         emit NewPrice(_newPrice);
     }
 

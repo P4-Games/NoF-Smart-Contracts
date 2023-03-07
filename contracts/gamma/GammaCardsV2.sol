@@ -42,7 +42,7 @@ contract GammaCardsV2 is ERC721, ERC721URIStorage, ERC721Burnable, Ownable {
     Counters.Counter private _tokenIdCounter;
     address public DAI_TOKEN;
     address public signer;
-    uint256 public packPrice;
+    uint256 public packPrice = 1200000000000000000;
     uint256 public prizesBalance;
     string public baseUri;
     uint256 public mainAlbumPrize = 15000000000000000000; // 15 DAI por album principal completado
@@ -69,7 +69,12 @@ contract GammaCardsV2 is ERC721, ERC721URIStorage, ERC721Burnable, Ownable {
     event EmergencyWithdrawal(address receiver, uint256 amount);
     event PrizesBalanceChanged(uint256 newPrizesBalance);
 
-    constructor(address _daiTokenAddress, address _packsContract, string memory _baseUri, /* address _balanceReceiver */ address _signer) ERC721("GammaCards", "NOF_GC") {
+    modifier onlyPacksContract {
+        require(msg.sender == address(packsContract), "Solo el contrato de packs puede modificar el balance");
+        _;
+    }
+
+    constructor(address _daiTokenAddress, address _packsContract, string memory _baseUri, address _signer) ERC721("GammaCards", "NOF_GC") {
         packsContract = IGammaPacks(_packsContract);
         DAI_TOKEN = _daiTokenAddress;
         baseUri = _baseUri;
@@ -196,8 +201,7 @@ contract GammaCardsV2 is ERC721, ERC721URIStorage, ERC721Burnable, Ownable {
         safeMint(msg.sender, uri, cardNum, 1);
     }
 
-    function receivePrizesBalance(uint256 amount) external {
-        require(msg.sender == address(packsContract), "Solo el contrato de packs puede modificar el balance");
+    function receivePrizesBalance(uint256 amount) external onlyPacksContract {
         prizesBalance += amount;
         emit PrizesBalanceChanged(prizesBalance);
     }
@@ -208,6 +212,10 @@ contract GammaCardsV2 is ERC721, ERC721URIStorage, ERC721Burnable, Ownable {
         IERC20(DAI_TOKEN).transfer(msg.sender, amount);
 
         emit EmergencyWithdrawal(msg.sender, amount);
+    }
+
+    function changePackPrice(uint256 newPackPrice) external onlyPacksContract {
+        packPrice = newPackPrice;
     }
 
     // The following functions are overrides required by Solidity.
