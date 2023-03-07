@@ -207,6 +207,13 @@ contract GammaCardsV2 is ERC721, ERC721URIStorage, ERC721Burnable, Ownable {
         _setTokenURI(tokenId, _uri);
     }
 
+    function mintCard(uint8 cardNum) public {
+        require(cardsByUser[msg.sender][cardNum] > 0, "No tienes esta carta");
+        // quitar carta del listado
+        // uri
+        // safeMint
+    }
+
     function receivePrizesBalance(uint256 amount) external {
         require(msg.sender == address(packsContract), "Solo el contrato de packs puede modificar el balance");
         prizesBalance += amount;
