@@ -62,15 +62,13 @@ contract GammaPacks is ERC721, ERC721URIStorage, ERC721Burnable, Ownable {
             balanceReceiver = _balanceReceiver;
     }
 
-    function buyPack(uint256 price) public {
+    function buyPack() public {
         require(address(cardsContract) != address(0), "Contrato de cartas no seteado"); // chequear tambien que el cards contract sea el correcto y no cualquiera
-         require(price == packPrice, "Debes enviar el precio exacto");
         safeMint(msg.sender, baseUri);
-        uint256 prizesAmount = price - price / 6;
+        uint256 prizesAmount = packPrice - packPrice / 6;
         cardsContract.receivePrizesBalance(prizesAmount);
         IERC20(DAI_TOKEN).transferFrom(msg.sender, address(cardsContract), prizesAmount); // envia monto de premios al contrato de cartas
-        IERC20(DAI_TOKEN).transferFrom(msg.sender, balanceReceiver, price - prizesAmount); // envia monto de profit a cuenta de NoF
-        // retornar tokenId
+        IERC20(DAI_TOKEN).transferFrom(msg.sender, balanceReceiver, packPrice - prizesAmount); // envia monto de profit a cuenta de NoF
     }
 
     function openPack(uint256 tokenId) public {

@@ -84,7 +84,7 @@ contract GammaCardsV2 is ERC721, ERC721URIStorage, ERC721Burnable, Ownable {
         require(packData.length < 15, "Limite de cartas excedido"); // chequear este length
         
         packsContract.openPack(packNumber);
-        prizesBalance += packPrice - packPrice / 6; // mover como global variable?
+        prizesBalance += packPrice - packPrice / 6;
 
         // Recreates the message present in the `signature`
         bytes32 messageHash = keccak256(abi.encodePacked(msg.sender, packNumber, packData, 0xf1dD71895e49b1563693969de50898197cDF3481)).toEthSignedMessageHash();
@@ -92,20 +92,11 @@ contract GammaCardsV2 is ERC721, ERC721URIStorage, ERC721Burnable, Ownable {
         require(messageHash.recover(signature) == signer, "Invalid signature");
 
 
-        for(uint8 i=0;i<packData.length;i++){
-            if(packData[i] < 120){
-                require(cardsInventory[packData[i]] < 4999, "Cantidad de copias de la carta excedida");
-                cardsInventory[packData[i]]++;
-                cardsByUser[msg.sender][packData[i]]++;
-            } else if(packData[i] == 120){
-                require(cardsInventory[120] < 2999, "Cantidad de copias del album de 120 excedida");
-                cardsInventory[120]++;
-                cardsByUser[msg.sender][120]++;
-            } else if(packData[i] == 121){
-                require(cardsInventory[121] < 4999, "Cantidad de copias del album de 60 excedida");
-                cardsInventory[121]++;
-                cardsByUser[msg.sender][121]++;
-            }
+        uint256 length = packData.length;
+        for(uint8 i=0;i<length;i++){
+            require(packData[i] == 120 ? cardsInventory[120] < 2999 : cardsInventory[packData[i]] < 4999);
+            cardsInventory[packData[i]]++; // 280k gas aprox.
+            cardsByUser[msg.sender][packData[i]]++; // 310k gas aprox.
         }
 
         emit PackOpened(msg.sender, packData, packNumber);
