@@ -43,7 +43,6 @@ contract GammaPacks is ERC721, ERC721URIStorage, ERC721Burnable, Ownable {
     string public baseUri;
     uint256 private immutable MAX_INT = 2**256-1;
     uint256 public packPrice; // 1200000000000000000 --- 1.2 DAI
-    // uint256 public prizesBalance;
     uint256 public constant totalSupply = 50000;
     address public balanceReceiver;
 

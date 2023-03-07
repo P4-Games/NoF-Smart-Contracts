@@ -49,11 +49,8 @@ contract GammaCardsV2 is ERC721, ERC721URIStorage, ERC721Burnable, Ownable {
     uint256 public secondaryAlbumPrize = 1000000000000000000; // 1 DAI por album secundario completado
     mapping (uint256 cardNumber => uint256 amount) public cardsInventory; // maximos: 119 => 4999
     mapping (uint256 tokenId => Card) public cards;
-    mapping(uint256 albumTokenId => mapping (uint256 cardNum => bool pasted)) public albumsCompletion;
     mapping(address user => mapping(uint8 cardNumber => uint8 amount)) public cardsByUser;
     mapping(address user => uint256 amount) public burnedCards;
-    
-    // setSigner
 
     struct Card {
         uint256 tokenId;
@@ -68,6 +65,7 @@ contract GammaCardsV2 is ERC721, ERC721URIStorage, ERC721Burnable, Ownable {
     event CardPasted(address player, uint256 cardTokenId, uint256 albumTokenId);
     event EmergencyWithdrawal(address receiver, uint256 amount);
     event PrizesBalanceChanged(uint256 newPrizesBalance);
+    event NewSigner(address newSigner);
 
     modifier onlyPacksContract {
         require(msg.sender == address(packsContract), "Solo el contrato de packs puede modificar el balance");
@@ -216,6 +214,11 @@ contract GammaCardsV2 is ERC721, ERC721URIStorage, ERC721Burnable, Ownable {
 
     function changePackPrice(uint256 newPackPrice) external onlyPacksContract {
         packPrice = newPackPrice;
+    }
+
+    function setSigner(address newSigner) public onlyOwner {
+        signer = newSigner;
+        emit NewSigner(newSigner);
     }
 
     // The following functions are overrides required by Solidity.
