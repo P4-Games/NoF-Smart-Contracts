@@ -47,16 +47,13 @@ contract GammaCardsV2 is ERC721, ERC721URIStorage, ERC721Burnable, Ownable {
     string public baseUri;
     uint256 public mainAlbumPrize = 15000000000000000000; // 15 DAI por album principal completado
     uint256 public secondaryAlbumPrize = 1000000000000000000; // 1 DAI por album secundario completado
-    mapping (uint256 nonce => bool used) public usedNonces;
     mapping (uint256 cardNumber => uint256 amount) public cardsInventory; // maximos: 119 => 4999
-    // mapping (uint256 albumNumber => uint256 amount) public albumsInventory; // definir maximos segun clase
     mapping (uint256 tokenId => Card) public cards;
     mapping(uint256 albumTokenId => mapping (uint256 cardNum => bool pasted)) public albumsCompletion;
     mapping(address user => mapping(uint8 cardNumber => uint8 amount)) public cardsByUser;
     mapping(address user => uint256 amount) public burnedCards;
     
     // setSigner
-
 
     struct Card {
         uint256 tokenId;
