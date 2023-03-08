@@ -23,9 +23,6 @@
 pragma solidity ^0.8.9;
 
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
-import "@openzeppelin/contracts/token/ERC721/extensions/ERC721URIStorage.sol";
-import "@openzeppelin/contracts/token/ERC721/extensions/ERC721Burnable.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/utils/Counters.sol";
 
@@ -34,56 +31,51 @@ interface ICardsContract {
     function changePackPrice(uint256 amount) external;
 }
 
-contract GammaPacks is ERC721, ERC721URIStorage, ERC721Burnable, Ownable {
+contract GammaPacks is Ownable {
     using Counters for Counters.Counter;
 
     Counters.Counter private _tokenIdCounter;
     address public DAI_TOKEN;
     ICardsContract public cardsContract;
-    string public baseUri;
     uint256 private immutable MAX_INT = 2**256-1;
-    uint256 public packPrice; // 1200000000000000000 --- 1.2 DAI
+    uint256 public packPrice = 1200000000000000000; // 1.2 DAI
     uint256 public constant totalSupply = 50000;
     address public balanceReceiver;
+
+    mapping(uint256 tokenId => address owner) public packs;
+    mapping(address owner => uint256[] tokenIds) public packsByUser;
 
     event PackPurchase(address buyer, uint256 tokenId);
     event NewPrice(uint256 newPrice);
     event NewCardsContract(address newCardsContract);
 
-    constructor(
-            address _daiTokenAddress,
-            uint256 _packPrice,
-            address _balanceReceiver,
-            string memory _baseUri
-        ) ERC721("GammaPacks", "NOF_GP") {
-            baseUri = _baseUri;
-            DAI_TOKEN = _daiTokenAddress;
-            packPrice = _packPrice;
-            balanceReceiver = _balanceReceiver;
+    constructor(address _daiTokenAddress, address _balanceReceiver) {
+        DAI_TOKEN = _daiTokenAddress;
+        balanceReceiver = _balanceReceiver;
     }
 
     function buyPack() public {
         require(address(cardsContract) != address(0), "Contrato de cartas no seteado"); // chequear tambien que el cards contract sea el correcto y no cualquiera
-        safeMint(msg.sender, baseUri);
+        uint256 tokenId = _tokenIdCounter.current();
+        require(tokenId < totalSupply, "Se acabaron los sobres");
+        _tokenIdCounter.increment();
+        
+        packs[tokenId] = msg.sender;
+        packsByUser[msg.sender].push(tokenId);
+        
         uint256 prizesAmount = packPrice - packPrice / 6;
         cardsContract.receivePrizesBalance(prizesAmount);
         IERC20(DAI_TOKEN).transferFrom(msg.sender, address(cardsContract), prizesAmount); // envia monto de premios al contrato de cartas
         IERC20(DAI_TOKEN).transferFrom(msg.sender, balanceReceiver, packPrice - prizesAmount); // envia monto de profit a cuenta de NoF
+
+        emit PackPurchase(msg.sender, tokenId);
     }
+
+    function transferPack() public {}
 
     function openPack(uint256 tokenId) public {
         require(msg.sender == address(cardsContract), "No es contrato de cartas");
-        _burn(tokenId);
-    }
-
-    function safeMint(address to, string memory uri) internal {
-        uint256 tokenId = _tokenIdCounter.current();
-        require(tokenId < totalSupply, "Se acabaron los sobres");
-        _tokenIdCounter.increment();
-        _safeMint(to, tokenId);
-        _setTokenURI(tokenId, uri);
-        
-        emit PackPurchase(msg.sender, tokenId);
+        // delete tokenId from packs & packsByUser
     }
 
     function changePrice(uint256 _newPrice) public onlyOwner {
@@ -95,52 +87,5 @@ contract GammaPacks is ERC721, ERC721URIStorage, ERC721Burnable, Ownable {
     function setCardsContract(address _cardsContract) public onlyOwner {
         cardsContract = ICardsContract(_cardsContract);
         emit NewCardsContract(_cardsContract);
-    }
-
-    // The following functions are overrides required by Solidity.
-
-    function _burn(uint256 tokenId) internal override(ERC721, ERC721URIStorage) {
-        super._burn(tokenId);
-    }
-
-    function tokenURI(uint256 tokenId)
-        public
-        view
-        override(ERC721, ERC721URIStorage)
-        returns (string memory)
-    {
-        return super.tokenURI(tokenId);
-    }
-}
-
-contract TestStorage {
-    mapping(uint256 => uint256) public numbersArr;
-    mapping(uint256 => uint256) public numbersArr2;
-    mapping(uint256 => uint256) public numbersArr3;
-    mapping(uint256 => uint256) public numbersArr4;
-
-    function addNumbers1(uint256 num) public {
-        for(uint256 i=0;i<num;i++){
-            numbersArr[num]++;
-        }
-    }
-
-    function addNumbers2(uint256[] memory arr) public {
-        for(uint256 i=0;i<arr.length;i++){
-            numbersArr2[arr[i]]++;
-        }
-    }
-
-    function addNumbers3(uint8[] memory arr) public {
-        uint256 length = arr.length;
-        for(uint256 i=0;i<length;i++){
-            numbersArr3[arr[i]]++;
-        }
-    }
-
-    function addNumbers4(uint8[13] memory arr) public {
-        for(uint256 i=0;i<13;i++){
-            numbersArr4[arr[i]]++;
-        }
     }
 }
