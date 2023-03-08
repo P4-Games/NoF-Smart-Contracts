@@ -72,7 +72,7 @@ contract GammaPacks is ERC721, ERC721URIStorage, ERC721Burnable, Ownable {
     }
 
     function openPack(uint256 tokenId) public {
-        // agregar require para que solo pueda ser llamado por cardsContract
+        require(msg.sender == address(cardsContract), "No es contrato de cartas");
         _burn(tokenId);
     }
 
@@ -110,5 +110,37 @@ contract GammaPacks is ERC721, ERC721URIStorage, ERC721Burnable, Ownable {
         returns (string memory)
     {
         return super.tokenURI(tokenId);
+    }
+}
+
+contract TestStorage {
+    mapping(uint256 => uint256) public numbersArr;
+    mapping(uint256 => uint256) public numbersArr2;
+    mapping(uint256 => uint256) public numbersArr3;
+    mapping(uint256 => uint256) public numbersArr4;
+
+    function addNumbers1(uint256 num) public {
+        for(uint256 i=0;i<num;i++){
+            numbersArr[num]++;
+        }
+    }
+
+    function addNumbers2(uint256[] memory arr) public {
+        for(uint256 i=0;i<arr.length;i++){
+            numbersArr2[arr[i]]++;
+        }
+    }
+
+    function addNumbers3(uint8[] memory arr) public {
+        uint256 length = arr.length;
+        for(uint256 i=0;i<length;i++){
+            numbersArr3[arr[i]]++;
+        }
+    }
+
+    function addNumbers4(uint8[13] memory arr) public {
+        for(uint256 i=0;i<13;i++){
+            numbersArr4[arr[i]]++;
+        }
     }
 }

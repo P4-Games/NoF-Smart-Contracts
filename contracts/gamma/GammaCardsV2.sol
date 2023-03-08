@@ -68,7 +68,7 @@ contract GammaCardsV2 is ERC721, ERC721URIStorage, ERC721Burnable, Ownable {
     event NewSigner(address newSigner);
 
     modifier onlyPacksContract {
-        require(msg.sender == address(packsContract), "Solo el contrato de packs puede modificar el balance");
+        require(msg.sender == address(packsContract), "Solo contrato de packs");
         _;
     }
 
@@ -77,6 +77,9 @@ contract GammaCardsV2 is ERC721, ERC721URIStorage, ERC721Burnable, Ownable {
         DAI_TOKEN = _daiTokenAddress;
         baseUri = _baseUri;
         signer = _signer;
+        for(uint256 i=0;i<122;i++){
+            cardsInventory[i] = 1;
+        }
     }
 
     function openPack(uint256 packNumber, uint8[] memory packData, bytes calldata signature) external {
@@ -94,7 +97,7 @@ contract GammaCardsV2 is ERC721, ERC721URIStorage, ERC721Burnable, Ownable {
 
         uint256 length = packData.length;
         for(uint8 i=0;i<length;i++){
-            require(packData[i] == 120 ? cardsInventory[120] < 2999 : cardsInventory[packData[i]] < 4999);
+            require(packData[i] == 120 ? cardsInventory[120] < 3001 : cardsInventory[packData[i]] < 5001);
             cardsInventory[packData[i]]++; // 280k gas aprox.
             cardsByUser[msg.sender][packData[i]]++; // 310k gas aprox.
         }
@@ -105,8 +108,8 @@ contract GammaCardsV2 is ERC721, ERC721URIStorage, ERC721Burnable, Ownable {
     // transfer one card
     function transferCard(address to, uint8 cardNumber) public {
         require(cardsByUser[msg.sender][cardNumber] > 0, "No tienes esta carta");
-        require(to != msg.sender, "No te puedes enviar cartas a ti mismo");
-        require(to != address(0), "No puedes quemar cartas de esta manera");
+        require(to != msg.sender, "Transf propia no permitida");
+        require(to != address(0), "Quemado de cartas no permitido");
         cardsByUser[msg.sender][cardNumber]--;
         cardsByUser[to][cardNumber]++;
     }
