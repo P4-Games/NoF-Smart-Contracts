@@ -29,7 +29,7 @@ import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 import "hardhat/console.sol";
 
 interface IGammaPacks {
-    function ownerOf(uint256 tokenId) external view returns (address);
+    function getPackOwner(uint256 tokenId) external view returns (address);
     function openPack(uint256 tokenId) external;
 }
 
@@ -83,7 +83,7 @@ contract GammaCardsV2 is ERC721, ERC721URIStorage, ERC721Burnable, Ownable {
     }
 
     function openPack(uint256 packNumber, uint8[] memory packData, bytes calldata signature) external {
-        require(packsContract.ownerOf(packNumber) == msg.sender, "Este sobre no es tuyo");
+        require(packsContract.getPackOwner(packNumber) == msg.sender, "Este sobre no es tuyo");
         require(packData.length < 15, "Limite de cartas excedido"); // chequear este length
         
         packsContract.openPack(packNumber);

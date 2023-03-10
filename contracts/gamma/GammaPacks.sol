@@ -48,6 +48,7 @@ contract GammaPacks is Ownable {
     event PackPurchase(address buyer, uint256 tokenId);
     event NewPrice(uint256 newPrice);
     event NewCardsContract(address newCardsContract);
+    event PackTransfer(address from, address to, uint256 tokenId);
 
     constructor(address _daiTokenAddress, address _balanceReceiver) {
         DAI_TOKEN = _daiTokenAddress;
@@ -71,11 +72,31 @@ contract GammaPacks is Ownable {
         emit PackPurchase(msg.sender, tokenId);
     }
 
-    function transferPack() public {}
+    function deleteTokenId(uint256 tokenId) internal {
+        for(uint256 i=0;i<packsByUser[msg.sender].length;i++){
+            if(packsByUser[msg.sender][i] == tokenId) {
+                packsByUser[msg.sender][i] = packsByUser[msg.sender][packsByUser[msg.sender].length - 1];
+                packsByUser[msg.sender].pop();
+            }
+            continue;
+        }
+    }
+
+    function transferPack(address to, uint256 tokenId) public {
+        require(packs[tokenId] == msg.sender, "Este paquete no es tuyo");
+        require(to != address(0), "Quemar no permitido");
+
+        packs[tokenId] = to;
+        deleteTokenId(tokenId);
+        packsByUser[to].push(tokenId);
+
+        emit PackTransfer(msg.sender, to, tokenId);
+    }
 
     function openPack(uint256 tokenId) public {
         require(msg.sender == address(cardsContract), "No es contrato de cartas");
-        // delete tokenId from packs & packsByUser
+        delete packs[tokenId];
+        deleteTokenId(tokenId);
     }
 
     function changePrice(uint256 _newPrice) public onlyOwner {
@@ -87,5 +108,13 @@ contract GammaPacks is Ownable {
     function setCardsContract(address _cardsContract) public onlyOwner {
         cardsContract = ICardsContract(_cardsContract);
         emit NewCardsContract(_cardsContract);
+    }
+
+    function getPacksByUser(address owner) public view returns(uint256[] memory) {
+        return packsByUser[owner];
+    }
+
+    function getPackOwner(uint256 tokenId) public view returns(address) {
+        return packs[tokenId];
     }
 }
