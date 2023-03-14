@@ -26,6 +26,8 @@ import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/utils/Counters.sol";
 
+import "hardhat/console.sol";
+
 interface ICardsContract {
     function receivePrizesBalance(uint256 amount) external;
     function changePackPrice(uint256 amount) external;
@@ -73,6 +75,7 @@ contract GammaPacks is Ownable {
     }
 
     function deleteTokenId(uint256 tokenId) internal {
+        console.log(tokenId);
         for(uint256 i=0;i<packsByUser[msg.sender].length;i++){
             if(packsByUser[msg.sender][i] == tokenId) {
                 packsByUser[msg.sender][i] = packsByUser[msg.sender][packsByUser[msg.sender].length - 1];
@@ -95,8 +98,10 @@ contract GammaPacks is Ownable {
 
     function openPack(uint256 tokenId) public {
         require(msg.sender == address(cardsContract), "No es contrato de cartas");
-        delete packs[tokenId];
         deleteTokenId(tokenId);
+        console.log(msg.sender, tokenId);
+        delete packs[tokenId];
+        console.log("Hola desde el final");
     }
 
     function changePrice(uint256 _newPrice) public onlyOwner {

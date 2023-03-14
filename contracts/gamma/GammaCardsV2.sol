@@ -47,6 +47,8 @@ contract GammaCardsV2 is ERC721, ERC721URIStorage, ERC721Burnable, Ownable {
     string public baseUri;
     uint256 public mainAlbumPrize = 15000000000000000000; // 15 DAI por album principal completado
     uint256 public secondaryAlbumPrize = 1000000000000000000; // 1 DAI por album secundario completado
+    string public mainUri;
+    string public secondaryUri;
     mapping (uint256 cardNumber => uint256 amount) public cardsInventory; // maximos: 119 => 4999
     mapping (uint256 tokenId => Card) public cards;
     mapping(address user => mapping(uint8 cardNumber => uint8 amount)) public cardsByUser;
@@ -64,8 +66,8 @@ contract GammaCardsV2 is ERC721, ERC721URIStorage, ERC721Burnable, Ownable {
     event AlbumCompleted(address player, uint8 albumClass);
     event CardPasted(address player, uint256 cardTokenId, uint256 albumTokenId);
     event EmergencyWithdrawal(address receiver, uint256 amount);
-    event PrizesBalanceChanged(uint256 newPrizesBalance);
     event NewSigner(address newSigner);
+    event NewUris(string newMainUri, string newSecondaryUri);
 
     modifier onlyPacksContract {
         require(msg.sender == address(packsContract), "Solo contrato de packs");
@@ -76,6 +78,8 @@ contract GammaCardsV2 is ERC721, ERC721URIStorage, ERC721Burnable, Ownable {
         packsContract = IGammaPacks(_packsContract);
         DAI_TOKEN = _daiTokenAddress;
         baseUri = _baseUri;
+        mainUri = string(abi.encodePacked(bytes(baseUri), bytes("/"), bytes("120"), bytes("F.json")));
+        secondaryUri = string(abi.encodePacked(bytes(baseUri), bytes("/"), bytes("121"), bytes("F.json")));
         signer = _signer;
         for(uint256 i=0;i<122;i++){
             cardsInventory[i] = 1;
@@ -130,30 +134,34 @@ contract GammaCardsV2 is ERC721, ERC721URIStorage, ERC721Burnable, Ownable {
     function finishAlbum() public {
         // requiere que el usuario tenga al menos un album de 120
         require(cardsByUser[msg.sender][120] > 0, "No tienes ningun album");
+        require(prizesBalance >= mainAlbumPrize, "Fondos insuficientes");
 
         // chequea que tenga al menos una carta de cada numero
         // chequear si es necesaria esta parte porque la resta de cartas haria underflow si esta en 0
-        bool finished = true;
-        for(uint8 i=0;i<120;i++){
-            if(cardsByUser[msg.sender][i] == 0) finished = false;
-        }
-        
-        require(finished, "You must complete the album first");
-
-        // le resta una carta a cada numero
+        bool unfinished;
         for(uint8 i=0;i<121;i++){
+            if(cardsByUser[msg.sender][i] == 0) {
+                unfinished = true;
+                break;
+            }
             cardsByUser[msg.sender][i]--;
         }
         
+        require(!unfinished, "Must complete the album");
+        
         // mintea el album lleno
-        string memory uri = string(abi.encodePacked(bytes(baseUri), bytes("/"), bytes("120"), bytes("F.json")));
-
-        safeMint(msg.sender, uri, 120, 2);
+        safeMint(msg.sender, mainUri, 120, 2);
 
         prizesBalance -= mainAlbumPrize;
         // transfiere premio en DAI
         IERC20(DAI_TOKEN).transfer(msg.sender, mainAlbumPrize);
         emit AlbumCompleted(msg.sender, 1);
+    }
+
+    function testAddCards() public {
+        for(uint8 i=0;i<121;i++){
+            cardsByUser[msg.sender][i]++;
+        }
     }
 
     // user should call this function if they want to 'paste' selected cards in the 60 cards album to 'burn' them
@@ -165,9 +173,9 @@ contract GammaCardsV2 is ERC721, ERC721URIStorage, ERC721Burnable, Ownable {
             cardsByUser[msg.sender][cardNumbers[i]]--;
         }
         if(burnedCards[msg.sender] % 60 == 0){
-            string memory uri = string(abi.encodePacked(bytes(baseUri), bytes("/"), bytes("121"), bytes("F.json")));
+            // string memory uri = string(abi.encodePacked(bytes(baseUri), bytes("/"), bytes("121"), bytes("F.json"))); // global variable
             // mintea album de 60
-            safeMint(msg.sender, uri, 121, 2);
+            safeMint(msg.sender, secondaryUri, 121, 2);
             
             prizesBalance -= mainAlbumPrize;
             // transfiere premio en DAI
@@ -175,7 +183,14 @@ contract GammaCardsV2 is ERC721, ERC721URIStorage, ERC721Burnable, Ownable {
             emit AlbumCompleted(msg.sender, 2);
         }
     }
-    
+
+    function mintCard(uint8 cardNum) public {
+        require(cardsByUser[msg.sender][cardNum] > 0, "No tienes esta carta");
+        cardsByUser[msg.sender][cardNum]--;
+        string memory uri = string(abi.encodePacked(bytes(baseUri), bytes("/"), bytes(toString(cardNum)), bytes(".json"))); // global variable / chequear createUri
+        safeMint(msg.sender, uri, cardNum, 1);
+    }
+     
     function safeMint(address _to, string memory _uri, uint256 _number, uint8 _class) internal {
         uint256 tokenId = _tokenIdCounter.current();
         _tokenIdCounter.increment();
@@ -186,18 +201,11 @@ contract GammaCardsV2 is ERC721, ERC721URIStorage, ERC721Burnable, Ownable {
         _setTokenURI(tokenId, _uri);
     }
 
-    function mintCard(uint8 cardNum) public {
-        require(cardsByUser[msg.sender][cardNum] > 0, "No tienes esta carta");
-        cardsByUser[msg.sender][cardNum]--;
-        string memory uri = string(abi.encodePacked(bytes(baseUri), bytes("/"), bytes(toString(cardNum)), bytes(".json")));
-        safeMint(msg.sender, uri, cardNum, 1);
-    }
-
     function receivePrizesBalance(uint256 amount) external onlyPacksContract {
         prizesBalance += amount;
-        emit PrizesBalanceChanged(prizesBalance);
     }
 
+    // do not call unless really necessary
     function emergencyWithdraw(uint256 amount) public onlyOwner {
         require(balanceOf(address(this)) >= amount);
         prizesBalance -= amount;
@@ -214,6 +222,43 @@ contract GammaCardsV2 is ERC721, ERC721URIStorage, ERC721Burnable, Ownable {
         signer = newSigner;
         emit NewSigner(newSigner);
     }
+
+    function setUris(string memory newMainUri, string memory newSecondaryUri) public onlyOwner {
+        mainUri = newMainUri;
+        secondaryUri = newSecondaryUri;
+        emit NewUris(newMainUri, newSecondaryUri);
+    }
+
+    // function getCardsByUser(address owner) public view returns(uint256[] memory) {
+    //     uint8[] memory userCards;
+    //     for(uint256 i=0;i<122;i++){
+    //         userCards.push(cardsByUser[owner][i]);
+    //     }
+    // }
+
+    function getCardsByUser(address user) public view returns (uint8[] memory, uint8[] memory) {
+    uint8[] memory cardNumbers = new uint8[](121);
+    uint8[] memory amounts = new uint8[](121);
+    uint8 index = 0;
+    
+    for (uint8 i = 1; i <= 120; i++) {
+        if (cardsByUser[user][i] > 0) {
+            cardNumbers[index] = i;
+            amounts[index] = cardsByUser[user][i];
+            index++;
+        }
+    }
+    
+    uint8[] memory userCardNumbers = new uint8[](index);
+    uint8[] memory userAmounts = new uint8[](index);
+    
+    for (uint8 j = 0; j < index; j++) {
+        userCardNumbers[j] = cardNumbers[j];
+        userAmounts[j] = amounts[j];
+    }
+    
+    return (userCardNumbers, userAmounts);
+}
 
     // The following functions are overrides required by Solidity.
 
