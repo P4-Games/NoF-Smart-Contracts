@@ -39,8 +39,8 @@ contract GammaPacks is Ownable {
     Counters.Counter private _tokenIdCounter;
     address public DAI_TOKEN;
     ICardsContract public cardsContract;
-    uint256 private immutable MAX_INT = 2**256-1;
-    uint256 public packPrice = 1200000000000000000; // 1.2 DAI
+    uint256 private immutable MAX_INT = ~uint256(0);
+    uint256 public packPrice = 12e17; // 1.2 DAI
     uint256 public constant totalSupply = 50000;
     address public balanceReceiver;
 
@@ -48,6 +48,7 @@ contract GammaPacks is Ownable {
     mapping(address owner => uint256[] tokenIds) public packsByUser;
 
     event PackPurchase(address buyer, uint256 tokenId);
+    event PacksPurchase(address buyer, uint256 amountOfPacks);
     event NewPrice(uint256 newPrice);
     event NewCardsContract(address newCardsContract);
     event PackTransfer(address from, address to, uint256 tokenId);
@@ -74,14 +75,32 @@ contract GammaPacks is Ownable {
         emit PackPurchase(msg.sender, tokenId);
     }
 
+    function buyPacks(uint256 numberOfPacks) public {
+        require(address(cardsContract) != address(0), "Contrato de cartas no seteado"); // chequear tambien que el cards contract sea el correcto y no cualquiera
+        uint256 prizesAmount = (packPrice - packPrice / 6) * numberOfPacks;
+        for(uint256 i;i < numberOfPacks;i++){
+            uint256 tokenId = _tokenIdCounter.current();
+            require(tokenId < totalSupply, "Se acabaron los sobres");
+            _tokenIdCounter.increment();
+            
+            packs[tokenId] = msg.sender;
+            packsByUser[msg.sender].push(tokenId);
+        }
+        cardsContract.receivePrizesBalance(prizesAmount);
+        IERC20(DAI_TOKEN).transferFrom(msg.sender, address(cardsContract), prizesAmount); // envia monto de premios al contrato de cartas
+        IERC20(DAI_TOKEN).transferFrom(msg.sender, balanceReceiver, packPrice * numberOfPacks - prizesAmount); // envia monto de profit a cuenta de NoF
+
+        emit PacksPurchase(msg.sender, numberOfPacks);
+    }
+
     function deleteTokenId(uint256 tokenId) internal {
-        console.log(tokenId);
-        for(uint256 i=0;i<packsByUser[msg.sender].length;i++){
+        uint256 packsByUserLength = packsByUser[msg.sender].length;
+        for(uint256 i;i<packsByUserLength;i++){
             if(packsByUser[msg.sender][i] == tokenId) {
                 packsByUser[msg.sender][i] = packsByUser[msg.sender][packsByUser[msg.sender].length - 1];
                 packsByUser[msg.sender].pop();
             }
-            continue;
+            break;
         }
     }
 
@@ -99,9 +118,7 @@ contract GammaPacks is Ownable {
     function openPack(uint256 tokenId) public {
         require(msg.sender == address(cardsContract), "No es contrato de cartas");
         deleteTokenId(tokenId);
-        console.log(msg.sender, tokenId);
         delete packs[tokenId];
-        console.log("Hola desde el final");
     }
 
     function changePrice(uint256 _newPrice) public onlyOwner {

@@ -237,28 +237,28 @@ contract GammaCardsV2 is ERC721, ERC721URIStorage, ERC721Burnable, Ownable {
     // }
 
     function getCardsByUser(address user) public view returns (uint8[] memory, uint8[] memory) {
-    uint8[] memory cardNumbers = new uint8[](121);
-    uint8[] memory amounts = new uint8[](121);
-    uint8 index = 0;
-    
-    for (uint8 i = 1; i <= 120; i++) {
-        if (cardsByUser[user][i] > 0) {
-            cardNumbers[index] = i;
-            amounts[index] = cardsByUser[user][i];
-            index++;
+        uint8[] memory cardNumbers = new uint8[](121);
+        uint8[] memory amounts = new uint8[](121);
+        uint8 index = 0;
+        
+        for (uint8 i = 1; i <= 120; i++) {
+            if (cardsByUser[user][i] > 0) {
+                cardNumbers[index] = i;
+                amounts[index] = cardsByUser[user][i];
+                index++;
+            }
         }
+        
+        uint8[] memory userCardNumbers = new uint8[](index);
+        uint8[] memory userAmounts = new uint8[](index);
+        
+        for (uint8 j = 0; j < index; j++) {
+            userCardNumbers[j] = cardNumbers[j];
+            userAmounts[j] = amounts[j];
+        }
+        
+        return (userCardNumbers, userAmounts);
     }
-    
-    uint8[] memory userCardNumbers = new uint8[](index);
-    uint8[] memory userAmounts = new uint8[](index);
-    
-    for (uint8 j = 0; j < index; j++) {
-        userCardNumbers[j] = cardNumbers[j];
-        userAmounts[j] = amounts[j];
-    }
-    
-    return (userCardNumbers, userAmounts);
-}
 
     // The following functions are overrides required by Solidity.
 
