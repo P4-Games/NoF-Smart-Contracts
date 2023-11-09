@@ -12,5 +12,5 @@ jobs:
     - name: Run script file
       run: |
         chmod +x .github/workflows/scripts/gitTag.sh
-        .github/workflows/scripts/gitTag.sh
+        .github/workflows/scripts/gitTag.sh -v patch
       shell: bash
