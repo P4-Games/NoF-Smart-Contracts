@@ -11,6 +11,6 @@ jobs:
     - uses: actions/checkout@v2
     - name: Run script file
       run: |
-        chmod +x ./scripts/gitTag.sh
-        ./scripts/gitTag.sh
+        chmod +x .github/workflows/scripts/gitTag.sh
+        .github/workflows/scripts/gitTag.sh
       shell: bash
