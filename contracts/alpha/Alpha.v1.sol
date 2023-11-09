@@ -4,7 +4,7 @@ import "@openzeppelin/contracts/token/ERC721/extensions/ERC721URIStorage.sol";
 import "@openzeppelin/contracts/utils/Counters.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 
-import "./ContextMixin.sol";
+import "./ContextMixin.v1.sol";
 
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.4;
@@ -229,7 +229,7 @@ contract NOF_Alpha is ERC721, ERC721URIStorage, Ownable, ContextMixin {
         require(ownerOf(card) == msg.sender, "This is not your card");
         require(ownerOf(album) == msg.sender, "This is not your album");
         require(cards[album].class == 0, "card is not an album");
-        require(cards[card].collection == cards[album].collection, "cards is not from the same collection");
+        // require(cards[card].collection == cards[album].collection, "cards is not from the same collection");
 
         for(uint8 i=0;i<cardsByUserBySeason[msg.sender][cards[card].season].length;i++){
             if(cardsByUserBySeason[msg.sender][cards[card].season][i].number == cards[card].number){

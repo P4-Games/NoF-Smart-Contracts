@@ -1,11 +1,13 @@
 // SPDX-License-Identifier: MIT
+pragma solidity ^0.8.16;
 
 // - 5000 copias de cada carta (120 personajes únicos) = 600.000 cartas de personajes
 // - se venden de a sobres a ciegas, trae 12 cartas y puede o no traer un album extra aleatoriamente
 // - los albumes de 120 figuritas son de toda la colección (los 120 personajes) (#120)
 // - los albumes de 60 figuritas son albumes de quema y no importa la figurita que pongan (#121)
 // - la carta al pegarse en el album se quema
-// - en total van a haber 3000 albumes de 120 figuritas, 5000 albumes de 60 figuritas, 6000 figuritas, 600000 cartas en total, 50000 sobres.
+// - en total van a haber 3000 albumes de 120 figuritas, 5000 albumes de 60 figuritas, 
+//   6000 figuritas, 600000 cartas en total, 50000 sobres.
 // - el album completo de 120 paga 15 dolares
 // - el album completo de 60 paga 1 dolar
 // - el sobre sale 1,20 dolares
@@ -16,8 +18,6 @@
 // - importante de la implementación que los albumes estén uniformemente repartidos en los sobres a lo largo del tiempo
 // - fee de transacción del 2.5%
 
-pragma solidity ^0.8.9;
-
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
 import "@openzeppelin/contracts/token/ERC721/extensions/ERC721URIStorage.sol";
@@ -26,14 +26,12 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/utils/Counters.sol";
 import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 
-import "hardhat/console.sol";
-
 interface IGammaPacks {
     function getPackOwner(uint256 tokenId) external view returns (address);
     function openPack(uint256 tokenId, address owner) external;
 }
 
-contract GammaCardsV2 is ERC721, ERC721URIStorage, ERC721Burnable, Ownable {
+contract NofGammaCardsV2 is ERC721, ERC721URIStorage, ERC721Burnable, Ownable {
     using Counters for Counters.Counter;
     using ECDSA for bytes32;
 
@@ -53,6 +51,7 @@ contract GammaCardsV2 is ERC721, ERC721URIStorage, ERC721Burnable, Ownable {
     mapping (uint256 tokenId => Card) public cards;
     mapping(address user => mapping(uint8 cardNumber => uint8 amount)) public cardsByUser;
     mapping(address user => uint256 amount) public burnedCards;
+    mapping(address => bool) public owners;
 
     struct Card {
         uint256 tokenId;
@@ -74,7 +73,24 @@ contract GammaCardsV2 is ERC721, ERC721URIStorage, ERC721Burnable, Ownable {
         _;
     }
 
-    constructor(address _daiTokenAddress, address _packsContract, string memory _baseUri, address _signer) ERC721("GammaCards", "NOF_GC") {
+    modifier onlyOwners() {
+        require(owners[msg.sender], "Only owners can call this function.");
+        _;
+    }
+
+    function addOwner(address _newOwner) external onlyOwners {
+        require(_newOwner != address(0), "Invalid address");
+        owners[_newOwner] = true;
+    }
+
+    function removeOwner(address _ownerToRemove) external onlyOwners {
+        require(_ownerToRemove != address(0), "Invalid address");
+        require(_ownerToRemove != msg.sender, "You cannot remove yourself as an owner");
+        owners[_ownerToRemove] = false;
+    }
+
+    constructor(address _daiTokenAddress, address _packsContract, string memory _baseUri, address _signer) 
+        ERC721("GammaCards", "NOF_GC") {
         packsContract = IGammaPacks(_packsContract);
         DAI_TOKEN = _daiTokenAddress;
         baseUri = _baseUri;
@@ -84,6 +100,7 @@ contract GammaCardsV2 is ERC721, ERC721URIStorage, ERC721Burnable, Ownable {
         for(uint256 i;i<122;i++){
             cardsInventory[i] = 1;
         }
+        owners[msg.sender] = true;
     }
 
     function openPack(uint256 packNumber, uint8[] memory packData, bytes calldata signature) external {
@@ -94,8 +111,11 @@ contract GammaCardsV2 is ERC721, ERC721URIStorage, ERC721Burnable, Ownable {
         prizesBalance += packPrice - packPrice / 6;
 
         // Recreates the message present in the `signature`
-        bytes32 messageHash = keccak256(abi.encodePacked(msg.sender, packNumber, packData, 0xf1dD71895e49b1563693969de50898197cDF3481)).toEthSignedMessageHash();
-        // bytes32 messageHash = keccak256(abi.encodePacked(msg.sender, packNumber, packData, address(this))).toEthSignedMessageHash();
+        address _address = '0xf1dD71895e49b1563693969de50898197cDF3481';
+        bytes32 messageHash = 
+            keccak256(abi.encodePacked(msg.sender, packNumber, packData, _address)).toEthSignedMessageHash();
+        // bytes32 messageHash = keccak256(abi.encodePacked(msg.sender, 
+        // packNumber, packData, address(this))).toEthSignedMessageHash();
         require(messageHash.recover(signature) == signer, "Invalid signature");
 
 
@@ -173,7 +193,8 @@ contract GammaCardsV2 is ERC721, ERC721URIStorage, ERC721Burnable, Ownable {
             cardsByUser[msg.sender][cardNumbers[i]]--;
         }
         if(burnedCards[msg.sender] % 60 == 0){
-            // string memory uri = string(abi.encodePacked(bytes(baseUri), bytes("/"), bytes("121"), bytes("F.json"))); // global variable
+            // string memory uri = string(abi.encodePacked(bytes(baseUri), 
+            // bytes("/"), bytes("121"), bytes("F.json"))); // global variable
             // mintea album de 60
             safeMint(msg.sender, secondaryUri, 121, 2);
             
@@ -187,7 +208,9 @@ contract GammaCardsV2 is ERC721, ERC721URIStorage, ERC721Burnable, Ownable {
     function mintCard(uint8 cardNum) public {
         require(cardsByUser[msg.sender][cardNum] > 0, "No tienes esta carta");
         cardsByUser[msg.sender][cardNum]--;
-        string memory uri = string(abi.encodePacked(bytes(baseUri), bytes("/"), bytes(toString(cardNum)), bytes(".json"))); // global variable / chequear createUri
+        // global variable / chequear createUri
+        string memory uri = 
+            string(abi.encodePacked(bytes(baseUri), bytes("/"), bytes(toString(cardNum)), bytes(".json"))); 
         safeMint(msg.sender, uri, cardNum, 1);
     }
      
@@ -206,7 +229,7 @@ contract GammaCardsV2 is ERC721, ERC721URIStorage, ERC721Burnable, Ownable {
     }
 
     // do not call unless really necessary
-    function emergencyWithdraw(uint256 amount) public onlyOwner {
+    function emergencyWithdraw(uint256 amount) public onlyOwners {
         require(balanceOf(address(this)) >= amount);
         prizesBalance -= amount;
         IERC20(DAI_TOKEN).transfer(msg.sender, amount);
@@ -218,12 +241,12 @@ contract GammaCardsV2 is ERC721, ERC721URIStorage, ERC721Burnable, Ownable {
         packPrice = newPackPrice;
     }
 
-    function setSigner(address newSigner) public onlyOwner {
+    function setSigner(address newSigner) public onlyOwners {
         signer = newSigner;
         emit NewSigner(newSigner);
     }
 
-    function setUris(string memory newMainUri, string memory newSecondaryUri) public onlyOwner {
+    function setUris(string memory newMainUri, string memory newSecondaryUri) public onlyOwners {
         mainUri = newMainUri;
         secondaryUri = newSecondaryUri;
         emit NewUris(newMainUri, newSecondaryUri);
