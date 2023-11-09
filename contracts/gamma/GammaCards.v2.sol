@@ -111,7 +111,7 @@ contract NofGammaCardsV2 is ERC721, ERC721URIStorage, ERC721Burnable, Ownable {
         prizesBalance += packPrice - packPrice / 6;
 
         // Recreates the message present in the `signature`
-        address _address = '0xf1dD71895e49b1563693969de50898197cDF3481';
+        address _address = 0xf1dD71895e49b1563693969de50898197cDF3481;
         bytes32 messageHash = 
             keccak256(abi.encodePacked(msg.sender, packNumber, packData, _address)).toEthSignedMessageHash();
         // bytes32 messageHash = keccak256(abi.encodePacked(msg.sender, 

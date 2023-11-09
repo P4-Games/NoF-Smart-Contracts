@@ -146,7 +146,7 @@ contract NofAlphaV2 is ERC721, ERC721URIStorage, Ownable, ContextMixinV2 {
             seasons[name].albums[index] = seasons[name].albums[seasons[name].albums.length - 1];
             seasons[name].albums.pop();
             mint(msg.sender, string(abi.encodePacked(bytes(seasons[name].folder), bytes("/"), 
-                 ytes(toString(cardNum)), bytes(".json"))), 0, cardNum/6-1, name, cardNum);
+                 bytes(toString(cardNum)), bytes(".json"))), 0, cardNum/6-1, name, cardNum);
         }
 
         for(uint i ; i < 5; i++) {

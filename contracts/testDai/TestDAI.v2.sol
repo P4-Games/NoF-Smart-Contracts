@@ -663,8 +663,7 @@ contract ERC20 is Context, IERC20 {
      *
      * Requirements
      *
-     * - `to` cannot be the zero address.
-     * - @NOF_dev original is internal, now set to public to mint DAI
+     * - `to` cannot be the zero address. 
      */
     function _mint(address account, uint256 amount) public virtual { 
         require(account != address(0), "ERC20: mint to the zero address");
