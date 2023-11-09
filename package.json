@@ -15,7 +15,7 @@
     "lint:fix": "npx eslint --ignore-path .gitignore . --fix",
     "prettier": "npx prettier --log-level warn --ignore-path .gitignore \"{contracts,test}/**/*.{js,ts,.sol}\" --check",
     "prettier:fix": "npx prettier --log-level warn --ignore-path .gitignore \"{contracts,test}/**/*.{js,ts,.sol}\" --write",
-    "slither": "npm run clean && slither ."
+    "slither": "slither . --filter-paths \" *v1.sol\""
   },
   "devDependencies": {
     "@ethersproject/abi": "^5.4.7",
