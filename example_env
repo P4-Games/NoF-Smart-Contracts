@@ -2,3 +2,7 @@ INFURA_ID={your infura porject id}
 ALCHEMY_ID={your infura api key}
 PUBLIC_ADDRESS={your wallet address}
 PRIVATE_KEY={your private key to deploy SCs}
+NOF_DAI_CONTRACT_NAME='NofTestDAIV2'
+NOF_ALPHA_CONTRACT_NAME='NofAlphaV2'
+NOF_GAMMA_PACKS_CONTRACT_NAME='NofGammaPacksV2'
+NOF_GAMMA_CARDS_CONTRACT_NAME='NofGammaCardsV2'
