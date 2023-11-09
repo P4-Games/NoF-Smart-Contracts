@@ -1,6 +1,7 @@
 import dotenv from "dotenv";
 import { HardhatUserConfig } from "hardhat/config";
 import "@nomicfoundation/hardhat-toolbox";
+import "@nomiclabs/hardhat-web3";
 
 dotenv.config()
 
@@ -13,7 +14,7 @@ const config: HardhatUserConfig = {
   networks: {
     hardhat: {
       chainId: 1337,
-      gas: 30000000
+      allowUnlimitedContractSize: true 
     },
     goerli: {
       url: `https://goerli.infura.io/v3/${INFURA_API_KEY}`,
