@@ -1,0 +1,8 @@
+**/artifacts/*
+**/cache/*
+**/node_modules/*
+**/contracts/_temp/*
+**/contracts/**/*.v1.sol*
+**/scripts/*
+**/test/*
+**/typechain-types/*

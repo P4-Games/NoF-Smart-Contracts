@@ -4,7 +4,7 @@ module.exports = {
   compileCommand: 'npm run compile',
   skipFiles: ['mocks'],
   providerOptions: {
-    default_balance_ether: '10000000000000000000000000'
+    default_balance_ether: '9000000000000000000000000000'
   },
   mocha: {
     fgrep: '[skip-on-coverage]',
