@@ -12,7 +12,11 @@ async function createAlphaMockData( addresses: SignerWithAddress[], testDAI: Con
   console.log('\nCreating Alpha Mock Data...\n')
   console.log('creating new Season...')
   await alpha.newSeason("T1", packPrice, 60, "T1");
-  
+
+  console.log('getting season data...')
+  const seasonData = await alpha.getSeasonData()
+  console.log(seasonData)
+
   console.log('approving...')
   await testDAI.approve(alpha.address, packPrice);
 
@@ -29,6 +33,7 @@ async function createAlphaMockData( addresses: SignerWithAddress[], testDAI: Con
 
   console.log('pasting cards...')
   await alpha.pasteCards(1, 0);
+
 }
 
 async function createGammaMockData( 
