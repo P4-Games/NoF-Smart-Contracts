@@ -25,6 +25,7 @@ pragma solidity ^0.8.16;
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/utils/Counters.sol";
+import "hardhat/console.sol";
 
 interface ICardsContract {
     function receivePrizesBalance(uint256 amount) external;
@@ -74,10 +75,18 @@ contract NofGammaPacksV2 is Ownable {
         owners[_ownerToRemove] = false;
     }
 
+    function changeBalanceReceiver(address _newBalanceReceiver) external onlyOwners {
+        require(_newBalanceReceiver != address(0), "Invalid address");
+        balanceReceiver = _newBalanceReceiver;
+    }
+
     function buyPack() public returns (uint256){
         require(address(cardsContract) != address(0), "Contrato de cartas no seteado"); 
         // chequear tambien que el cards contract sea el correcto y no cualquiera
         uint256 tokenId = _tokenIdCounter.current();
+
+        console.log('buyPack', msg.sender, tokenId, totalSupply);
+
         require(tokenId < totalSupply, "Se acabaron los sobres");
         _tokenIdCounter.increment();
         
@@ -86,11 +95,12 @@ contract NofGammaPacksV2 is Ownable {
         
         uint256 prizesAmount = packPrice - packPrice / 6;
         cardsContract.receivePrizesBalance(prizesAmount);
+
         // envia monto de premios al contrato de cartas
         IERC20(DAI_TOKEN).transferFrom(msg.sender, address(cardsContract), prizesAmount); 
         // envia monto de profit a cuenta de NoF
         IERC20(DAI_TOKEN).transferFrom(msg.sender, balanceReceiver, packPrice - prizesAmount); 
-        
+
         emit PackPurchase(msg.sender, tokenId);
         return tokenId;
     }
@@ -118,7 +128,6 @@ contract NofGammaPacksV2 is Ownable {
         IERC20(DAI_TOKEN).transferFrom(msg.sender, balanceReceiver, packPrice * numberOfPacks - prizesAmount); 
 
         emit PacksPurchase(msg.sender, tokenIds);
-        
         return tokenIds;
     }
 

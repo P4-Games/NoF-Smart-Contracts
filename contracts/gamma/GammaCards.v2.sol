@@ -25,6 +25,7 @@ import "@openzeppelin/contracts/token/ERC721/extensions/ERC721Burnable.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/utils/Counters.sol";
 import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
+import "hardhat/console.sol";
 
 interface IGammaPacks {
     function getPackOwner(uint256 tokenId) external view returns (address);
@@ -111,11 +112,12 @@ contract NofGammaCardsV2 is ERC721, ERC721URIStorage, ERC721Burnable, Ownable {
         prizesBalance += packPrice - packPrice / 6;
 
         // Recreates the message present in the `signature`
-        address _address = 0xf1dD71895e49b1563693969de50898197cDF3481;
+        console.log('openPack', msg.sender, packNumber);
         bytes32 messageHash = 
-            keccak256(abi.encodePacked(msg.sender, packNumber, packData, _address)).toEthSignedMessageHash();
-        // bytes32 messageHash = keccak256(abi.encodePacked(msg.sender, 
-        // packNumber, packData, address(this))).toEthSignedMessageHash();
+            keccak256(abi.encodePacked(
+                msg.sender, packNumber, 
+                packData, '0xf1dD71895e49b1563693969de50898197cDF3481')).toEthSignedMessageHash();
+        
         require(messageHash.recover(signature) == signer, "Invalid signature");
 
 
