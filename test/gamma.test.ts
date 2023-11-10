@@ -7,18 +7,8 @@ describe('NoF - Gamma Tests', function () {
   async function deployNofFixture() {
     console.log('\tRunning deployNofFixture...')
 
-    const [
-      address0,
-      address1,
-      address2,
-      address3,
-      address4,
-      address5,
-      address6,
-      address7,
-      address8,
-      address9
-    ] = await ethers.getSigners();
+    const [address0, address1, address2, address3, address4, address5, address6, address7, address8, address9] =
+      await ethers.getSigners()
 
     const addresses = [
       address0,
@@ -72,11 +62,11 @@ describe('NoF - Gamma Tests', function () {
   it('Pack owner must be equatl to buyer', async function () {
     const { testDAI, gammaPacks, address0 } = await loadFixture(deployNofFixture)
 
-    const TenPacksPrice = ethers.BigNumber.from(("10000000000000000000").toString()) 
-    await testDAI._mint(address0.address, TenPacksPrice);
-    await testDAI.approve(gammaPacks.address, TenPacksPrice);
-    const tokenId = await gammaPacks.buyPack({ from: address0.address });
+    const TenPacksPrice = ethers.BigNumber.from('10000000000000000000'.toString())
+    await testDAI._mint(address0.address, TenPacksPrice)
+    await testDAI.approve(gammaPacks.address, TenPacksPrice)
+    const tokenId = await gammaPacks.buyPack({ from: address0.address })
     const packOwner = await gammaPacks.getPackOwner(tokenId.value)
-    expect(packOwner).to.equal(address0.address);
+    expect(packOwner).to.equal(address0.address)
   })
 })

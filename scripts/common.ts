@@ -1,16 +1,19 @@
-import "@nomiclabs/hardhat-ethers";
-import { ethers, network } from "hardhat"; 
+import '@nomiclabs/hardhat-ethers';
+import { ethers, network } from 'hardhat'; 
 import dotenv from 'dotenv';
-import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
+import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 import Web3 from 'web3';
-import { config } from "hardhat";
+import { config } from 'hardhat';
+
+const isLocalhost = (network.name === 'localhost') || (network.name === '127.0.0.1')
+const isHardhat = (network.name === 'hardhat') 
 
 export async function getInitData() {
-  if (network.name === "hardhat") {
+  if (isHardhat) {
     console.warn(
-      "You are trying to deploy a contract to the Hardhat Network, which" +
-        "gets automatically created and destroyed every time. Use the Hardhat" +
-        " option '--network localhost'"
+      `You are trying to deploy a contract to the Hardhat Network, which
+        gets automatically created and destroyed every time. Use the Hardhat
+        option --network localhost`
     );
   }
 
@@ -58,33 +61,40 @@ export async function deployContracts(addresses: SignerWithAddress[]) {
   const nofAlphaContractName = process.env.NOF_ALPHA_CONTRACT_NAME || 'NofAlphaV2'
   const nofGammaPacksContractName = process.env.NOF_GAMMA_PACKS_CONTRACT_NAME || 'NofGammaPacksV2'
   const nofGammaCardsContractName = process.env.NOF_GAMMA_CARDS_CONTRACT_NAME || 'NofGammaCardsV2'
-  const walletSignaturePrivateKey = process.env.PRIVATE_KEY || ''
+  const signatureMethod = process.env.SIGNATURE_METHOD || '1'
+  const microServiceSignatureWalletAddress = process.env.MICRO_SERVICE_SIGNATURE_WALLET_ADDRESS || '0x20517cf8c140f7f393f92cea6158f57385a75733'
+  const balanceReceiverAddress = 
+    (isLocalhost || isHardhat) ? addresses[0].address : (process.env.BALANCE_RECEIVER_WALLET_ADDRESS || '')
 
   const TestDAI = await ethers.getContractFactory(nofDaiContractName);
   const testDAI = await TestDAI.deploy();
   await testDAI.deployed();
-  console.log("TestDAI deployed address:", testDAI.address);
 
   const Alpha = await ethers.getContractFactory(nofAlphaContractName);
-  const alpha = await Alpha.deploy("https://www.example.com", testDAI.address, addresses[0].address);
+  const alpha = await Alpha.deploy('https://nof.town', testDAI.address, balanceReceiverAddress);
   await alpha.deployed();
-  console.log("Alpha deployed address:", alpha.address);
 
   const GammaPacks = await ethers.getContractFactory(nofGammaPacksContractName);
-  const gammaPacks = await GammaPacks.deploy(testDAI.address, addresses[0].address);
+  const gammaPacks = await GammaPacks.deploy(testDAI.address, balanceReceiverAddress);
   await gammaPacks.deployed();
-  console.log("Gamma deployed Packs address:", gammaPacks.address);
 
   const GammaCards = await ethers.getContractFactory(nofGammaCardsContractName);
-  const gammaCards = await GammaCards.deploy(testDAI.address, gammaPacks.address, "https://www.example.com", addresses[0].address);
+  const gammaCards = await GammaCards.deploy(testDAI.address, gammaPacks.address, 'hhttps://nof.town', microServiceSignatureWalletAddress);
   await gammaCards.deployed();
-  console.log("Gamma deployed Cards address:", gammaCards.address);
   await gammaPacks.setCardsContract(gammaCards.address);
 
-  console.log(`minting some DAIs for address ${addresses[0].address}`)
-  await testDAI._mint(addresses[0].address, ethers.BigNumber.from("900000000000000000000"));
+  console.log('\nTestDAI deployed address:', testDAI.address);
+  console.log('Alpha deployed address:', alpha.address);
+  console.log('Gamma deployed Packs address:', gammaPacks.address);
+  console.log('Gamma deployed Cards address:', gammaCards.address);
+  console.log('Alpha balance receiver setted:', balanceReceiverAddress);
+  console.log('Gamma Packs balance receiver setted:', balanceReceiverAddress);
+  console.log('Gamma Cards micro-services Signature Wallet Address setted:', microServiceSignatureWalletAddress);
 
-  console.log("To use in .env in nof-landing", gammaCards.address);
+  console.log(`\nMinting some DAIs for address ${addresses[0].address}`)
+  await testDAI._mint(addresses[0].address, ethers.BigNumber.from('900000000000000000000'));
+
+  console.log('\nFacility text to use in .env in nof-landing:', gammaCards.address);
   console.log(`
     NEXT_PUBLIC_DAI_ADDRESS='${testDAI.address}'
     NEXT_PUBLIC_ALPHA_ADDRESS='${alpha.address}'
@@ -93,13 +103,12 @@ export async function deployContracts(addresses: SignerWithAddress[]) {
     NEXT_PUBLIC_ADMIN_ACCOUNTS='${addresses[0].address}'
   `)
 
-  return { testDAI, alpha, gammaPacks, gammaCards, walletSignaturePrivateKey };
+  return { testDAI, alpha, gammaPacks, gammaCards, signatureMethod };
   
 }
 
-
-export async function generateSignature(method: number, address: string, packNumber: number) {
-  if (method === 1) 
+export async function generateSignature(method: string, address: string, packNumber: number) {
+  if (method === '1') 
     return generateSignature1(address, packNumber)
   else
   return generateSignature2(address, packNumber)
@@ -107,7 +116,7 @@ export async function generateSignature(method: number, address: string, packNum
 
 async function generateSignature1(address: string, packNumber: number) {
   
-  const web3 = new Web3("https://bsc-dataseed2.binance.org");
+  const web3 = new Web3('https://bsc-dataseed2.binance.org');
   const pack0Data = [25,62,94,71,41,77,100,90,3,58,113,28] // valid only with pack 0
 
   const accounts: any = config.networks.hardhat.accounts;
@@ -115,21 +124,20 @@ async function generateSignature1(address: string, packNumber: number) {
   const wallet0 = ethers.Wallet.fromMnemonic(accounts.mnemonic, accounts.path + `/${index}`);
   
   // 0xf1dD71895e49b1563693969de50898197cDF3481 es el contract adddress que esta en backend (servicio)
-  // y tambiéon en el SC de Gamma Gards para validar la firma. 
+  // y tambiéo en el SC de Gamma Gards para validar la firma. Si se despliega un nuevo contrato, no hace
+  // falta cambiarlo, dado que esta harcodeado el mismo dato en ambos lugares.
   const hash: string = web3.utils.soliditySha3( 
-    {type: "address", value: address}, 
-    {type: "uint256", value: packNumber}, 
-    {type: "uint256[]", value: pack0Data}, 
-    {type: "address", value: '0xf1dD71895e49b1563693969de50898197cDF3481'}) || ''; 
+    {type: 'address', value: address}, 
+    {type: 'uint256', value: packNumber}, 
+    {type: 'uint256[]', value: pack0Data}, 
+    {type: 'address', value: '0xf1dD71895e49b1563693969de50898197cDF3481'}) || ''; 
 
   const signature = web3.eth.accounts.sign(hash, wallet0.privateKey);
   return { packet_data: pack0Data, signature };
   
-}
-  
+} 
 
 async function generateSignature2(address: string, packNumber: number) {
-  
   const api_endpoint = 'https://gamma-microservice-7bteynlhua-uc.a.run.app/'
 
   try {
