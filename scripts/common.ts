@@ -81,6 +81,18 @@ export async function deployContracts(addresses: SignerWithAddress[]) {
   console.log("Gamma deployed Cards address:", gammaCards.address);
   await gammaPacks.setCardsContract(gammaCards.address);
 
+  console.log(`minting some DAIs for address ${addresses[0].address}`)
+  await testDAI._mint(addresses[0].address, ethers.BigNumber.from("900000000000000000000"));
+
+  console.log("To use in .env in nof-landing", gammaCards.address);
+  console.log(`
+    NEXT_PUBLIC_DAI_ADDRESS='${testDAI.address}'
+    NEXT_PUBLIC_ALPHA_ADDRESS='${alpha.address}'
+    NEXT_PUBLIC_GAMMA_PACKS_ADDRESS='${gammaPacks.address}'
+    NEXT_PUBLIC_GAMMA_CARDS_ADDRESS='${gammaCards.address}'
+    NEXT_PUBLIC_ADMIN_ACCOUNTS='${addresses[0].address}'
+  `)
+
   return { testDAI, alpha, gammaPacks, gammaCards, walletSignaturePrivateKey };
   
 }
