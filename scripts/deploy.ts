@@ -5,7 +5,7 @@ import { getInitData, deployContracts } from "./common";
 async function main() {
   try {
     const addresses: SignerWithAddress[] = await getInitData()
-    await deployContracts (addresses)
+    await deployContracts(addresses)
     
     process.exit(0);
   } catch (error) {

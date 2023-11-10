@@ -38,7 +38,8 @@ async function createAlphaMockData( addresses: SignerWithAddress[], testDAI: Con
 
 async function createGammaMockData( 
   addresses: SignerWithAddress[], testDAI: Contract, 
-  gammaPacks: Contract, gammaCards: Contract ) {
+  gammaPacks: Contract, gammaCards: Contract, 
+  signatureMethod: string) {
       
   console.log('\nCreating Gamma Mock Data...\n')
 
@@ -71,12 +72,6 @@ async function createGammaMockData(
   console.log('Verifing testDai allowance...')
   const allowance2 = await testDAI.allowance(addresses[0].address, gammaPacks.address)
   console.log(`${addresses[0].address} allowance to use with $ gamaPackAddress (${gammaPacks.address}): `, allowance2)
-  /*
-  uint256 prizesAmount = packPrice - packPrice / 6;
-  cardsContract.receivePrizesBalance(prizesAmount);
-  IERC20(DAI_TOKEN).transferFrom(msg.sender, address(cardsContract), prizesAmount); // envia monto de premios al contrato de cartas
-  IERC20(DAI_TOKEN).transferFrom(msg.sender, balanceReceiver, packPrice - prizesAmount); // envia monto de profit a cuenta de NoF
-  */
 
   console.log('Verifing pack owner...')
   const packOwner = await gammaPacks.getPackOwner(tokenId.value)
@@ -99,7 +94,19 @@ async function createGammaMockData(
 
   /*
   console.log('Opening Pack with cardData simulating backend signature...')
-  const signatureData: any = await generateSignature(1, addresses[0].address, 0)
+  if (signatureMethod === '1') {
+    // tiene que cambiar la wallet del signer a la misma que hace la 
+    // firma en el método generateSignature1  (la wallet 0 de hardhat). 
+    // Se hace eso para que luego en el SC, al comparar ambas wallets, 
+    // funciones bien (wallet de firma = signer)
+    gammaCards.setSigner(addresses[0].address)
+
+    // en el caso de deploy fuera de local, el SC tiene que tener como signer
+    // la dirección de la clave privada que usa el micro-servicio:
+    // 0x20517cf8c140f7f393f92cea6158f57385a75733 
+  }
+
+  const signatureData: any = await generateSignature(signatureMethod, addresses[0].address, 0)
   const packNumber = ethers.BigNumber.from(packs[0]).toNumber()
   const { packet_data, signature } = signatureData
 
@@ -120,12 +127,13 @@ async function main() {
       testDAI: Contract;
       alpha: Contract;
       gammaPacks: Contract;
-      gammaCards: Contract
+      gammaCards: Contract;
+      signatureMethod: string;
     } = await deployContracts (addresses)
     
-    await createAlphaMockData(addresses, contracts.testDAI, contracts.alpha);
+    // await createAlphaMockData(addresses, contracts.testDAI, contracts.alpha);
 
-    await createGammaMockData(addresses, contracts.testDAI, contracts.gammaPacks, contracts.gammaCards);
+    await createGammaMockData(addresses, contracts.testDAI, contracts.gammaPacks, contracts.gammaCards, contracts.signatureMethod);
 
     process.exit(0);
   } catch (error) {
