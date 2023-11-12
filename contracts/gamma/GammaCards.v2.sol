@@ -116,8 +116,11 @@ contract NofGammaCardsV2 is ERC721, ERC721URIStorage, ERC721Burnable, Ownable {
             keccak256(abi.encodePacked(
                 msg.sender, packNumber, 
                 packData, '0xf1dD71895e49b1563693969de50898197cDF3481')).toEthSignedMessageHash();
-        
-        require(messageHash.recover(signature) == signer, "Invalid signature");
+
+        console.log('open pack signer recovered', messageHash.recover(signature));
+        console.log('openPack', msg.sender, packNumber, signer);
+
+        require(address(messageHash.recover(signature)) == address(signer), "Invalid signature");
 
 
         uint256 length = packData.length;
@@ -253,13 +256,10 @@ contract NofGammaCardsV2 is ERC721, ERC721URIStorage, ERC721Burnable, Ownable {
         emit NewUris(newMainUri, newSecondaryUri);
     }
 
-    // function getCardsByUser(address owner) public view returns(uint256[] memory) {
-    //     uint8[] memory userCards;
-    //     for(uint256 i;i<122;i++){
-    //         userCards.push(cardsByUser[owner][i]);
-    //     }
-    // }
-
+    function hasCard(uint8 cardNum) public view returns (bool has) {
+        return cardsByUser[msg.sender][cardNum] > 0;
+    }
+     
     function getCardsByUser(address user) public view returns (uint8[] memory, uint8[] memory) {
     uint8[] memory cardNumbers = new uint8[](121);
     uint8[] memory amounts = new uint8[](121);
