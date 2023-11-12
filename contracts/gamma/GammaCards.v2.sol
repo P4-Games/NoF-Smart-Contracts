@@ -40,7 +40,6 @@ contract NofGammaCardsV2 is ERC721, ERC721URIStorage, ERC721Burnable, Ownable {
 
     Counters.Counter private _tokenIdCounter;
     address public DAI_TOKEN;
-    address public signer;
     uint256 public packPrice = 12e17;
     uint256 public prizesBalance;
     string public baseUri;
@@ -53,6 +52,7 @@ contract NofGammaCardsV2 is ERC721, ERC721URIStorage, ERC721Burnable, Ownable {
     mapping(address user => mapping(uint8 cardNumber => uint8 amount)) public cardsByUser;
     mapping(address user => uint256 amount) public burnedCards;
     mapping(address => bool) public owners;
+    mapping(address => bool) public signers;
 
     struct Card {
         uint256 tokenId;
@@ -81,13 +81,28 @@ contract NofGammaCardsV2 is ERC721, ERC721URIStorage, ERC721Burnable, Ownable {
 
     function addOwner(address _newOwner) external onlyOwners {
         require(_newOwner != address(0), "Invalid address");
+        require(!owners[_newOwner], "Address is already an owner");
         owners[_newOwner] = true;
     }
 
     function removeOwner(address _ownerToRemove) external onlyOwners {
         require(_ownerToRemove != address(0), "Invalid address");
         require(_ownerToRemove != msg.sender, "You cannot remove yourself as an owner");
+        require(owners[_ownerToRemove], "Address is not an owner");
         owners[_ownerToRemove] = false;
+    }
+
+    function addSigner(address _newSigner) external onlyOwners {
+        require(_newSigner != address(0), "Invalid address");
+        require(!signers[_newSigner], "Address is already an owner");
+        signers[_newSigner] = true;
+    }
+
+    function removeSigner(address _signerToRemove) external onlyOwners {
+        require(_signerToRemove != address(0), "Invalid address");
+        require(_signerToRemove != msg.sender, "You cannot remove yourself as an signer");
+        require(signers[_signerToRemove], "Address is not an signer");
+        signers[_signerToRemove] = false;
     }
 
     constructor(address _daiTokenAddress, address _packsContract, string memory _baseUri, address _signer) 
@@ -97,7 +112,7 @@ contract NofGammaCardsV2 is ERC721, ERC721URIStorage, ERC721Burnable, Ownable {
         baseUri = _baseUri;
         mainUri = string(abi.encodePacked(bytes(baseUri), bytes("/"), bytes("120"), bytes("F.json")));
         secondaryUri = string(abi.encodePacked(bytes(baseUri), bytes("/"), bytes("121"), bytes("F.json")));
-        signer = _signer;
+        signers[_signer] = true;
         for(uint256 i;i<122;i++){
             cardsInventory[i] = 1;
         }
@@ -117,11 +132,9 @@ contract NofGammaCardsV2 is ERC721, ERC721URIStorage, ERC721Burnable, Ownable {
                 msg.sender, packNumber, 
                 packData, '0xf1dD71895e49b1563693969de50898197cDF3481')).toEthSignedMessageHash();
 
-        console.log('open pack signer recovered', messageHash.recover(signature));
-        console.log('openPack', msg.sender, packNumber, signer);
-
-        require(address(messageHash.recover(signature)) == address(signer), "Invalid signature");
-
+        address recoveredSigner = messageHash.recover(signature);
+        console.log('open pack signer recovered', recoveredSigner);
+        require(signers[recoveredSigner], "Invalid signature");
 
         uint256 length = packData.length;
         for(uint8 i;i<length;i++){
@@ -133,7 +146,6 @@ contract NofGammaCardsV2 is ERC721, ERC721URIStorage, ERC721Burnable, Ownable {
         emit PackOpened(msg.sender, packData, packNumber);
     }
 
-    // transfer one card
     function transferCard(address to, uint8 cardNumber) public {
         require(cardsByUser[msg.sender][cardNumber] > 0, "No tienes esta carta");
         require(to != msg.sender, "Transf propia no permitida");
@@ -142,7 +154,6 @@ contract NofGammaCardsV2 is ERC721, ERC721URIStorage, ERC721Burnable, Ownable {
         cardsByUser[to][cardNumber]++;
     }
 
-    // transfer multiple cards
     function transferCards(address to, uint8[] calldata cardNumbers) public {
         require(to != msg.sender, "No te puedes enviar cartas a ti mismo");
         require(to != address(0), "No puedes quemar cartas de esta manera");
@@ -243,11 +254,6 @@ contract NofGammaCardsV2 is ERC721, ERC721URIStorage, ERC721Burnable, Ownable {
 
     function changePackPrice(uint256 newPackPrice) external onlyPacksContract {
         packPrice = newPackPrice;
-    }
-
-    function setSigner(address newSigner) public onlyOwners {
-        signer = newSigner;
-        emit NewSigner(newSigner);
     }
 
     function setUris(string memory newMainUri, string memory newSecondaryUri) public onlyOwners {
