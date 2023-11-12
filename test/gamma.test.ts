@@ -69,4 +69,13 @@ describe('NoF - Gamma Tests', function () {
     const packOwner = await gammaPacks.getPackOwner(tokenId.value)
     expect(packOwner).to.equal(address0.address)
   })
+
+  it("Pack could be open by its owner", async () => {
+    const { testDAI, gammaPacks, gammaCards, address0 } = await loadFixture(deployNofFixture)
+    const TenPacksPrice = ethers.BigNumber.from('10000000000000000000'.toString())
+    await testDAI._mint(address0.address, TenPacksPrice)
+    await testDAI.approve(gammaPacks.address, TenPacksPrice)
+    const tokenId = await gammaPacks.buyPack({ from: address0.address })
+    gammaPacks.openPack(tokenId, address0.address, { from: gammaCards.address })
+  })
 })
