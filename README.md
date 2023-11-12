@@ -67,12 +67,13 @@ NOF_GAMMA_CARDS_CONTRACT_NAME='NofGammaCardsV2'
 # un micro-servicio de backend.
 SIGNATURE_METHOD='1'
 
-# esta variable contiene la wallet address de la clave privada que está 
-# en el micro-servicio de backend, el cual genera una firma, que luego se
-# obtiene de la landing y se compara en el SC de gamma-cards con el signer
-# seteado allí.
-# wallet correspondiente a la secret-key que firma en el micro-servicio: 0x20517cf8c140f7f393f92cea6158f57385a75733 
-MICRO_SERVICE_SIGNATURE_WALLET_ADDRESS='0x20517cf8c140f7f393f92cea6158f57385a75733'
+# Esta variable contiene una lista (separador: ",") de las wallets addresses
+# que han firmado packs.
+# El micro-servicio de backend genera una firma. En el SC que llama la landing, 
+# se valida esa firma.
+# Última wallet seteada en el micro-servicio: 0x20517cf8c140f7f393f92cea6158f57385a75733 
+# Se deja seteadas varias, por las distintas wallets que han firmado packs.
+MICRO_SERVICE_SIGNATURE_WALLETS_ADDRESSES='0xbc448896fa30dcafa085c0a45005a1334ebf1ab3,0x20517cf8C140F7F393F92cEa6158f57385a75733,0x4c46a8a7cf253e2fb7afe816a4bc273fbdd46c8c,0xfc355c1731a9f4e49a2fe7f9412aa22fa8fde198,0x1836acb4f313f21cbb86ffe2e8e9dfe2d853a657'
 
 # Dirección de la wallet del balance receiver que quedará condigurado en el contrato
 # gamma-packs

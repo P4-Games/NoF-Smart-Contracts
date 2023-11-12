@@ -62,7 +62,7 @@ export async function deployContracts(addresses: SignerWithAddress[]) {
   const nofGammaPacksContractName = process.env.NOF_GAMMA_PACKS_CONTRACT_NAME || 'NofGammaPacksV2'
   const nofGammaCardsContractName = process.env.NOF_GAMMA_CARDS_CONTRACT_NAME || 'NofGammaCardsV2'
   const signatureMethod = process.env.SIGNATURE_METHOD || '1'
-  const microServiceSignatureWalletAddress = process.env.MICRO_SERVICE_SIGNATURE_WALLET_ADDRESS || '0x20517cf8c140f7f393f92cea6158f57385a75733'
+  const microServiceSignatureWalletsAddresses = (process.env.MICRO_SERVICE_SIGNATURE_WALLETS_ADDRESSES || '0x20517cf8c140f7f393f92cea6158f57385a75733').split(',')
   const balanceReceiverAddress = 
     (isLocalhost || isHardhat) ? addresses[0].address : (process.env.BALANCE_RECEIVER_WALLET_ADDRESS || '')
 
@@ -79,7 +79,7 @@ export async function deployContracts(addresses: SignerWithAddress[]) {
   await gammaPacks.deployed();
 
   const GammaCards = await ethers.getContractFactory(nofGammaCardsContractName);
-  const gammaCards = await GammaCards.deploy(testDAI.address, gammaPacks.address, 'hhttps://nof.town', microServiceSignatureWalletAddress);
+  const gammaCards = await GammaCards.deploy(testDAI.address, gammaPacks.address, 'hhttps://nof.town', microServiceSignatureWalletsAddresses[0]);
   await gammaCards.deployed();
   await gammaPacks.setCardsContract(gammaCards.address);
 
@@ -89,10 +89,18 @@ export async function deployContracts(addresses: SignerWithAddress[]) {
   console.log('Gamma deployed Cards address:', gammaCards.address);
   console.log('Alpha balance receiver setted:', balanceReceiverAddress);
   console.log('Gamma Packs balance receiver setted:', balanceReceiverAddress);
-  console.log('Gamma Cards micro-services Signature Wallet Address setted:', microServiceSignatureWalletAddress);
+  console.log('Gamma Cards micro-services Signature Wallets Addresses setted:', microServiceSignatureWalletsAddresses[0]);
 
   console.log(`\nMinting some DAIs for address ${addresses[0].address}`)
   await testDAI._mint(addresses[0].address, ethers.BigNumber.from('900000000000000000000'));
+
+  if (microServiceSignatureWalletsAddresses.length > 1) {
+    const additionalSignatureWallets = microServiceSignatureWalletsAddresses.slice(1);
+    console.log(`\nAdded these additional signature wallets addresses in Gamma Cards Contract`, additionalSignatureWallets.join(','))
+    additionalSignatureWallets.forEach(walletAddress => {
+      gammaCards.addSigner(walletAddress);
+    });
+  }
 
   console.log('\nFacility text to use in .env in nof-landing:', gammaCards.address);
   console.log(`
