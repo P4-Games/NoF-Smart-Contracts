@@ -20,11 +20,15 @@ async function createAlphaMockData( addresses: SignerWithAddress[], testDAI: Con
   console.log('approving...')
   await testDAI.approve(alpha.address, packPrice);
 
-  console.log('minting...')
+  console.log('minting for address 0...')
   await testDAI._mint(addresses[0].address, packPrice);
-  for (let i = 1; i < 10; i++) {
-    await testDAI.connect(addresses[i]).approve(alpha.address, packPrice);
-    await testDAI.connect(addresses[i])._mint(addresses[i].address, packPrice);
+
+  if (addresses.length > 1) {
+    console.log('minting for the rest of addresses...')
+    for (let i = 1; i < addresses.length; i++) {
+      await testDAI.connect(addresses[i]).approve(alpha.address, packPrice);
+      await testDAI.connect(addresses[i])._mint(addresses[i].address, packPrice);
+    }
   }
 
   console.log('buying pack...')
