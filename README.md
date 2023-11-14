@@ -73,11 +73,15 @@ SIGNATURE_METHOD='1'
 # se valida esa firma.
 # Última wallet seteada en el micro-servicio: 0x20517cf8c140f7f393f92cea6158f57385a75733 
 # Se deja seteadas varias, por las distintas wallets que han firmado packs.
-MICRO_SERVICE_SIGNATURE_WALLETS_ADDRESSES='0xbc448896fa30dcafa085c0a45005a1334ebf1ab3,0x20517cf8C140F7F393F92cEa6158f57385a75733,0x4c46a8a7cf253e2fb7afe816a4bc273fbdd46c8c,0xfc355c1731a9f4e49a2fe7f9412aa22fa8fde198,0x1836acb4f313f21cbb86ffe2e8e9dfe2d853a657'
+MICRO_SERVICE_SIGNATURE_WALLETS_ADDRESSES=''
 
 # Dirección de la wallet del balance receiver que quedará condigurado en el contrato
 # gamma-packs
 BALANCE_RECEIVER_WALLET_ADDRESS=''
+
+# Lista de direcciones de owners adicionales (al que desplega) para sumar a los contratos 
+# (separar los valores por ",")
+ADDITIONAL_OWNERS_WALLETS_ADDRESSES=''
 ```
 
 > Note: You can find more info about the other required `.env` variables inside the `example_env` file.
