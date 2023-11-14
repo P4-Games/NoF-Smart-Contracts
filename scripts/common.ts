@@ -5,8 +5,8 @@ import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 import Web3 from 'web3';
 import { config } from 'hardhat';
 
-const isLocalhost = (network.name === 'localhost') || (network.name === '127.0.0.1')
-const isHardhat = (network.name === 'hardhat') 
+export const isLocalhost = (network.name === 'localhost') || (network.name === '127.0.0.1')
+export const isHardhat = (network.name === 'hardhat') 
 
 export async function getInitData() {
   if (isHardhat) {
@@ -43,7 +43,9 @@ export async function deployContracts(addresses: SignerWithAddress[]) {
   const additionalOwners = (process.env.ADDITIONAL_OWNERS_WALLETS_ADDRESSES 
       || '0x35dad65F60c1A32c9895BE97f6bcE57D32792E83,0x8a8F5e5ae88532c605921f320a92562c9599fB9E').split(',')
   const balanceReceiverAddress = 
-    (isLocalhost || isHardhat) ? addresses[0].address : (process.env.BALANCE_RECEIVER_WALLET_ADDRESS || '0x6b510284C49705eA14e92aD35D86FD3075eC56e0')
+    (isLocalhost || isHardhat) 
+      ? addresses[0].address 
+      : (process.env.BALANCE_RECEIVER_WALLET_ADDRESS || '0x6b510284C49705eA14e92aD35D86FD3075eC56e0')
 
   console.log(`deploying contract ${nofDaiContractName}`)
   const TestDAI = await ethers.getContractFactory(nofDaiContractName);
@@ -52,7 +54,7 @@ export async function deployContracts(addresses: SignerWithAddress[]) {
 
   console.log(`deploying contract ${nofAlphaContractName}`)
   const Alpha = await ethers.getContractFactory(nofAlphaContractName);
-  const alpha = await Alpha.deploy('https://nof.town', testDAI.address, balanceReceiverAddress);
+  const alpha = await Alpha.deploy('https://storage.googleapis.com/nof-alfa/T1', testDAI.address, balanceReceiverAddress);
   await alpha.deployed();
 
   console.log(`deploying contract ${nofGammaPacksContractName}`)
@@ -62,7 +64,8 @@ export async function deployContracts(addresses: SignerWithAddress[]) {
 
   console.log(`deploying contract ${nofGammaCardsContractName}`)
   const GammaCards = await ethers.getContractFactory(nofGammaCardsContractName);
-  const gammaCards = await GammaCards.deploy(testDAI.address, gammaPacks.address, 'https://storage.googleapis.com/nof-gamma/T1', microServiceSignatureWalletsAddresses[0]);
+  const gammaCards = await GammaCards.deploy(testDAI.address, gammaPacks.address, 
+    'https://storage.googleapis.com/nof-gamma/T1', microServiceSignatureWalletsAddresses[0]);
   await gammaCards.deployed();
   await gammaPacks.setCardsContract(gammaCards.address);
 
