@@ -21,31 +21,7 @@ export async function getInitData() {
   const [deployer] = await ethers.getSigners();
   const balance = (await deployer.getBalance()).toString()
   const acc = await deployer.getAddress();
-  const [
-    address0,
-    address1,
-    address2,
-    address3,
-    address4,
-    address5,
-    address6,
-    address7,
-    address8,
-    address9
-  ] = await ethers.getSigners();
-
-  const addresses = [address0,
-    address1,
-    address2,
-    address3,
-    address4,
-    address5,
-    address6,
-    address7,
-    address8,
-    address9
-  ]
-
+  const addresses = await ethers.getSigners()
   console.log(
     `Deploying the contracts with the account ${acc}, current acc balance: ${balance}`
   );
@@ -67,22 +43,26 @@ export async function deployContracts(addresses: SignerWithAddress[]) {
   const additionalOwners = (process.env.ADDITIONAL_OWNERS_WALLETS_ADDRESSES 
       || '0x35dad65F60c1A32c9895BE97f6bcE57D32792E83,0x8a8F5e5ae88532c605921f320a92562c9599fB9E').split(',')
   const balanceReceiverAddress = 
-    (isLocalhost || isHardhat) ? addresses[0].address : (process.env.BALANCE_RECEIVER_WALLET_ADDRESS || '')
+    (isLocalhost || isHardhat) ? addresses[0].address : (process.env.BALANCE_RECEIVER_WALLET_ADDRESS || '0x6b510284C49705eA14e92aD35D86FD3075eC56e0')
 
+  console.log(`deploying contract ${nofDaiContractName}`)
   const TestDAI = await ethers.getContractFactory(nofDaiContractName);
   const testDAI = await TestDAI.deploy();
   await testDAI.deployed();
 
+  console.log(`deploying contract ${nofAlphaContractName}`)
   const Alpha = await ethers.getContractFactory(nofAlphaContractName);
   const alpha = await Alpha.deploy('https://nof.town', testDAI.address, balanceReceiverAddress);
   await alpha.deployed();
 
+  console.log(`deploying contract ${nofGammaPacksContractName}`)
   const GammaPacks = await ethers.getContractFactory(nofGammaPacksContractName);
   const gammaPacks = await GammaPacks.deploy(testDAI.address, balanceReceiverAddress);
   await gammaPacks.deployed();
 
+  console.log(`deploying contract ${nofGammaCardsContractName}`)
   const GammaCards = await ethers.getContractFactory(nofGammaCardsContractName);
-  const gammaCards = await GammaCards.deploy(testDAI.address, gammaPacks.address, 'hhttps://nof.town', microServiceSignatureWalletsAddresses[0]);
+  const gammaCards = await GammaCards.deploy(testDAI.address, gammaPacks.address, 'https://storage.googleapis.com/nof-gamma/T1', microServiceSignatureWalletsAddresses[0]);
   await gammaCards.deployed();
   await gammaPacks.setCardsContract(gammaCards.address);
 
@@ -102,21 +82,30 @@ export async function deployContracts(addresses: SignerWithAddress[]) {
     // Se skipea la primera posición que fue incorporada en el deploy de gammaCards
     const additionalSignatureWallets = microServiceSignatureWalletsAddresses.slice(1);
     console.log(`\nAdded these additional signature wallets addresses in Gamma Cards Contract`, additionalSignatureWallets.join(','))
-    additionalSignatureWallets.forEach(walletAddress => {
-      gammaCards.addSigner(walletAddress);
-    });
+    for (const walletAddress of additionalSignatureWallets) {
+      const alreadySigner = await gammaCards.signers(walletAddress);
+      if (!alreadySigner) {
+        await gammaCards.addSigner(walletAddress);
+      }
+    }
   }
 
   if (additionalOwners.length > 0) {
     console.log(`\nAdded these additional owners wallets addresses in Gamma Cards Contract`, additionalOwners.join(','))
-    additionalOwners.forEach(walletAddress => {
-      gammaCards.addOwner(walletAddress);
-    });
+    for (const walletAddress of additionalOwners) {
+      const alreadyOwner = await gammaCards.owners(walletAddress);
+      if (!alreadyOwner) {
+        await gammaCards.addOwner(walletAddress);
+      }
+    }
 
     console.log(`\nAdded these additional owners wallets addresses in Gamma Packs Contract`, additionalOwners.join(','))
-    additionalOwners.forEach(walletAddress => {
-      gammaPacks.addOwner(walletAddress);
-    });
+    for (const walletAddress of additionalOwners) {
+      const alreadyOwner = await gammaPacks.owners(walletAddress);
+      if (!alreadyOwner) {
+        await gammaPacks.addOwner(walletAddress);
+      }
+    }
   }
 
   console.log('\nFacility text to use in .env in nof-landing:');
