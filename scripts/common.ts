@@ -62,7 +62,10 @@ export async function deployContracts(addresses: SignerWithAddress[]) {
   const nofGammaPacksContractName = process.env.NOF_GAMMA_PACKS_CONTRACT_NAME || 'NofGammaPacksV2'
   const nofGammaCardsContractName = process.env.NOF_GAMMA_CARDS_CONTRACT_NAME || 'NofGammaCardsV2'
   const signatureMethod = process.env.SIGNATURE_METHOD || '1'
-  const microServiceSignatureWalletsAddresses = (process.env.MICRO_SERVICE_SIGNATURE_WALLETS_ADDRESSES || '0x20517cf8c140f7f393f92cea6158f57385a75733').split(',')
+  const microServiceSignatureWalletsAddresses = (process.env.MICRO_SERVICE_SIGNATURE_WALLETS_ADDRESSES 
+      || '0x20517cf8c140f7f393f92cea6158f57385a75733').split(',')
+  const additionalOwners = (process.env.ADDITIONAL_OWNERS_WALLETS_ADDRESSES 
+      || '0x35dad65F60c1A32c9895BE97f6bcE57D32792E83,0x8a8F5e5ae88532c605921f320a92562c9599fB9E').split(',')
   const balanceReceiverAddress = 
     (isLocalhost || isHardhat) ? addresses[0].address : (process.env.BALANCE_RECEIVER_WALLET_ADDRESS || '')
 
@@ -94,7 +97,9 @@ export async function deployContracts(addresses: SignerWithAddress[]) {
   console.log(`\nMinting some DAIs for address ${addresses[0].address}`)
   await testDAI._mint(addresses[0].address, ethers.BigNumber.from('900000000000000000000'));
 
+  // se contempla si tiene más de 1 agregado, dado que el primero (posición 0), ya se incorpora en el deploy de gammaCards
   if (microServiceSignatureWalletsAddresses.length > 1) {
+    // Se skipea la primera posición que fue incorporada en el deploy de gammaCards
     const additionalSignatureWallets = microServiceSignatureWalletsAddresses.slice(1);
     console.log(`\nAdded these additional signature wallets addresses in Gamma Cards Contract`, additionalSignatureWallets.join(','))
     additionalSignatureWallets.forEach(walletAddress => {
@@ -102,7 +107,19 @@ export async function deployContracts(addresses: SignerWithAddress[]) {
     });
   }
 
-  console.log('\nFacility text to use in .env in nof-landing:', gammaCards.address);
+  if (additionalOwners.length > 0) {
+    console.log(`\nAdded these additional owners wallets addresses in Gamma Cards Contract`, additionalOwners.join(','))
+    additionalOwners.forEach(walletAddress => {
+      gammaCards.addOwner(walletAddress);
+    });
+
+    console.log(`\nAdded these additional owners wallets addresses in Gamma Packs Contract`, additionalOwners.join(','))
+    additionalOwners.forEach(walletAddress => {
+      gammaPacks.addOwner(walletAddress);
+    });
+  }
+
+  console.log('\nFacility text to use in .env in nof-landing:');
   console.log(`
     NEXT_PUBLIC_DAI_ADDRESS='${testDAI.address}'
     NEXT_PUBLIC_ALPHA_ADDRESS='${alpha.address}'

@@ -131,7 +131,7 @@ async function main() {
       signatureMethod: string;
     } = await deployContracts (addresses)
     
-    // await createAlphaMockData(addresses, contracts.testDAI, contracts.alpha);
+    await createAlphaMockData(addresses, contracts.testDAI, contracts.alpha);
 
     await createGammaMockData(addresses, contracts.testDAI, contracts.gammaPacks, contracts.gammaCards, contracts.signatureMethod);
 
