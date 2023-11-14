@@ -47,6 +47,7 @@ contract NofGammaCardsV2 is ERC721, ERC721URIStorage, ERC721Burnable, Ownable {
     uint256 public secondaryAlbumPrize = 1e18; // 1 DAI por album secundario completado
     string public mainUri;
     string public secondaryUri;
+    bool public requireOpenPackSignerValidation;
     mapping (uint256 cardNumber => uint256 amount) public cardsInventory; // maximos: 119 => 4999
     mapping (uint256 tokenId => Card) public cards;
     mapping(address user => mapping(uint8 cardNumber => uint8 amount)) public cardsByUser;
@@ -68,6 +69,21 @@ contract NofGammaCardsV2 is ERC721, ERC721URIStorage, ERC721Burnable, Ownable {
     event EmergencyWithdrawal(address receiver, uint256 amount);
     event NewSigner(address newSigner);
     event NewUris(string newMainUri, string newSecondaryUri);
+
+    constructor(address _daiTokenAddress, address _packsContract, string memory _baseUri, address _signer) 
+        ERC721("GammaCards", "NOF_GC") {
+        packsContract = IGammaPacks(_packsContract);
+        DAI_TOKEN = _daiTokenAddress;
+        baseUri = _baseUri;
+        mainUri = string(abi.encodePacked(bytes(baseUri), bytes("/"), bytes("120"), bytes("F.json")));
+        secondaryUri = string(abi.encodePacked(bytes(baseUri), bytes("/"), bytes("121"), bytes("F.json")));
+        signers[_signer] = true;
+        requireOpenPackSignerValidation = false;
+        for(uint256 i;i<122;i++){
+            cardsInventory[i] = 1;
+        }
+        owners[msg.sender] = true;
+    }
 
     modifier onlyPacksContract {
         require(msg.sender == address(packsContract), "Solo contrato de packs");
@@ -105,40 +121,39 @@ contract NofGammaCardsV2 is ERC721, ERC721URIStorage, ERC721Burnable, Ownable {
         signers[_signerToRemove] = false;
     }
 
-    constructor(address _daiTokenAddress, address _packsContract, string memory _baseUri, address _signer) 
-        ERC721("GammaCards", "NOF_GC") {
-        packsContract = IGammaPacks(_packsContract);
-        DAI_TOKEN = _daiTokenAddress;
-        baseUri = _baseUri;
-        mainUri = string(abi.encodePacked(bytes(baseUri), bytes("/"), bytes("120"), bytes("F.json")));
-        secondaryUri = string(abi.encodePacked(bytes(baseUri), bytes("/"), bytes("121"), bytes("F.json")));
-        signers[_signer] = true;
-        for(uint256 i;i<122;i++){
-            cardsInventory[i] = 1;
-        }
-        owners[msg.sender] = true;
+    function changeRequireOpenPackSignerValidation(bool required) external onlyOwners {
+        requireOpenPackSignerValidation = required;
+    }
+
+    function verifyPackSigner(uint256 packNumber, uint8[] memory packData, bytes calldata signature) public view 
+        returns (address signer) {
+        bytes32 messageHash = keccak256(abi.encodePacked(msg.sender, packNumber, 
+            packData, '0xf1dD71895e49b1563693969de50898197cDF3481')).toEthSignedMessageHash();
+        address recoveredSigner = messageHash.recover(signature);
+        console.log('open pack signer recovered', recoveredSigner);
+        return recoveredSigner;
     }
 
     function openPack(uint256 packNumber, uint8[] memory packData, bytes calldata signature) external {
         require(packsContract.getPackOwner(packNumber) == msg.sender, "Este sobre no es tuyo");
         require(packData.length < 15, "Limite de cartas excedido"); // chequear este length
         
-        packsContract.openPack(packNumber, msg.sender);
-        prizesBalance += packPrice - packPrice / 6;
-
-        // Recreates the message present in the `signature`
-        bytes32 messageHash = 
-            keccak256(abi.encodePacked(
-                msg.sender, packNumber, 
+        if (requireOpenPackSignerValidation) {
+            // Recreates the message present in the `signature`
+            bytes32 messageHash = keccak256(abi.encodePacked(msg.sender, packNumber, 
                 packData, '0xf1dD71895e49b1563693969de50898197cDF3481')).toEthSignedMessageHash();
 
-        address recoveredSigner = messageHash.recover(signature);
-        console.log('open pack signer recovered', recoveredSigner);
-        require(signers[recoveredSigner], "Invalid signature");
+            address recoveredSigner = messageHash.recover(signature);
+            console.log('open pack signer recovered', recoveredSigner);
+            require(signers[recoveredSigner], "Invalid signature");
+        }
 
+        packsContract.openPack(packNumber, msg.sender);
+        prizesBalance += packPrice - packPrice / 6;
         uint256 length = packData.length;
         for(uint8 i;i<length;i++){
-            require(packData[i] == 120 ? cardsInventory[120] < 3001 : cardsInventory[packData[i]] < 5001);
+            require(packData[i] == 120 ? cardsInventory[120] < 3001 : cardsInventory[packData[i]] < 5001, 
+                'invalid cardInventory position');
             cardsInventory[packData[i]]++; // 280k gas aprox.
             cardsByUser[msg.sender][packData[i]]++; // 310k gas aprox.
         }
