@@ -64,11 +64,13 @@ async function createGammaMockData(
   if (isHardhat || isLocalhost) {
     console.log('buying Pack (estimating gas)...')
     const estimatedGas = await gammaPacks.estimateGas.buyPack({ from: addresses[0].address });
+
     console.log('buying Pack, estimated gas', estimatedGas)
-  
     const gasLimit = estimatedGas.add(20000) // security-margin
+
     console.log('buying Pack (real operation)...')
     const tokenId = await gammaPacks.connect(addresses[0]).buyPack({ gasLimit });
+    await tokenId.wait()
     console.log('Buyed Pack token Id', tokenId.value)
   
     console.log('Verifing testDai balance...')
@@ -89,7 +91,8 @@ async function createGammaMockData(
   
     console.log('buying 2 Packs (operation)...')
     const gasLimitTenPacks = estimatedGasTenPacks.add(20000) // security-margin
-    await gammaPacks.connect(addresses[0]).buyPacks(2, { gasLimit: gasLimitTenPacks });
+    const trxBuypacks = await gammaPacks.connect(addresses[0]).buyPacks(2, { gasLimit: gasLimitTenPacks });
+    await trxBuypacks.wait()
   
     console.log('Verifing user\'s packs...')
     const packs:[any] = await gammaPacks.getPacksByUser(addresses[0].address)
@@ -98,6 +101,10 @@ async function createGammaMockData(
     for (let i = 0; i < packs.length-1; i++) {
       console.log(`\tPack ${i+1} Id: ${packs[i]}`)
     }
+
+    console.log('Added all cards by 1 user', addresses[1].address)
+    const transactionTestCards = await gammaCards.testAddCards({ from: addresses[0].address })
+    await transactionTestCards.wait()
 
     /*
     //
