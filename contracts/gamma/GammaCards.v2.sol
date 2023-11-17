@@ -286,7 +286,7 @@ contract NofGammaCardsV2 is ERC721, ERC721URIStorage, ERC721Burnable, Ownable {
     uint8[] memory amounts = new uint8[](121);
     uint8 index = 0;
     
-    for (uint8 i = 1; i <= 120; i++) {
+    for (uint8 i = 0; i <= 119; i++) {
         if (cardsByUser[user][i] > 0) {
             cardNumbers[index] = i;
             amounts[index] = cardsByUser[user][i];
