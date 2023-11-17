@@ -29,7 +29,7 @@ export async function getInitData() {
   return addresses
 }
 
-export async function deployContracts(addresses: SignerWithAddress[]) {
+export async function deployContracts(wallets: SignerWithAddress[]) {
 
   dotenv.config(); 
 
@@ -44,7 +44,7 @@ export async function deployContracts(addresses: SignerWithAddress[]) {
       || '0x35dad65F60c1A32c9895BE97f6bcE57D32792E83,0x8a8F5e5ae88532c605921f320a92562c9599fB9E').split(',')
   const balanceReceiverAddress = 
     (isLocalhost || isHardhat) 
-      ? addresses[0].address 
+      ? wallets[0].address 
       : (process.env.BALANCE_RECEIVER_WALLET_ADDRESS || '0x6b510284C49705eA14e92aD35D86FD3075eC56e0')
 
   console.log(`deploying contract ${nofDaiContractName}`)
@@ -77,8 +77,10 @@ export async function deployContracts(addresses: SignerWithAddress[]) {
   console.log('Gamma Packs balance receiver setted:', balanceReceiverAddress);
   console.log('Gamma Cards micro-services Signature Wallets Addresses setted:', microServiceSignatureWalletsAddresses[0]);
 
-  console.log(`\nMinting some DAIs for address ${addresses[0].address}`)
-  await testDAI._mint(addresses[0].address, ethers.BigNumber.from('900000000000000000000'));
+  for (const wallet of wallets) {
+    console.log(`\nMinting some DAIs for address ${wallet.address}`)
+    await testDAI._mint(wallet.address, ethers.BigNumber.from('900000000000000000000'));
+  }
 
   // se contempla si tiene más de 1 agregado, dado que el primero (posición 0), ya se incorpora en el deploy de gammaCards
   if (microServiceSignatureWalletsAddresses.length > 1) {
@@ -117,7 +119,7 @@ export async function deployContracts(addresses: SignerWithAddress[]) {
     NEXT_PUBLIC_ALPHA_ADDRESS='${alpha.address}'
     NEXT_PUBLIC_GAMMA_PACKS_ADDRESS='${gammaPacks.address}'
     NEXT_PUBLIC_GAMMA_CARDS_ADDRESS='${gammaCards.address}'
-    NEXT_PUBLIC_ADMIN_ACCOUNTS='${addresses[0].address}'
+    NEXT_PUBLIC_ADMIN_ACCOUNTS='${wallets[0].address}'
   `)
 
   return { testDAI, alpha, gammaPacks, gammaCards, signatureMethod };
