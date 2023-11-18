@@ -37,6 +37,12 @@ export async function deployContracts(wallets: SignerWithAddress[]) {
   const nofAlphaContractName = process.env.NOF_ALPHA_CONTRACT_NAME || 'NofAlphaV2'
   const nofGammaPacksContractName = process.env.NOF_GAMMA_PACKS_CONTRACT_NAME || 'NofGammaPacksV2'
   const nofGammaCardsContractName = process.env.NOF_GAMMA_CARDS_CONTRACT_NAME || 'NofGammaCardsV2'
+
+  const nofDaiContractCurrentAddress = process.env.NOF_DAI_CONTRACT_CURRENT_ADDRESS || ''
+  const nofAlphaContractCurrentAddress = process.env.NOF_ALPHA_CONTRACT_CURRENT_ADDRESS || ''
+  const nofGammaPacksContractCurrentAddress = process.env.NOF_GAMMA_PACKS_CONTRACT_CURRENT_ADDRESS || ''
+  const nofGammaCardsContractCurrentAddress = process.env.NOF_GAMMA_CARDS_CONTRACT_CURRENT_ADDRESS || ''
+
   const signatureMethod = process.env.SIGNATURE_METHOD || '1'
   const microServiceSignatureWalletsAddresses = (process.env.MICRO_SERVICE_SIGNATURE_WALLETS_ADDRESSES 
       || '0x20517cf8c140f7f393f92cea6158f57385a75733').split(',')
@@ -47,32 +53,60 @@ export async function deployContracts(wallets: SignerWithAddress[]) {
       ? wallets[0].address 
       : (process.env.BALANCE_RECEIVER_WALLET_ADDRESS || '0x6b510284C49705eA14e92aD35D86FD3075eC56e0')
 
-  console.log(`deploying contract ${nofDaiContractName}`)
-  const TestDAI = await ethers.getContractFactory(nofDaiContractName);
-  const testDAI = await TestDAI.deploy();
-  await testDAI.deployed();
+  let testDaiAddress = nofDaiContractCurrentAddress;
+  let testDAI;
+  if (testDaiAddress === '') {
+    console.log(`deploying contract ${nofDaiContractName}`)
+    const TestDAI = await ethers.getContractFactory(nofDaiContractName);
+    testDAI = await TestDAI.deploy();
+    await testDAI.deployed();
+    testDaiAddress = testDAI.address;
+  } else {
+    testDAI = await ethers.getContractAt(nofDaiContractName, testDaiAddress);
+  }
 
-  console.log(`deploying contract ${nofAlphaContractName}`)
-  const Alpha = await ethers.getContractFactory(nofAlphaContractName);
-  const alpha = await Alpha.deploy('https://storage.googleapis.com/nof-alfa/T1', testDAI.address, balanceReceiverAddress);
-  await alpha.deployed();
+  let alphaAddress = nofAlphaContractCurrentAddress;
+  let alpha;
+  if (alphaAddress === '') {
+    console.log(`deploying contract ${nofAlphaContractName}`)
+    const Alpha = await ethers.getContractFactory(nofAlphaContractName);
+    alpha = await Alpha.deploy('https://storage.googleapis.com/nof-alfa/T1', testDaiAddress, balanceReceiverAddress);
+    await alpha.deployed();
+    alphaAddress = alpha.address;
+  } else {
+    alpha = await ethers.getContractAt(nofAlphaContractName, alphaAddress);
+  }
 
-  console.log(`deploying contract ${nofGammaPacksContractName}`)
-  const GammaPacks = await ethers.getContractFactory(nofGammaPacksContractName);
-  const gammaPacks = await GammaPacks.deploy(testDAI.address, balanceReceiverAddress);
-  await gammaPacks.deployed();
+  let gammaPacksAddress = nofGammaPacksContractCurrentAddress;
+  let gammaPacks;
+  if (gammaPacksAddress === '') {
+    console.log(`deploying contract ${nofGammaPacksContractName}`)
+    const GammaPacks = await ethers.getContractFactory(nofGammaPacksContractName);
+    gammaPacks = await GammaPacks.deploy(testDaiAddress, balanceReceiverAddress);
+    await gammaPacks.deployed();
+    gammaPacksAddress = gammaPacks.address;
+  } else {
+    gammaPacks = await ethers.getContractAt(nofGammaPacksContractName, gammaPacksAddress);
+  }
 
-  console.log(`deploying contract ${nofGammaCardsContractName}`)
-  const GammaCards = await ethers.getContractFactory(nofGammaCardsContractName);
-  const gammaCards = await GammaCards.deploy(testDAI.address, gammaPacks.address, 
-    'https://storage.googleapis.com/nof-gamma/T1', microServiceSignatureWalletsAddresses[0]);
-  await gammaCards.deployed();
-  await gammaPacks.setCardsContract(gammaCards.address);
+  let gammaCardsAddress = nofGammaCardsContractCurrentAddress;
+  let gammaCards;
+  if (gammaCardsAddress === '') {
+    console.log(`deploying contract ${nofGammaCardsContractName}`)
+    const GammaCards = await ethers.getContractFactory(nofGammaCardsContractName);
+    gammaCards = await GammaCards.deploy(testDaiAddress, gammaPacksAddress, 
+      'https://storage.googleapis.com/nof-gamma/T1', microServiceSignatureWalletsAddresses[0]);
+    await gammaCards.deployed();
+    gammaCardsAddress = gammaCards.address;
+    await gammaPacks.setCardsContract(gammaCardsAddress);
+  } else { 
+    gammaCards = await ethers.getContractAt(nofGammaCardsContractName, gammaCardsAddress);
+  }
 
-  console.log('\nTestDAI deployed address:', testDAI.address);
-  console.log('Alpha deployed address:', alpha.address);
-  console.log('Gamma deployed Packs address:', gammaPacks.address);
-  console.log('Gamma deployed Cards address:', gammaCards.address);
+  console.log('\nTestDAI deployed address:', testDaiAddress);
+  console.log('Alpha deployed address:', alphaAddress);
+  console.log('Gamma deployed Packs address:', gammaPacksAddress);
+  console.log('Gamma deployed Cards address:', gammaCardsAddress);
   console.log('Alpha balance receiver setted:', balanceReceiverAddress);
   console.log('Gamma Packs balance receiver setted:', balanceReceiverAddress);
   console.log('Gamma Cards micro-services Signature Wallets Addresses setted:', microServiceSignatureWalletsAddresses[0]);
@@ -115,7 +149,7 @@ export async function deployContracts(wallets: SignerWithAddress[]) {
 
   console.log('\nFacility text to use in .env in nof-landing:');
   console.log(`
-    NEXT_PUBLIC_DAI_ADDRESS='${testDAI.address}'
+    NEXT_PUBLIC_DAI_ADDRESS='${testDaiAddress}'
     NEXT_PUBLIC_ALPHA_ADDRESS='${alpha.address}'
     NEXT_PUBLIC_GAMMA_PACKS_ADDRESS='${gammaPacks.address}'
     NEXT_PUBLIC_GAMMA_CARDS_ADDRESS='${gammaCards.address}'
