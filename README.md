@@ -82,6 +82,14 @@ BALANCE_RECEIVER_WALLET_ADDRESS=''
 # Lista de direcciones de owners adicionales (al que desplega) para sumar a los contratos 
 # (separar los valores por ",")
 ADDITIONAL_OWNERS_WALLETS_ADDRESSES=''
+
+# Direcciones de contatos existentes, para no re-desplegar al ejecutar el script deploy.hs
+# (usará las definidas en éstas variables)
+NOF_DAI_CONTRACT_CURRENT_ADDRESS=''
+NOF_ALPHA_CONTRACT_CURRENT_ADDRESS=''
+NOF_GAMMA_PACKS_CONTRACT_CURRENT_ADDRESS=''
+NOF_GAMMA_CARDS_CONTRACT_CURRENT_ADDRESS=''
+
 ```
 
 > Note: You can find more info about the other required `.env` variables inside the `example_env` file.
