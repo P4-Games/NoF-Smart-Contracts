@@ -116,7 +116,7 @@ contract NofGammaCardsV2 is ERC721, ERC721URIStorage, ERC721Burnable, Ownable {
 
     function removeSigner(address _signerToRemove) external onlyOwners {
         require(_signerToRemove != address(0), "Invalid address");
-        require(_signerToRemove != msg.sender, "You cannot remove yourself as an signer");
+        require(_signerToRemove != msg.sender, "You cannot remove yourself as a signer");
         require(signers[_signerToRemove], "Address is not an signer");
         signers[_signerToRemove] = false;
     }
