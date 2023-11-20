@@ -3,21 +3,25 @@ pragma solidity ^0.8.16;
 
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/utils/Counters.sol";
-import "hardhat/console.sol";
+// import "hardhat/console.sol";
 
 interface IGammaCardsContract {
-  function hasCard(address user, uint8 cardNumber) external returns (bool has);
+  function hasCardByOffer(address user, uint8 cardNumber) external returns (bool has);
   function removeCardByOffer(address user, uint8 cardNumber) external;
   function restoreCardByOffer(address user, uint8 cardNumber) external;
   function exchangeCardsOffer(address from, uint8 cardNumberFrom, address to, uint8 cardNumberTo) external;
 }
 
-contract NofGammaOffersV1 is Ownable {
+contract NofGammaOffersV3 is Ownable {
     using Counters for Counters.Counter;
 
     IGammaCardsContract public gammaCardsContract;
     mapping(address => bool) public owners;
 
+    uint256 maxOffersAllowed = uint256(5000);
+    uint256 maxOffersByUserAllowed = uint256(5);
+    uint256 maxCardNumbersAllowed = uint256(120);
+    
     struct Offer {
         uint256 offerId;
         uint8 cardNumber;
@@ -25,16 +29,19 @@ contract NofGammaOffersV1 is Ownable {
         address owner;
     }
 
-    Offer[] offers;
+    Offer[] public offers;
     mapping(address user => Offer[]) offersByUser;
     mapping(uint8 cardNumber => Offer[]) offersByCardNumber;
-    Counters.Counter private _offerIdCounter;
+    mapping(address => Counters.Counter) public offersByUserCounter;
+    mapping(uint8 => Counters.Counter) public offersByCardNumberCounter;
+    Counters.Counter private offersTotalCounter;
 
     event NewGammaCardsContract(address newGammaCardsContract);
     event NewOfferCreated (address user, uint8 cardNumber, uint8[] wantedCardNumbers);
     event OfferRemoved (address user, uint8 cardNumber);
     event NewOwnerAdded (address owner);
     event OwnerRemoved (address owner);
+    event RemovedAllOffers ();
 
     constructor(address _cardsContract) {
         gammaCardsContract = IGammaCardsContract(_cardsContract);
@@ -67,37 +74,86 @@ contract NofGammaOffersV1 is Ownable {
     }
 
     function setGammaCardsContract (address _gammaCardsContract) public onlyOwners {
+        require(_gammaCardsContract != address(0), "Invalid address.");
         gammaCardsContract = IGammaCardsContract(_gammaCardsContract);
         emit NewGammaCardsContract(_gammaCardsContract);
     }
 
+    function setMaxOffersAllowed(uint256 _maxOffersAllowed) external onlyOwners {
+        maxOffersAllowed = _maxOffersAllowed;
+    }
+
+    function setMaxOffersByUserAllowed(uint256 _maxOffersByUserAllowed) external onlyOwners {
+        maxOffersByUserAllowed = _maxOffersByUserAllowed;
+    }
+
+    function setMaxCardNumbersAllowed(uint256 _maxCardNumbersAllowed) external onlyOwners {
+        maxCardNumbersAllowed = _maxCardNumbersAllowed;
+    }
+
     function createOffer(uint8 cardNumber, uint8[] memory wantedCardNumbers) public {
         require(address(gammaCardsContract) != address(0), "GammaCardsContract not set."); 
-        
-        bool userHasCard = gammaCardsContract.hasCard(msg.sender, cardNumber);
+        require(offersByUserCounter[msg.sender].current() < maxOffersByUserAllowed, "User has reached the maximum allowed offers.");
+        require(offersTotalCounter.current() < maxOffersAllowed, "Total offers have reached the maximum allowed.");
+
+        bool userHasCard = gammaCardsContract.hasCardByOffer(msg.sender, cardNumber);
         require(userHasCard, "You does not have that card.");
 
         for (uint8 i = 0; i < wantedCardNumbers.length; i++) {
             require(wantedCardNumbers[i] != cardNumber, "The cardNumber cannot be in wantedCardNumbers.");
         }
 
-        _offerIdCounter.increment();
-        uint256 offerId = _offerIdCounter.current();
+        Offer memory existingOffer = getOfferByUserAndCardNumber(msg.sender, cardNumber);
+        require(existingOffer.offerId == 0, "An offer for this user and cardNumber already exists.");
+
+        offersByUserCounter[msg.sender].increment();
+        offersByCardNumberCounter[cardNumber].increment();
+        offersTotalCounter.increment();
+
+        uint256 offerId = offersTotalCounter.current();
         
         offers.push(Offer(offerId, cardNumber, wantedCardNumbers, msg.sender));
         offersByUser[msg.sender].push(offers[offers.length - 1]);
         offersByCardNumber[cardNumber].push(offers[offers.length - 1]);
-        
+
         gammaCardsContract.removeCardByOffer(msg.sender, cardNumber);
 
         emit NewOfferCreated (msg.sender, cardNumber, wantedCardNumbers);
     }
 
+    function getOffersByUserCounter(address user) external view returns (uint256) {
+        require(user != address(0), "Invalid address.");
+        return offersByUserCounter[user].current();
+    }
+
+    function getOffersByCardNumberCounter(uint8 cardNumber) external view returns (uint256) {
+        return offersByCardNumberCounter[cardNumber].current();
+    }
+
+    function getOffersCounter() external view returns (uint256) {
+        return offersTotalCounter.current();
+    }
+    
     function getOffers() external view returns (Offer[] memory) {
         return offers;
     }
 
+    function getOfferByIndex(uint256 index) public view returns (Offer memory) {
+        require(index < offers.length, "Offer Id does not exist");
+        return offers[index];
+    }
+
+    function getOfferByOfferId(uint256 offerId) external view returns (Offer memory) {
+        for (uint256 i = 0; i < offersTotalCounter.current(); i++) {
+            if (offers[i].offerId == offerId) {
+                return (offers[i]);
+            }
+        }
+        return Offer(0, 0, new uint8[](0), address(0));
+    }
+
     function getOffersByUser(address user) external view returns (Offer[] memory) {
+        require(user != address(0), "Invalid address.");
         return offersByUser[user];
     }
 
@@ -105,178 +161,70 @@ contract NofGammaOffersV1 is Ownable {
         return offersByCardNumber[cardNumber];
     }
 
-    function getOffersByUserAndCardNumber(address user, uint8 cardNumber) external view returns (Offer[] memory) {
-        // return offersByUser[user][cardNumber];
-    }
-
-    function removeOfferByUserAndCardNumber(uint8 cardNumber) external {
-        require(address(gammaCardsContract) != address(0), "GammaCardsContract not set."); 
-
-        Offer[] storage userOffers = offersByUser[msg.sender];
-
-        for (uint i = 0; i < userOffers.length; i++) {
-            if (userOffers[i].cardNumber == cardNumber) {
-                uint offerId = userOffers[i].offerId;
-                delete userOffers[i];
-                userOffers[i] = userOffers[userOffers.length - 1];
-                userOffers.pop();
-
-                _removeOfferFromCard(cardNumber, offerId);
-                _removeOfferFromAll(offerId);
-
-                gammaCardsContract.restoreCardByOffer(msg.sender, cardNumber);
-                emit OfferRemoved (msg.sender, cardNumber);
-                return;
+    function getOfferByUserAndCardNumber(address user, uint8 cardNumber) public view returns (Offer memory) {
+        require(user != address(0), "Invalid address.");
+        for (uint256 i = 0; i < offersByUserCounter[user].current(); i++) {
+            if (offersByUser[user][i].cardNumber == cardNumber) {
+                return offersByUser[user][i];
             }
         }
-
-        revert("Offer not found for this user and card number.");
-    }
-     
-    function _removeOfferFromCard(uint8 cardNumber, uint offerId) private {
-        uint256 size = offersByCardNumber[cardNumber].length;
-        for (uint i = 0; i < size; i++) {
-            if (offersByCardNumber[cardNumber][i].offerId == offerId) {
-                delete offersByCardNumber[cardNumber][i];
-                offersByCardNumber[cardNumber][i] = offersByCardNumber[cardNumber][size - 1];
-                offersByCardNumber[cardNumber].pop();
-                return;
-            }
-        }
+        return Offer(0, 0, new uint8[](0), address(0));
     }
 
-    function _removeOfferFromAll(uint offerId) private {
-        for (uint i = 0; i < offers.length; i++) {
-            if (offers[i].offerId == offerId) {
-                delete offers[i];
-                offers[i] = offers[offers.length - 1];
-                offers.pop();
-                return;
-            }
-        }
+    function removeOfferByCardNumber(uint8 cardNumber) external returns (bool) {
+        return removeOfferByUserAndCardNumber (msg.sender, cardNumber);
     }
 
-    /*
+    function removeOfferByUserAndCardNumber(address user, uint8 cardNumber) public onlyOwners returns (bool) {
+        require(user != address(0), "Invalid address.");
 
-    function removeAllOffers() public onlyOwners {
-        for (uint8 i = 0; i < offers.length; i++) {
-            // restore card to user
-            cardsByUser[offers[i].owner][offers[i].cardNumber]++;
-            delete offersByUser[offers[i].owner];
-            delete offersByCardNumber[offers[i].cardNumber];
-        }
-        offers = new Offer[](0); // Reinicializar el array allOffers con un array vacío
-    }
-    
-    */
+        Offer[] memory userOffers = offersByUser[user];
+        uint256 currentUserOffersCounter = offersByUserCounter[user].current();
+        uint256 currentTotalOffersCounter = offersTotalCounter.current();
 
-    /*
-    function removeOfferById(uint256 offerId) external {
         bool found = false;
-        uint index;
-        uint8 cardNUmber = 0;
+        for (uint256 i = 0; i < currentUserOffersCounter; i++) {
+            
+            if (userOffers[i].cardNumber == cardNumber) {
+                uint256 offerId = userOffers[i].offerId;
 
-        for (uint256 i = 0; i < offers.length; i++) {
-            if (offers[i].offerId == offerId && 
-                offersByUser[msg.sender][i].offerId == offerId) {
-                index = i;
-                cardNUmber = offers[i].cardNumber;
-                found = true;
-                break;
-            }
-        }
+                delete offersByUser[user][i];
+                delete offersByCardNumber[cardNumber][i];
 
-        require(found, "Offer not found");
-        delete offers[index];
-        offers[index] = offers[offers.length - 1];
-        offers.pop();
-
-        _removeOfferFromUser(offerId);
-        _removeOfferFromCard(offerId);
-
-        // restore card to user
-        // cardsByUser[msg.sender][cardNUmber]++;
-    }
-
-    function _removeOfferFromUser(uint offerId) private {
-        // Offer[] storage userOffers = offersByUser[msg.sender];
-
-        for (uint i = 0; i < offersByUser[msg.sender].length; i++) {
-            if (offersByUser[msg.sender][i].offerId == offerId) {
-                delete offersByUser[msg.sender][i];
-                offersByUser[msg.sender][i] = offersByUser[msg.sender][offersByUser[msg.sender].length - 1];
-                offersByUser[msg.sender].pop();
-                break;
-            }
-        }
-    }
-
-    function _removeOfferFromCard(uint offerId) private {
-        for (uint8 i = 0; i < 256; i++) {
-            Offer[] storage cardOffers = offersByCardNumber[i];
-
-            for (uint j = 0; j < cardOffers.length; j++) {
-                if (cardOffers[j].offerId == offerId) {
-
-                    delete cardOffers[j];
-                    cardOffers[j] = cardOffers[cardOffers.length - 1];
-                    cardOffers.pop();
-                    return;
+                for (uint256 j = 0; j < currentTotalOffersCounter; j++) {
+                    if (offers[j].offerId == offerId) {
+                        delete offers[j];
+                        offers[j] = offers[offers.length - 1];
+                        offers.pop();
+                        break;
+                    }
                 }
-            }
-        }
-    }
-    */
 
-    /*
-    function removeOfferByIndex(uint index) external onlyOwners {
-        require(index < offers.length, "Index out of bounds");
+                offersByUserCounter[user].decrement();
+                offersByCardNumberCounter[cardNumber].decrement();
+                offersTotalCounter.decrement();
 
-        Offer memory offerToRemove = offers[index];
-        delete offers[index];
+                found = true;
+                gammaCardsContract.restoreCardByOffer(user, cardNumber);
 
-        uint8 cardNumber = offerToRemove.cardNumber;
-        _removeOfferFromList(offersByUser[msg.sender], offerToRemove);
-        _removeOfferFromList(offersByCardNumber[cardNumber], offerToRemove);
-
-        // restore card to user
-        // cardsByUser[msg.sender][cardNumber]++;
-    }
-
-    function _removeOfferFromList(Offer[] storage offerList, Offer memory offerToRemove) private {
-        for (uint i = 0; i < offerList.length; i++) {
-            if (offerList[i].cardNumber == offerToRemove.cardNumber &&
-                keccak256(abi.encodePacked(offerList[i].wantedCardNumbers)) == 
-                    keccak256(abi.encodePacked(offerToRemove.wantedCardNumbers))) {
-                delete offerList[i];
-                offerList[i] = offerList[offerList.length - 1];
-                offerList.pop();
+                emit OfferRemoved(user, cardNumber);
                 break;
             }
         }
-    }
-    */
-
-    function toString(uint256 value) internal pure returns (string memory) {
-        // Inspired by OraclizeAPI's implementation - MIT licence
-        // https://github.com/OpenZeppelin/openzeppelin-contracts/blob/master/contracts/utils/Strings.sol#L15-L35
-
-        if (value == 0) {
-            return "0";
-        }
-        uint256 temp = value;
-        uint256 digits;
-        while (temp != 0) {
-            digits++;
-            temp /= 10;
-        }
-        bytes memory buffer = new bytes(digits);
-        while (value != 0) {
-            digits -= 1;
-            buffer[digits] = bytes1(uint8(48 + uint256(value % 10)));
-            value /= 10;
-        }
-        return string(buffer);
+        return found;
     }
 
+    function deleteAllOffers() external onlyOwners {
+        for (uint256 i = 0; i < offers.length; i++) {
+            delete offersByUser[offers[i].owner];
+            offersByUserCounter[offers[i].owner].reset();
+
+            delete offersByCardNumber[offers[i].cardNumber];
+            offersByCardNumberCounter[offers[i].cardNumber].reset();
+        }
+        offersTotalCounter.reset();
+        delete offers;
+
+        emit RemovedAllOffers();
+    }
 }

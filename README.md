@@ -60,7 +60,7 @@ NOF_DAI_CONTRACT_NAME='NofTestDAIV2'
 NOF_ALPHA_CONTRACT_NAME='NofAlphaV2'
 NOF_GAMMA_PACKS_CONTRACT_NAME='NofGammaPacksV2'
 NOF_GAMMA_CARDS_CONTRACT_NAME='NofGammaCardsV3'
-NOF_GAMMA_OFFERS_CONTRACT_NAME='NofGammaOffersV3'
+NOF_GAMMA_OFFERS_CONTRACT_NAME='NofGammaOffersV1'
 # Se dejó en el código dos métodos para hacer una firma de datos.
 # El metodo 1 es un custom que se usa de manera local. 
 # El método 2 es el que usa al app en los ambientes, desplegado en 
