@@ -10,34 +10,34 @@ async function createAlphaMockData( addresses: SignerWithAddress[], testDAI: Con
   const packPrice = ethers.BigNumber.from("10000000000000000000")
 
   console.log('\nCreating Alpha Mock Data...\n')
-  console.log('creating new Season...')
-  await alpha.newSeason("T1", packPrice, 60, "T1");
+  console.log('creating new Season T1...')
+  let trx = await alpha.newSeason("T1", packPrice, 60, "T1");
+  await trx.wait()
 
   console.log('getting season data...')
   const seasonData = await alpha.getSeasonData()
   console.log(seasonData)
+  
+  const forLimit = (addresses.length > 5 ? 5 : addresses.length);
+  try {
+    // se cargan las primeras 5 direcciones solamente o menos (si addresses tiene menos)
+    for (let i = 0; (i < forLimit); i++) {
+      console.log('approving for address', addresses[i].address)
+      trx = await testDAI.connect(addresses[i]).approve(alpha.address, packPrice);
 
-  console.log('approving...')
-  await testDAI.approve(alpha.address, packPrice);
+      console.log('minting for address', addresses[i].address)
+      trx = await testDAI.connect(addresses[i])._mint(addresses[i].address, packPrice);
 
-  console.log('minting for address 0...')
-  await testDAI._mint(addresses[0].address, packPrice);
-
-  if (addresses.length > 1) {
-    console.log('minting for the rest of addresses...')
-    for (let i = 1; i < addresses.length; i++) {
-      await testDAI.connect(addresses[i]).approve(alpha.address, packPrice);
-      await testDAI.connect(addresses[i])._mint(addresses[i].address, packPrice);
+      console.log('buying pack, season T1 for address', addresses[i].address); 
+      trx = await alpha.connect(addresses[i]).buyPack(packPrice, "T1");
     }
+  
+    console.log('pasting cards...')
+    trx = await alpha.pasteCards(1, 0);
+  
+  } catch (ex) {
+    console.error ({ ex })
   }
-
-  console.log('buying pack...')
-  await alpha.buyPack(packPrice, "T1");
-  await alpha.connect(addresses[1]).buyPack(packPrice, "T1");
-
-  console.log('pasting cards...')
-  await alpha.pasteCards(1, 0);
-
 }
 
 async function createGammaMockData( 
@@ -62,14 +62,21 @@ async function createGammaMockData(
   console.log(`${addresses[0].address} allowance to use with $ gamaPackAddress (${gammaPacks.address}): `, allowance)
 
   if (isHardhat || isLocalhost) {
-    console.log('buying Pack (estimating gas)...')
-    const estimatedGas = await gammaPacks.estimateGas.buyPack({ from: addresses[0].address });
-
-    console.log('buying Pack, estimated gas', estimatedGas)
-    const gasLimit = estimatedGas.add(20000) // security-margin
+    /*
+    let gasLimit = ethers.BigNumber.from((30000000).toString()) 
+    try {
+      console.log('buying Pack (estimating gas)...')
+      const estimatedGas = await gammaPacks.estimateGas.buyPack({ from: addresses[0].address });
+      console.log('buying Pack, estimated gas', estimatedGas)
+      gasLimit = estimatedGas.add(20000) // security-margin
+    } catch {
+      // none
+    }
+    */
 
     console.log('buying Pack (real operation)...')
-    const tokenId = await gammaPacks.connect(addresses[0]).buyPack({ gasLimit });
+    // const tokenId = await gammaPacks.connect(addresses[0]).buyPack({ gasLimit });
+    const tokenId = await gammaPacks.connect(addresses[0]).buyPack();
     await tokenId.wait()
     console.log('Buyed Pack token Id', tokenId.value)
   
@@ -85,13 +92,16 @@ async function createGammaMockData(
     const packOwner = await gammaPacks.getPackOwner(tokenId.value)
     console.log(`Owner of TokenId ${tokenId.value}: ${packOwner}`)
   
+    /*
     console.log('buying 2 Packs (estimating gas)...')
     const estimatedGasTenPacks = await gammaPacks.estimateGas.buyPacks(2);
     console.log('buying 2 Packs, estimated gas', estimatedGasTenPacks)
-  
+    */
+
     console.log('buying 2 Packs (operation)...')
-    const gasLimitTenPacks = estimatedGasTenPacks.add(20000) // security-margin
-    const trxBuypacks = await gammaPacks.connect(addresses[0]).buyPacks(2, { gasLimit: gasLimitTenPacks });
+    // const gasLimitTenPacks = estimatedGasTenPacks.add(20000) // security-margin
+    // const trxBuypacks = await gammaPacks.connect(addresses[0]).buyPacks(2, { gasLimit: gasLimitTenPacks });
+    const trxBuypacks = await gammaPacks.connect(addresses[0]).buyPacks(2);
     await trxBuypacks.wait()
   
     console.log('Verifing user\'s packs...')
@@ -105,23 +115,6 @@ async function createGammaMockData(
     console.log('Added all cards by 1 user', addresses[1].address)
     const transactionTestCards = await gammaCards.testAddCards({ from: addresses[0].address })
     await transactionTestCards.wait()
-
-    /*
-    //
-    TO-FIX: reason: 'invalid arrayify value',
-    //
-    console.log('Opening Pack with cardData simulating backend signature...')
-    const packNumber = ethers.BigNumber.from(packs[0]).toNumber()
-    const signatureData: any = await generateSignature(signatureMethod, addresses[0].address, packNumber)
-    const { packet_data, signature } = signatureData
-
-    await gammaCards.openPack(packNumber, packet_data, signature)
-    
-    console.log('User\'s packs')
-    for (let i = 0; i < packs.length-1; i++) {
-      console.log(`\tPack ${i+1} Id: ${packs[i]}`)
-    }
-    */
   }
 
 }

@@ -36,12 +36,14 @@ export async function deployContracts(wallets: SignerWithAddress[]) {
   const nofDaiContractName = process.env.NOF_DAI_CONTRACT_NAME ||  'NofTestDAIV2'
   const nofAlphaContractName = process.env.NOF_ALPHA_CONTRACT_NAME || 'NofAlphaV2'
   const nofGammaPacksContractName = process.env.NOF_GAMMA_PACKS_CONTRACT_NAME || 'NofGammaPacksV2'
-  const nofGammaCardsContractName = process.env.NOF_GAMMA_CARDS_CONTRACT_NAME || 'NofGammaCardsV2'
+  const nofGammaCardsContractName = process.env.NOF_GAMMA_CARDS_CONTRACT_NAME || 'NofGammaCardsV3'
+  const nofGammaOffersContractName = process.env.NOF_GAMMA_OFFERS_CONTRACT_NAME || 'NofGammaOffersV3'
 
   const nofDaiContractCurrentAddress = process.env.NOF_DAI_CONTRACT_CURRENT_ADDRESS || ''
   const nofAlphaContractCurrentAddress = process.env.NOF_ALPHA_CONTRACT_CURRENT_ADDRESS || ''
   const nofGammaPacksContractCurrentAddress = process.env.NOF_GAMMA_PACKS_CONTRACT_CURRENT_ADDRESS || ''
   const nofGammaCardsContractCurrentAddress = process.env.NOF_GAMMA_CARDS_CONTRACT_CURRENT_ADDRESS || ''
+  const nofGammaOffersContractCurrentAddress = process.env.NOF_GAMMA_OFFERS_CONTRACT_CURRENT_ADDRESS || ''
 
   const signatureMethod = process.env.SIGNATURE_METHOD || '1'
   const microServiceSignatureWalletsAddresses = (process.env.MICRO_SERVICE_SIGNATURE_WALLETS_ADDRESSES 
@@ -98,24 +100,39 @@ export async function deployContracts(wallets: SignerWithAddress[]) {
       'https://storage.googleapis.com/nof-gamma/T1', microServiceSignatureWalletsAddresses[0]);
     await gammaCards.deployed();
     gammaCardsAddress = gammaCards.address;
-    await gammaPacks.setCardsContract(gammaCardsAddress);
+    await gammaPacks.setGammaCardsContract(gammaCardsAddress);
   } else { 
     gammaCards = await ethers.getContractAt(nofGammaCardsContractName, gammaCardsAddress);
+  }
+
+  let gammaOffersAddress = nofGammaOffersContractCurrentAddress;
+  let gammaOffers;
+  if (gammaOffersAddress === '') {
+    console.log(`deploying contract ${nofGammaOffersContractName}`)
+    const GammaOffers = await ethers.getContractFactory(nofGammaOffersContractName);
+    gammaOffers = await GammaOffers.deploy(gammaCardsAddress);
+    await gammaOffers.deployed();
+    gammaOffersAddress = gammaOffers.address;
+    await gammaCards.setGammaOffersContract(gammaOffersAddress);
+  } else { 
+    gammaOffers = await ethers.getContractAt(nofGammaOffersContractName, gammaOffersAddress);
   }
 
   console.log('\nTestDAI deployed address:', testDaiAddress);
   console.log('Alpha deployed address:', alphaAddress);
   console.log('Gamma deployed Packs address:', gammaPacksAddress);
   console.log('Gamma deployed Cards address:', gammaCardsAddress);
+  console.log('Gamma deployed Offers address:', gammaOffersAddress);
   console.log('Alpha balance receiver setted:', balanceReceiverAddress);
   console.log('Gamma Packs balance receiver setted:', balanceReceiverAddress);
   console.log('Gamma Cards micro-services Signature Wallets Addresses setted:', microServiceSignatureWalletsAddresses[0]);
 
   for (const wallet of wallets) {
-    console.log(`\nMinting some DAIs for address ${wallet.address}`)
+    console.log(`\nMinting some DAIs for these wallet address ${wallet.address}`)
     await testDAI._mint(wallet.address, ethers.BigNumber.from('900000000000000000000'));
   }
 
+  // 0x20517cf8C140F7F393F92cEa6158f57385a75733,0x4c46a8a7cf253e2fb7afe816a4bc273fbdd46c8c,0xfc355c1731a9f4e49a2fe7f9412aa22fa8fde198,0x1836acb4f313f21cbb86ffe2e8e9dfe2d853a657,0x422db8aef9748680d13e29d3495a66254f5e9061
   // se contempla si tiene más de 1 agregado, dado que el primero (posición 0), ya se incorpora en el deploy de gammaCards
   if (microServiceSignatureWalletsAddresses.length > 1) {
     // Se skipea la primera posición que fue incorporada en el deploy de gammaCards
@@ -149,11 +166,11 @@ export async function deployContracts(wallets: SignerWithAddress[]) {
 
   console.log('\nFacility text to use in .env in nof-landing:');
   console.log(`
-    NEXT_PUBLIC_DAI_ADDRESS='${testDaiAddress}'
-    NEXT_PUBLIC_ALPHA_ADDRESS='${alpha.address}'
-    NEXT_PUBLIC_GAMMA_PACKS_ADDRESS='${gammaPacks.address}'
-    NEXT_PUBLIC_GAMMA_CARDS_ADDRESS='${gammaCards.address}'
-    NEXT_PUBLIC_ADMIN_ACCOUNTS='${wallets[0].address}'
+  NEXT_PUBLIC_DAI_ADDRESS='${testDaiAddress}'
+  NEXT_PUBLIC_ALPHA_ADDRESS='${alpha.address}'
+  NEXT_PUBLIC_GAMMA_PACKS_ADDRESS='${gammaPacks.address}'
+  NEXT_PUBLIC_GAMMA_CARDS_ADDRESS='${gammaCards.address}'
+  NEXT_PUBLIC_ADMIN_ACCOUNTS='${wallets[0].address}'
   `)
 
   return { testDAI, alpha, gammaPacks, gammaCards, signatureMethod };

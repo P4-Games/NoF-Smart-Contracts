@@ -5,10 +5,11 @@ import { nofDaiContractName, nofAlphaContractName } from './common'
 
 describe('NoF - Alpha Tests', function () {
   async function deployNofFixture() {
-    console.log('\tRunning deployNofFixture...')
+    console.log('\tRunning deployNofFixture (alpha)...')
 
-    const [address0, address1, address2, address3, address4, address5, address6, address7, address8, address9] =
-      await ethers.getSigners()
+    const [
+      address0, address1, address2, address3, address4, address5, 
+      address6, address7, address8, address9] = await ethers.getSigners()
 
     const addresses = [
       address0,
@@ -117,12 +118,7 @@ describe('NoF - Alpha Tests', function () {
     await nofAlpha.connect(address9).pasteCards(58, 54)
     await nofAlpha.connect(address9).pasteCards(59, 54)
 
-    const seasonCards = await nofAlpha.getSeasonCards('T1')
-    const seasonAlbums = await nofAlpha.getSeasonAlbums('T1')
-    console.log(`\tSeason Cards: ${seasonCards}`)
-    console.log(`\tSeason Albums: ${seasonAlbums}`)
-
-    console.log('\tEnd deployNofFixture')
+    console.log('\tEnd deployNofFixture (alpha)')
     return {
       testDAI,
       nofAlpha,
