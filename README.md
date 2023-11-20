@@ -59,8 +59,8 @@ PRIVATE_KEY={your private key to deploy SCs}
 NOF_DAI_CONTRACT_NAME='NofTestDAIV2'
 NOF_ALPHA_CONTRACT_NAME='NofAlphaV2'
 NOF_GAMMA_PACKS_CONTRACT_NAME='NofGammaPacksV2'
-NOF_GAMMA_CARDS_CONTRACT_NAME='NofGammaCardsV2'
-
+NOF_GAMMA_CARDS_CONTRACT_NAME='NofGammaCardsV3'
+NOF_GAMMA_OFFERS_CONTRACT_NAME='NofGammaOffersV3'
 # Se dejó en el código dos métodos para hacer una firma de datos.
 # El metodo 1 es un custom que se usa de manera local. 
 # El método 2 es el que usa al app en los ambientes, desplegado en 
@@ -89,6 +89,7 @@ NOF_DAI_CONTRACT_CURRENT_ADDRESS=''
 NOF_ALPHA_CONTRACT_CURRENT_ADDRESS=''
 NOF_GAMMA_PACKS_CONTRACT_CURRENT_ADDRESS=''
 NOF_GAMMA_CARDS_CONTRACT_CURRENT_ADDRESS=''
+NOF_GAMMA_OFFERS_CONTRACT_CURRENT_ADDRESS=''
 
 ```
 
@@ -121,3 +122,10 @@ solhint 'contracts/**/*.sol'
 # To install slither =>  https://github.com/crytic/slither#how-to-install
 slither .
 ```
+
+---
+
+
+## Gamma Logic Detaills
+
+See detaills about gamma Smart Contracts in this [file](./.doc/contracts-info.md)
