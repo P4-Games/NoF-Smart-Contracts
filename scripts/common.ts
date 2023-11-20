@@ -166,14 +166,15 @@ export async function deployContracts(wallets: SignerWithAddress[]) {
 
   console.log('\nFacility text to use in .env in nof-landing:');
   console.log(`
-  NEXT_PUBLIC_DAI_ADDRESS='${testDaiAddress}'
-  NEXT_PUBLIC_ALPHA_ADDRESS='${alpha.address}'
-  NEXT_PUBLIC_GAMMA_PACKS_ADDRESS='${gammaPacks.address}'
-  NEXT_PUBLIC_GAMMA_CARDS_ADDRESS='${gammaCards.address}'
-  NEXT_PUBLIC_ADMIN_ACCOUNTS='${wallets[0].address}'
+    NEXT_PUBLIC_ADMIN_ACCOUNTS='${wallets[0].address}'
+    NEXT_PUBLIC_DAI_ADDRESS='${testDaiAddress}'
+    NEXT_PUBLIC_ALPHA_ADDRESS='${alpha.address}'
+    NEXT_PUBLIC_GAMMA_PACKS_ADDRESS='${gammaPacks.address}'
+    NEXT_PUBLIC_GAMMA_CARDS_ADDRESS='${gammaCards.address}'
+    NEXT_PUBLIC_GAMMA_OFFERS_ADDRESS='${gammaOffers.address}'
   `)
 
-  return { testDAI, alpha, gammaPacks, gammaCards, signatureMethod };
+  return { testDAI, alpha, gammaPacks, gammaCards, gammaOffers, signatureMethod };
   
 }
 
