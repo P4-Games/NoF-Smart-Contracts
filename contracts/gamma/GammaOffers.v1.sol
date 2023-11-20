@@ -12,7 +12,7 @@ interface IGammaCardsContract {
   function exchangeCardsOffer(address from, uint8 cardNumberFrom, address to, uint8 cardNumberTo) external;
 }
 
-contract NofGammaOffersV3 is Ownable {
+contract NofGammaOffersV1 is Ownable {
     using Counters for Counters.Counter;
 
     IGammaCardsContract public gammaCardsContract;
