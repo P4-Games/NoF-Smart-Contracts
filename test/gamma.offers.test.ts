@@ -5,34 +5,34 @@ import { deployNofFixture, getOnePackData, getCardsByUserType } from './common'
 
 describe('NoF - Gamma Offers Tests', function () {
 
-  it('addOwner should revert when address is invalid', async () => {
+  it('Add owner should revert when the address is invalid', async () => {
     const { gammaOffers } = await loadFixture(deployNofFixture)
     await expect(gammaOffers.addOwner(ethers.constants.AddressZero)).to.be.revertedWith("Invalid address.")
   });
 
-  it('addOwner should revert when adding an existing owner', async () => {
+  it('Add owner should revert when adding an existing owner', async () => {
     const { gammaOffers, address1 } = await loadFixture(deployNofFixture)
     await gammaOffers.addOwner(address1.address)
     await expect(gammaOffers.addOwner(address1.address)).to.be.revertedWith("Address is already an owner.")
   });
 
-  it('removeOwner should revert when address is invalid', async () => {
+  it('Remove owner should revert when address is invalid', async () => {
     const { gammaOffers } = await loadFixture(deployNofFixture)
     await expect(gammaOffers.removeOwner(ethers.constants.AddressZero)).to.be.revertedWith("Invalid address.")
   });
 
-  it('removeOwner should revert when removing self as an owner', async () => {
+  it('Remove owner should revert when removing self as an owner', async () => {
     const { gammaOffers, address0 } = await loadFixture(deployNofFixture)
     await expect(gammaOffers.removeOwner(address0.address)).to.be.revertedWith("You cannot remove yourself as an owner.")
   });
 
-  it('removeOwner should revert when removing a non-existing owner', async () => {
+  it('Remove owner should revert when removing a non-existing owner', async () => {
     const { gammaOffers } = await loadFixture(deployNofFixture)
     const nonExistingOwner = ethers.Wallet.createRandom().address
     await expect(gammaOffers.removeOwner(nonExistingOwner)).to.be.revertedWith("Address is not an owner.")
   });
 
-  it('createOffer should revert when gammaCardsContract is not set', async () => {
+  it('Create Offer should revert when gammaCardsContract is not set', async () => {
     const { gammaPacks, gammaCards, gammaOffers, address0 } = await loadFixture(deployNofFixture)
     const getCardsByUserResult: getCardsByUserType = await getOnePackData(gammaPacks, gammaCards, address0)   
     await expect(
@@ -40,7 +40,7 @@ describe('NoF - Gamma Offers Tests', function () {
     ).to.be.revertedWith('Invalid address.')
   })
   
-  it('createOffer should revert when cardNumber in wantedCardNumbers', async () => {
+  it('Create Offer should revert when cardNumber in wantedCardNumbers', async () => {
     const { gammaPacks, gammaCards, gammaOffers, address0 } = await loadFixture(deployNofFixture)
     const getCardsByUserResult: getCardsByUserType = await getOnePackData(gammaPacks, gammaCards, address0)
     await expect(
@@ -48,7 +48,7 @@ describe('NoF - Gamma Offers Tests', function () {
     ).to.be.revertedWith('The cardNumber cannot be in wantedCardNumbers.')
   })
   
-  it('createOffer should revert when user does not have cardNumber', async () => {
+  it('Create Offer should revert when user does not have cardNumber', async () => {
     const { gammaPacks, gammaCards, gammaOffers, address0 } = await loadFixture(deployNofFixture)
     const getCardsByUserResult: getCardsByUserType = await getOnePackData(gammaPacks, gammaCards, address0)
     await expect(
@@ -56,7 +56,7 @@ describe('NoF - Gamma Offers Tests', function () {
     ).to.be.revertedWith('You does not have that card.')
   })
 
-  it('createOffer should revert when user repeats the cardNumber', async () => {
+  it('Create Offer should revert when user repeats the cardNumber', async () => {
     const { gammaPacks, gammaCards, gammaOffers, address0 } = await loadFixture(deployNofFixture)
     const getCardsByUserResult: getCardsByUserType = await getOnePackData(gammaPacks, gammaCards, address0)
 
@@ -85,7 +85,7 @@ describe('NoF - Gamma Offers Tests', function () {
 
   })
 
-  it('should retrieve an offer using getOfferByIndex', async () => {
+  it('Should retrieve an offer using getOfferByIndex', async () => {
     const { gammaPacks, gammaCards, gammaOffers, address0 } = await loadFixture(deployNofFixture)
     const getCardsByUserResult: getCardsByUserType = await getOnePackData(gammaPacks, gammaCards, address0)
     await gammaOffers.createOffer(getCardsByUserResult[0][0], [1,2,24,4,5,6,7,8])
@@ -94,7 +94,7 @@ describe('NoF - Gamma Offers Tests', function () {
     await expect(offers[0].offerId).not.equal(0)
   })
 
-  it('should retrieve an offer using getOfferByOfferId', async () => {
+  it('Should retrieve an offer using getOfferByOfferId', async () => {
     const { gammaPacks, gammaCards, gammaOffers, address0 } = await loadFixture(deployNofFixture)
     const getCardsByUserResult: getCardsByUserType = await getOnePackData(gammaPacks, gammaCards, address0)
     await gammaOffers.createOffer(getCardsByUserResult[0][0], [1,2,24,4,5,6,7,8])
@@ -103,7 +103,7 @@ describe('NoF - Gamma Offers Tests', function () {
     await expect(offers[0].offerId).not.equal(0)
   })
 
-  it('should retrieve an offer using getOffersByUser', async () => {
+  it('Should retrieve an offer using getOffersByUser', async () => {
     const { gammaPacks, gammaCards, gammaOffers, address0 } = await loadFixture(deployNofFixture)
     const getCardsByUserResult: getCardsByUserType = await getOnePackData(gammaPacks, gammaCards, address0)
     await gammaOffers.createOffer(getCardsByUserResult[0][0], [1,2,24,4,5,6,7,8])
@@ -112,7 +112,7 @@ describe('NoF - Gamma Offers Tests', function () {
     await expect(offers[0].offerId).not.equal(0)
   })
 
-  it('should retrieve an offer using getOffersByCardNumber', async () => {
+  it('Should retrieve an offer using getOffersByCardNumber', async () => {
     const { gammaPacks, gammaCards, gammaOffers, address0 } = await loadFixture(deployNofFixture)
     const getCardsByUserResult: getCardsByUserType = await getOnePackData(gammaPacks, gammaCards, address0)
     await gammaOffers.createOffer(getCardsByUserResult[0][0], [1,2,24,4,5,6,7,8])
@@ -122,7 +122,7 @@ describe('NoF - Gamma Offers Tests', function () {
     await expect(offers[0].cardNumber).to.be.equal(getCardsByUserResult[0][0])
   })
 
-  it('should retrieve an offer using getOfferByUserAndCardNumber', async () => {
+  it('Should retrieve an offer using getOfferByUserAndCardNumber', async () => {
     const { gammaPacks, gammaCards, gammaOffers, address0 } = await loadFixture(deployNofFixture)
     const getCardsByUserResult: getCardsByUserType = await getOnePackData(gammaPacks, gammaCards, address0)
     const cardNumber = getCardsByUserResult[0][0]
@@ -133,7 +133,7 @@ describe('NoF - Gamma Offers Tests', function () {
     await expect(offers.owner).to.be.equal(address0.address)
   })
 
-  it('should allow to delete an offer by user and cardNumber', async () => {
+  it('Should allow to delete an offer by user and cardNumber', async () => {
     const { gammaPacks, gammaCards, gammaOffers, address0 } = await loadFixture(deployNofFixture)
     const getCardsByUserResult: getCardsByUserType = await getOnePackData(gammaPacks, gammaCards, address0)
     const card1 = getCardsByUserResult[0][0];
@@ -179,7 +179,7 @@ describe('NoF - Gamma Offers Tests', function () {
 
   });
 
-  it('should delete all offers', async () => {
+  it('Should delete all offers', async () => {
     const { gammaPacks, gammaCards, gammaOffers, address0 } = await loadFixture(deployNofFixture)
     const getCardsByUserResult: getCardsByUserType = await getOnePackData(gammaPacks, gammaCards, address0)
     

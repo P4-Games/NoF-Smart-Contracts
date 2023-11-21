@@ -15,66 +15,66 @@ describe('NoF - Gamma Cards Tests', function () {
     return cardData
   }
 
-  it('addOwner should revert when address is invalid', async () => {
+  it('Add Owner should revert when the address is invalid', async () => {
     const { gammaCards } = await loadFixture(deployNofFixture)
     await expect(gammaCards.addOwner(ethers.constants.AddressZero)).to.be.revertedWith("Invalid address.")
   });
 
-  it('addOwner should revert when adding an existing owner', async () => {
+  it('Add Owner should revert when adding an existing owner', async () => {
     const { gammaCards, address1 } = await loadFixture(deployNofFixture)
     await gammaCards.addOwner(address1.address)
     await expect(gammaCards.addOwner(address1.address)).to.be.revertedWith("Address is already an owner.")
   });
 
-  it('removeOwner should revert when address is invalid', async () => {
+  it('Remove Owner should revert when the address is invalid', async () => {
     const { gammaCards } = await loadFixture(deployNofFixture)
     await expect(gammaCards.removeOwner(ethers.constants.AddressZero)).to.be.revertedWith("Invalid address.")
   });
 
-  it('removeOwner should revert when removing self as an owner', async () => {
+  it('Remove Owner should revert when removing self as an owner', async () => {
     const { gammaCards, address0 } = await loadFixture(deployNofFixture)
     await expect(gammaCards.removeOwner(address0.address)).to.be.revertedWith("You cannot remove yourself as an owner.")
   });
 
-  it('removeOwner should revert when removing a non-existing owner', async () => {
+  it('Remove Owner should revert when removing a non-existing owner', async () => {
     const { gammaCards } = await loadFixture(deployNofFixture)
     const nonExistingOwner = ethers.Wallet.createRandom().address
     await expect(gammaCards.removeOwner(nonExistingOwner)).to.be.revertedWith("Address is not an owner.")
   });
 
-  it('Pack could be open by its owner (card-contract)', async () => {
+  it('Pack could opened by its owner (card-contract)', async () => {
     const { gammaPacks, gammaCards, address0 } = await loadFixture(deployNofFixture)
     const getCardsByUserResult: getCardsByUserType = await getOnePackData(gammaPacks, gammaCards, address0)
     expect(getCardsByUserResult.length).not.equal(0)
   })
 
-  it('addSigner should revert when address is invalid', async () => {
+  it('Add signer should revert when the address is invalid', async () => {
     const { gammaCards } = await loadFixture(deployNofFixture)
     await expect(gammaCards.addSigner(ethers.constants.AddressZero)).to.be.revertedWith("Invalid address.")
   });
 
-  it('addSigner should revert when adding an existing signer', async () => {
+  it('Add signer should revert when adding an existing signer', async () => {
     const { gammaCards, address0 } = await loadFixture(deployNofFixture)
     await expect(gammaCards.addSigner(address0.address)).to.be.revertedWith("Address is already an owner.")
   });
 
-  it('removeSigner should revert when address is invalid', async () => {
+  it('Remove signer should revert when the address is invalid', async () => {
     const { gammaCards } = await loadFixture(deployNofFixture)
     await expect(gammaCards.removeSigner(ethers.constants.AddressZero)).to.be.revertedWith("Invalid address.")
   });
 
-  it('removeSigner should revert when removing self as a signer', async () => {
+  it('Remove signer should revert when removing self as a signer', async () => {
     const { gammaCards, address0 } = await loadFixture(deployNofFixture)
     await expect(gammaCards.removeSigner(address0.address)).to.be.revertedWith("You cannot remove yourself as a signer.")
   });
 
-  it('removeSigner should revert when removing a non-existing signer', async () => {
+  it('Remove signer should revert when removing a non-existing signer', async () => {
     const { gammaCards } = await loadFixture(deployNofFixture)
     const nonExistingSigner = ethers.Wallet.createRandom().address
     await expect(gammaCards.removeSigner(nonExistingSigner)).to.be.revertedWith("Address is not an signer.")
   });
 
-  it('should not allow to mint a card when has an offer and flag requireOfferValidationInMint is true', async () => {
+  it('Should not allow to mint a card when has an offer and flag requireOfferValidationInMint is true', async () => {
     const { gammaPacks, gammaCards, gammaOffers, address0 } = await loadFixture(deployNofFixture)
     const getCardsByUserResult: getCardsByUserType = await getOnePackData(gammaPacks, gammaCards, address0)
     
@@ -89,7 +89,7 @@ describe('NoF - Gamma Cards Tests', function () {
     ).to.be.revertedWith('This card has an offer, it cannot be minted.')
   });
 
-  it('should allow to mint a card when has an offer and flag requireOfferValidationInMint is false', async () => {
+  it('Should allow minting a card when has an offer and flag requireOfferValidationInMint is false', async () => {
     const { gammaPacks, gammaCards, gammaOffers, address0 } = await loadFixture(deployNofFixture)
     const getCardsByUserResult: getCardsByUserType = await getOnePackData(gammaPacks, gammaCards, address0)
     
@@ -102,7 +102,7 @@ describe('NoF - Gamma Cards Tests', function () {
     await gammaCards.mintCard(getCardsByUserResult[0][0]);
   });
 
-  it('should allow to mint a card when has an offer, qantity > 1 and flag requireOfferValidationInMint is true', async () => {
+  it('Should allow to mint a card when has an offer, quantity > 1 and flag requireOfferValidationInMint is true', async () => {
     const { gammaPacks, gammaCards, gammaOffers, address0 } = await loadFixture(deployNofFixture)
     const getCardsByUserResult1: getCardsByUserType = await getOnePackData(gammaPacks, gammaCards, address0)
     // another pack with the same cards.
@@ -122,7 +122,7 @@ describe('NoF - Gamma Cards Tests', function () {
     await expect(quantity).to.be.equal(1);
   });
 
-  it('should not allow to transfer a card when has an offer and flag requireOfferValidationInTransfer is true', async () => {
+  it('Should not allow the transfer a card when has an offer and flag requireOfferValidationInTransfer is true', async () => {
     const { gammaPacks, gammaCards, gammaOffers, address0, address1 } = await loadFixture(deployNofFixture)
     const getCardsByUserResult: getCardsByUserType = await getOnePackData(gammaPacks, gammaCards, address0)
     
@@ -137,7 +137,7 @@ describe('NoF - Gamma Cards Tests', function () {
     ).to.be.revertedWith('This card has an offer, it cannot be transfered.')
   });
 
-  it('should allow to transfer a card when has an offer and flag requireOfferValidationInTransfer is false', async () => {
+  it('Should allow the transfer a card when has an offer and flag requireOfferValidationInTransfer is false', async () => {
     const { gammaPacks, gammaCards, gammaOffers, address0, address1 } = await loadFixture(deployNofFixture)
     const getCardsByUserResult: getCardsByUserType = await getOnePackData(gammaPacks, gammaCards, address0)
     
@@ -149,7 +149,7 @@ describe('NoF - Gamma Cards Tests', function () {
     await gammaCards.transferCard(address1.address, getCardsByUserResult[0][0]);
   });
 
-  it('should allow to transfer a card when has an offer, qantity > 1 and flag requireOfferValidationInTransfer is true', async () => {
+  it('Should allow the transfer a card when has an offer, quantity > 1 and flag requireOfferValidationInTransfer is true', async () => {
     const { gammaPacks, gammaCards, gammaOffers, address0, address1 } = await loadFixture(deployNofFixture)
     const getCardsByUserResult1: getCardsByUserType = await getOnePackData(gammaPacks, gammaCards, address0)
     // another pack with the same cards.
@@ -169,7 +169,7 @@ describe('NoF - Gamma Cards Tests', function () {
     await expect(quantity).to.be.equal(1);
   });
 
-  it('should allow to transfer several cards', async () => {
+  it('Should allow to transfer several cards', async () => {
     const { gammaPacks, gammaCards, gammaOffers, address0, address1 } = await loadFixture(deployNofFixture)
     const getCardsByUserResult1: getCardsByUserType = await getOnePackData(gammaPacks, gammaCards, address0)
   
