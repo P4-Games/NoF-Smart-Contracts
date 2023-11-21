@@ -102,6 +102,26 @@ describe('NoF - Gamma Cards Tests', function () {
     await gammaCards.mintCard(getCardsByUserResult[0][0]);
   });
 
+  it('should allow to mint a card when has an offer, qantity > 1 and flag requireOfferValidationInMint is true', async () => {
+    const { gammaPacks, gammaCards, gammaOffers, address0 } = await loadFixture(deployNofFixture)
+    const getCardsByUserResult1: getCardsByUserType = await getOnePackData(gammaPacks, gammaCards, address0)
+    // another pack with the same cards.
+    await getOnePackData(gammaPacks, gammaCards, address0)
+
+    const cardNumber = getCardsByUserResult1[0][0];
+    let quantity = await gammaCards.getCardQuantityByUser(address0.address, cardNumber);
+    await expect(quantity).to.be.equal(2);
+
+    await gammaOffers.createOffer(cardNumber, [1,2,24,4,5,6,7,8])
+    let offers = await gammaOffers.getOffers();
+    await expect(offers.length).to.not.be.equal(0);
+
+    await gammaCards.changeRequireOfferValidationInMint(true);
+    await gammaCards.mintCard(cardNumber);
+    quantity = await gammaCards.getCardQuantityByUser(address0.address, cardNumber);
+    await expect(quantity).to.be.equal(1);
+  });
+
   it('should not allow to transfer a card when has an offer and flag requireOfferValidationInTransfer is true', async () => {
     const { gammaPacks, gammaCards, gammaOffers, address0, address1 } = await loadFixture(deployNofFixture)
     const getCardsByUserResult: getCardsByUserType = await getOnePackData(gammaPacks, gammaCards, address0)
@@ -117,12 +137,11 @@ describe('NoF - Gamma Cards Tests', function () {
     ).to.be.revertedWith('This card has an offer, it cannot be transfered.')
   });
 
-  it('should allow to mint a card when has an offer and flag requireOfferValidationInTransfer is false', async () => {
+  it('should allow to transfer a card when has an offer and flag requireOfferValidationInTransfer is false', async () => {
     const { gammaPacks, gammaCards, gammaOffers, address0, address1 } = await loadFixture(deployNofFixture)
     const getCardsByUserResult: getCardsByUserType = await getOnePackData(gammaPacks, gammaCards, address0)
     
     await gammaOffers.createOffer(getCardsByUserResult[0][0], [1,2,24,4,5,6,7,8])
-    
     let offers = await gammaOffers.getOffers();
     await expect(offers.length).to.not.be.equal(0);
 
@@ -130,5 +149,42 @@ describe('NoF - Gamma Cards Tests', function () {
     await gammaCards.transferCard(address1.address, getCardsByUserResult[0][0]);
   });
 
+  it('should allow to transfer a card when has an offer, qantity > 1 and flag requireOfferValidationInTransfer is true', async () => {
+    const { gammaPacks, gammaCards, gammaOffers, address0, address1 } = await loadFixture(deployNofFixture)
+    const getCardsByUserResult1: getCardsByUserType = await getOnePackData(gammaPacks, gammaCards, address0)
+    // another pack with the same cards.
+    await getOnePackData(gammaPacks, gammaCards, address0)
+
+    const cardNumber = getCardsByUserResult1[0][0];
+    let quantity = await gammaCards.getCardQuantityByUser(address0.address, cardNumber);
+    await expect(quantity).to.be.equal(2);
+
+    await gammaOffers.createOffer(cardNumber, [1,2,24,4,5,6,7,8])
+    let offers = await gammaOffers.getOffers();
+    await expect(offers.length).to.not.be.equal(0);
+
+    await gammaCards.changeRequireOfferValidationInTransfer(true);
+    await gammaCards.transferCard(address1.address, cardNumber);
+    quantity = await gammaCards.getCardQuantityByUser(address0.address, cardNumber);
+    await expect(quantity).to.be.equal(1);
+  });
+
+  it('should allow to transfer several cards', async () => {
+    const { gammaPacks, gammaCards, gammaOffers, address0, address1 } = await loadFixture(deployNofFixture)
+    const getCardsByUserResult1: getCardsByUserType = await getOnePackData(gammaPacks, gammaCards, address0)
+  
+    const cardNumber1 = getCardsByUserResult1[0][0];
+    const cardNumber2 = getCardsByUserResult1[0][1];
+    const cardNumber3 = getCardsByUserResult1[0][2];
+    const cards = [cardNumber1, cardNumber2, cardNumber3];
+
+    await gammaCards.transferCards(address1.address, cards);
+    const quantity1 = await gammaCards.getCardQuantityByUser(address0.address, cardNumber1);
+    const quantity2 = await gammaCards.getCardQuantityByUser(address0.address, cardNumber2);
+    const quantity3 = await gammaCards.getCardQuantityByUser(address0.address, cardNumber3);
+    await expect(quantity1).to.be.equal(0);
+    await expect(quantity2).to.be.equal(0);
+    await expect(quantity3).to.be.equal(0);
+  });
 
 })
