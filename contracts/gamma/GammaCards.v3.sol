@@ -16,6 +16,7 @@ interface IgammaPacksContract {
 }
 
 interface IgammaOffersContract {
+    function hasOffer(address user, uint8 cardNumber) external view returns (bool);
     function getOfferByUserAndCardNumber(address user, uint8 cardNumber) external view 
         returns ( uint256, uint8, uint8[] memory , address );
 }
@@ -37,6 +38,8 @@ contract NofGammaCardsV3 is ERC721, ERC721URIStorage, ERC721Burnable, Ownable {
     string public mainUri;
     string public secondaryUri;
     bool public requireOpenPackSignerValidation;
+    bool public requireOfferValidationInMint;
+    bool public requireOfferValidationInTransfer;
 
     mapping(address => bool) public owners;
     mapping(address => bool) public signers;
@@ -78,6 +81,9 @@ contract NofGammaCardsV3 is ERC721, ERC721URIStorage, ERC721Burnable, Ownable {
         secondaryUri = string(abi.encodePacked(bytes(baseUri), bytes("/"), bytes("121"), bytes("F.json")));
         signers[_signer] = true;
         requireOpenPackSignerValidation = false;
+        requireOfferValidationInMint = true;
+        requireOfferValidationInTransfer = true;
+
         for(uint256 i;i<122;i++){
             cardsInventory[i] = 1;
         }
@@ -134,7 +140,15 @@ contract NofGammaCardsV3 is ERC721, ERC721URIStorage, ERC721Burnable, Ownable {
     function changeRequireOpenPackSignerValidation(bool required) external onlyOwners {
         requireOpenPackSignerValidation = required;
     }
-    
+
+    function changeRequireOfferValidationInMint(bool required) external onlyOwners {
+        requireOfferValidationInMint = required;
+    }
+
+    function changeRequireOfferValidationInTransfer(bool required) external onlyOwners {
+        requireOfferValidationInTransfer = required;
+    }
+
     function hasCardByOffer(address user, uint8 cardNumber) external view onlyGammaOffersContract returns (bool has) {
         return cardsByUser[user][cardNumber] > 0;
     }
@@ -212,6 +226,12 @@ contract NofGammaCardsV3 is ERC721, ERC721URIStorage, ERC721Burnable, Ownable {
         require(cardsByUser[msg.sender][cardNumber] > 0, "You does not have this card.");
         require(to != msg.sender, "Own transfer not allowed.");
         require(to != address(0), "Invalid address.");
+                
+        if (requireOfferValidationInTransfer) {
+            bool hasOffer = gammaOffersContract.hasOffer(msg.sender, cardNumber);
+            require (!hasOffer, "This card has an offer, it cannot be transfered.");
+        }
+        
         cardsByUser[msg.sender][cardNumber]--;
         cardsByUser[to][cardNumber]++;
     }
@@ -287,6 +307,12 @@ contract NofGammaCardsV3 is ERC721, ERC721URIStorage, ERC721Burnable, Ownable {
 
     function mintCard(uint8 cardNum) public {
         require(cardsByUser[msg.sender][cardNum] > 0, "You does not have this card.");
+        
+        if (requireOfferValidationInMint) {
+            bool hasOffer = gammaOffersContract.hasOffer(msg.sender, cardNum);
+            require (!hasOffer, "This card has an offer, it cannot be minted.");
+        }
+        
         cardsByUser[msg.sender][cardNum]--;
         
         string memory uri = 
@@ -331,28 +357,32 @@ contract NofGammaCardsV3 is ERC721, ERC721URIStorage, ERC721Burnable, Ownable {
         return cardsByUser[msg.sender][cardNum] > 0;
     }
      
-    function getCardsByUser(address user) public view returns (uint8[] memory, uint8[] memory) {
+    function getCardsByUser(address user) public view returns (uint8[] memory, uint8[] memory, bool[] memory) {
         uint8[] memory cardNumbers = new uint8[](121);
         uint8[] memory quantities = new uint8[](121);
+        bool[] memory offers = new bool[](121);
         uint8 index = 0;
         
         for (uint8 i = 0; i <= 119; i++) {
             if (cardsByUser[user][i] > 0) {
                 cardNumbers[index] = i;
                 quantities[index] = cardsByUser[user][i];
+                offers[index] = gammaOffersContract.hasOffer(user, i);
                 index++;
             }
         }
         
         uint8[] memory userCardNumbers = new uint8[](index);
         uint8[] memory userCardsQtty = new uint8[](index);
+        bool[] memory userCardsOffers = new bool[](index);
         
         for (uint8 j = 0; j < index; j++) {
             userCardNumbers[j] = cardNumbers[j];
             userCardsQtty[j] = quantities[j];
+            userCardsOffers[j] = offers[j];
         }
         
-        return (userCardNumbers, userCardsQtty);
+        return (userCardNumbers, userCardsQtty, userCardsOffers);
     }
 
     // The following functions are overrides required by Solidity.
