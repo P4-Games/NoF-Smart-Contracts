@@ -229,7 +229,13 @@ contract NofGammaCardsV3 is ERC721, ERC721URIStorage, ERC721Burnable, Ownable {
                 
         if (requireOfferValidationInTransfer) {
             bool hasOffer = gammaOffersContract.hasOffer(msg.sender, cardNumber);
-            require (!hasOffer, "This card has an offer, it cannot be transfered.");
+            bool hasMoreThanOne = cardsByUser[msg.sender][cardNumber] > 1;
+            /* 
+            The user can only make an offer for one letter and in that case he cannot mint or transfer it.
+            If you have more than one copy (quantity > 1) of that card, you must be able to mint 
+            or transfer the rest.
+            */
+            require (!hasOffer || hasMoreThanOne, "This card has an offer, it cannot be transfered.");
         }
         
         cardsByUser[msg.sender][cardNumber]--;
@@ -244,6 +250,18 @@ contract NofGammaCardsV3 is ERC721, ERC721URIStorage, ERC721Burnable, Ownable {
             require(cardsByUser[msg.sender][cardNumbers[i]] > 0, "You does not have this card.");
             cardsByUser[msg.sender][cardNumbers[i]]--;
             cardsByUser[to][cardNumbers[i]]++;
+                                
+            if (requireOfferValidationInTransfer) {
+                bool hasOffer = gammaOffersContract.hasOffer(msg.sender, cardNumbers[i]);
+                bool hasMoreThanOne = cardsByUser[msg.sender][cardNumbers[i]] > 1;
+                /* 
+                The user can only make an offer for one letter and in that case he cannot mint or transfer it.
+                If you have more than one copy (quantity > 1) of that card, you must be able to mint 
+                or transfer the rest.
+                */
+                require (!hasOffer || hasMoreThanOne, "This card has an offer, it cannot be transfered.");
+            }
+            
         }
     }
 
@@ -310,7 +328,13 @@ contract NofGammaCardsV3 is ERC721, ERC721URIStorage, ERC721Burnable, Ownable {
         
         if (requireOfferValidationInMint) {
             bool hasOffer = gammaOffersContract.hasOffer(msg.sender, cardNum);
-            require (!hasOffer, "This card has an offer, it cannot be minted.");
+            bool hasMoreThanOne = cardsByUser[msg.sender][cardNum] > 1;
+            /* 
+            The user can only make an offer for one letter and in that case he cannot mint or transfer it.
+            If you have more than one copy (quantity > 1) of that card, you must be able to mint 
+            or transfer the rest.
+            */
+            require (!hasOffer || hasMoreThanOne, "This card has an offer, it cannot be minted.");
         }
         
         cardsByUser[msg.sender][cardNum]--;
@@ -357,6 +381,10 @@ contract NofGammaCardsV3 is ERC721, ERC721URIStorage, ERC721Burnable, Ownable {
         return cardsByUser[msg.sender][cardNum] > 0;
     }
      
+    function getCardQuantityByUser(address user, uint8 cardNum) public view returns (uint8) {
+        return cardsByUser[user][cardNum];
+    }
+
     function getCardsByUser(address user) public view returns (uint8[] memory, uint8[] memory, bool[] memory) {
         uint8[] memory cardNumbers = new uint8[](121);
         uint8[] memory quantities = new uint8[](121);
