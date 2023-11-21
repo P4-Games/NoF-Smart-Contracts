@@ -3,7 +3,7 @@ pragma solidity ^0.8.16;
 
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/utils/Counters.sol";
-// import "hardhat/console.sol";
+import "hardhat/console.sol";
 
 interface IGammaCardsContract {
   function hasCardByOffer(address user, uint8 cardNumber) external returns (bool has);
@@ -21,7 +21,8 @@ contract NofGammaOffersV1 is Ownable {
     uint256 maxOffersAllowed = uint256(5000);
     uint256 maxOffersByUserAllowed = uint256(5);
     uint256 maxCardNumbersAllowed = uint256(120);
-    
+    bool removeCardInInventoryWhenOffer = false;
+
     struct Offer {
         uint256 offerId;
         uint8 cardNumber;
@@ -46,6 +47,7 @@ contract NofGammaOffersV1 is Ownable {
     constructor(address _cardsContract) {
         gammaCardsContract = IGammaCardsContract(_cardsContract);
         owners[msg.sender] = true;
+        removeCardInInventoryWhenOffer = false;
     }
 
     modifier onlyCardsContract {
@@ -91,6 +93,10 @@ contract NofGammaOffersV1 is Ownable {
         maxCardNumbersAllowed = _maxCardNumbersAllowed;
     }
 
+    function changeRemoveCardinInventoryWhenOffer(bool _value) external onlyOwners {
+        removeCardInInventoryWhenOffer = _value;
+    }
+
     function createOffer(uint8 cardNumber, uint8[] memory wantedCardNumbers) public {
         require(address(gammaCardsContract) != address(0), "GammaCardsContract not set."); 
         require(offersByUserCounter[msg.sender].current() < maxOffersByUserAllowed, "User has reached the maximum allowed offers.");
@@ -116,7 +122,9 @@ contract NofGammaOffersV1 is Ownable {
         offersByUser[msg.sender].push(offers[offers.length - 1]);
         offersByCardNumber[cardNumber].push(offers[offers.length - 1]);
 
-        gammaCardsContract.removeCardByOffer(msg.sender, cardNumber);
+        if (removeCardInInventoryWhenOffer) {
+            gammaCardsContract.removeCardByOffer(msg.sender, cardNumber);
+        }
 
         emit NewOfferCreated (msg.sender, cardNumber, wantedCardNumbers);
     }
@@ -171,6 +179,16 @@ contract NofGammaOffersV1 is Ownable {
         return Offer(0, 0, new uint8[](0), address(0));
     }
 
+    function hasOffer(address user, uint8 cardNumber) public view returns (bool) {
+        require(user != address(0), "Invalid address.");
+        for (uint256 i = 0; i < offersByUserCounter[user].current(); i++) {
+            if (offersByUser[user][i].cardNumber == cardNumber) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     function removeOfferByCardNumber(uint8 cardNumber) external returns (bool) {
         return removeOfferByUserAndCardNumber (msg.sender, cardNumber);
     }
@@ -205,7 +223,10 @@ contract NofGammaOffersV1 is Ownable {
                 offersTotalCounter.decrement();
 
                 found = true;
-                gammaCardsContract.restoreCardByOffer(user, cardNumber);
+                
+                if (removeCardInInventoryWhenOffer) {
+                    gammaCardsContract.restoreCardByOffer(user, cardNumber);
+                }
 
                 emit OfferRemoved(user, cardNumber);
                 break;

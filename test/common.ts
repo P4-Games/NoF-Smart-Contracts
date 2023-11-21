@@ -3,7 +3,7 @@ import { ethers } from 'hardhat'
 
 dotenv.config()
 
-type PackDataType = any[][]
+type getCardsByUserType = any[][]
 
 const nofDaiContractName = process.env.NOF_DAI_CONTRACT_NAME || 'NofTestDAIV2'
 const nofAlphaContractName = process.env.NOF_ALPHA_CONTRACT_NAME || 'NofAlphaV2'
@@ -62,29 +62,20 @@ async function deployNofFixture() {
   }
 }
 
-async function getOnePackData (gammaPacks: any, gammaCards: any, address0: any): Promise<PackDataType> {
+async function getOnePackData (gammaPacks: any, gammaCards: any, address0: any): Promise<getCardsByUserType> {
  
   const tokenId = await gammaPacks.buyPack({ from: address0.address })
   const pack0Data = [25,62,94,71,41,77,100,90,3,58,113,28] // valid only with pack 0
   await gammaCards.changeRequireOpenPackSignerValidation(false)
   await gammaCards.testOpenPack(tokenId.value, pack0Data)
-  const packData: PackDataType = await gammaCards.getCardsByUser(address0.address)
+  const result: getCardsByUserType = await gammaCards.getCardsByUser(address0.address)
 
-  /*
-  console.log(cardData)
-  for (let i = 0; i < packData[0].length; i++) {
-    const cardId = packData[0][i]
-    const quantity = packData[1][i]
-    console.log(`\tname: ${cardId.toString()}, stamped: ${quantity > 0}, quantity: ${quantity}`)
-  }
-  */
-
-  return packData
+  return result
 }
 
 export {
   nofDaiContractName, nofAlphaContractName, 
   nofGammaPacksContractName, nofGammaCardsContractName,
   nofGammaOffersContractName, deployNofFixture,
-  getOnePackData, PackDataType
+  getOnePackData, getCardsByUserType
 }

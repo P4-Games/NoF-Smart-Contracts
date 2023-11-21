@@ -1,17 +1,17 @@
 import { loadFixture } from '@nomicfoundation/hardhat-network-helpers'
 import { expect } from 'chai'
 import { ethers } from 'hardhat'
-import { deployNofFixture, PackDataType } from './common'
+import { deployNofFixture, getCardsByUserType } from './common'
 
 describe('NoF - Gamma Cards Tests', function () {
 
-  async function getOnePackData(gammaPacks: any, gammaCards: any, address0: any): Promise<PackDataType> {
+  async function getOnePackData(gammaPacks: any, gammaCards: any, address0: any): Promise<getCardsByUserType> {
     const tokenId = await gammaPacks.buyPack({ from: address0.address })
     const pack0Data = [25,62,94,71,41,77,100,90,3,58,113,28] // valid only with pack 0
     await gammaCards.changeRequireOpenPackSignerValidation(false)
     await gammaCards.testOpenPack(tokenId.value, pack0Data)
 
-    const cardData: PackDataType = await gammaCards.getCardsByUser(address0.address)
+    const cardData: getCardsByUserType = await gammaCards.getCardsByUser(address0.address)
     return cardData
   }
 
@@ -44,8 +44,8 @@ describe('NoF - Gamma Cards Tests', function () {
 
   it('Pack could be open by its owner (card-contract)', async () => {
     const { gammaPacks, gammaCards, address0 } = await loadFixture(deployNofFixture)
-    const packData: PackDataType = await getOnePackData(gammaPacks, gammaCards, address0)
-    expect(packData.length).not.equal(0)
+    const getCardsByUserResult: getCardsByUserType = await getOnePackData(gammaPacks, gammaCards, address0)
+    expect(getCardsByUserResult.length).not.equal(0)
   })
 
   it('addSigner should revert when address is invalid', async () => {
@@ -73,5 +73,62 @@ describe('NoF - Gamma Cards Tests', function () {
     const nonExistingSigner = ethers.Wallet.createRandom().address
     await expect(gammaCards.removeSigner(nonExistingSigner)).to.be.revertedWith("Address is not an signer.")
   });
+
+  it('should not allow to mint a card when has an offer and flag requireOfferValidationInMint is true', async () => {
+    const { gammaPacks, gammaCards, gammaOffers, address0 } = await loadFixture(deployNofFixture)
+    const getCardsByUserResult: getCardsByUserType = await getOnePackData(gammaPacks, gammaCards, address0)
+    
+    await gammaOffers.createOffer(getCardsByUserResult[0][0], [1,2,24,4,5,6,7,8])
+    
+    let offers = await gammaOffers.getOffers();
+    await expect(offers.length).to.not.be.equal(0);
+
+    await gammaCards.changeRequireOfferValidationInMint(true);
+    await expect (
+      gammaCards.mintCard(getCardsByUserResult[0][0])
+    ).to.be.revertedWith('This card has an offer, it cannot be minted.')
+  });
+
+  it('should allow to mint a card when has an offer and flag requireOfferValidationInMint is false', async () => {
+    const { gammaPacks, gammaCards, gammaOffers, address0 } = await loadFixture(deployNofFixture)
+    const getCardsByUserResult: getCardsByUserType = await getOnePackData(gammaPacks, gammaCards, address0)
+    
+    await gammaOffers.createOffer(getCardsByUserResult[0][0], [1,2,24,4,5,6,7,8])
+    
+    let offers = await gammaOffers.getOffers();
+    await expect(offers.length).to.not.be.equal(0);
+
+    await gammaCards.changeRequireOfferValidationInMint(false);
+    await gammaCards.mintCard(getCardsByUserResult[0][0]);
+  });
+
+  it('should not allow to transfer a card when has an offer and flag requireOfferValidationInTransfer is true', async () => {
+    const { gammaPacks, gammaCards, gammaOffers, address0, address1 } = await loadFixture(deployNofFixture)
+    const getCardsByUserResult: getCardsByUserType = await getOnePackData(gammaPacks, gammaCards, address0)
+    
+    await gammaOffers.createOffer(getCardsByUserResult[0][0], [1,2,24,4,5,6,7,8])
+    
+    let offers = await gammaOffers.getOffers();
+    await expect(offers.length).to.not.be.equal(0);
+
+    await gammaCards.changeRequireOfferValidationInTransfer(true);
+    await expect (
+      gammaCards.transferCard(address1.address, getCardsByUserResult[0][0])
+    ).to.be.revertedWith('This card has an offer, it cannot be transfered.')
+  });
+
+  it('should allow to mint a card when has an offer and flag requireOfferValidationInTransfer is false', async () => {
+    const { gammaPacks, gammaCards, gammaOffers, address0, address1 } = await loadFixture(deployNofFixture)
+    const getCardsByUserResult: getCardsByUserType = await getOnePackData(gammaPacks, gammaCards, address0)
+    
+    await gammaOffers.createOffer(getCardsByUserResult[0][0], [1,2,24,4,5,6,7,8])
+    
+    let offers = await gammaOffers.getOffers();
+    await expect(offers.length).to.not.be.equal(0);
+
+    await gammaCards.changeRequireOfferValidationInTransfer(false);
+    await gammaCards.transferCard(address1.address, getCardsByUserResult[0][0]);
+  });
+
 
 })
