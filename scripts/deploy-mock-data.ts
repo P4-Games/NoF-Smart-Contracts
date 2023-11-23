@@ -2,14 +2,16 @@ import "@nomiclabs/hardhat-ethers";
 import { ethers } from "hardhat"; 
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { Contract } from "ethers";
-import { generateSignature, getInitData, deployContracts, isHardhat, isLocalhost } from "./common";
+import { /*generateSignature,*/ getInitData, deployContracts, isHardhat, isLocalhost } from "./common";
 
 async function createAlphaMockData( addresses: SignerWithAddress[], testDAI: Contract, alpha: Contract ) {
   // Alpha Data
   // example season with 60 cards (50 cards & 10 albums) and 10 dai price per pack
   const packPrice = ethers.BigNumber.from("10000000000000000000")
 
-  console.log('\nCreating Alpha Mock Data...\n')
+  console.log('----------------------------------')
+  console.log('Creating Alpha Mock Data')
+  console.log('----------------------------------\n')
   console.log('creating new Season T1...')
   let trx = await alpha.newSeason("T1", packPrice, 60, "T1");
   await trx.wait()
@@ -40,144 +42,142 @@ async function createAlphaMockData( addresses: SignerWithAddress[], testDAI: Con
   }
 }
 
-async function createGammaMockData( 
-  addresses: SignerWithAddress[], testDAI: Contract, 
-  gammaPacks: Contract, gammaCards: Contract, 
-  signatureMethod: string) {
-      
-  console.log('\nCreating Gamma Mock Data...\n')
-
+async function gammaDaiBySigner(signer: SignerWithAddress, testDAI: Contract, gammaPacks: Contract, gammaCards: Contract) {
   const packPrice = 10000000000000000000
   const TenPacksPrice = ethers.BigNumber.from((packPrice * 10).toString()) 
 
   console.log('approving in testDai...')
-  await testDAI.approve(gammaPacks.address, TenPacksPrice);
+  await testDAI.connect(signer).approve(gammaPacks.address, TenPacksPrice);
 
   console.log('Verifing testDai balance...')
-  const balance = await testDAI.balanceOf(addresses[0].address)
-  console.log(`${addresses[0].address} balance: `, balance)
+  const balance = await testDAI.balanceOf(signer.address)
+  console.log(`${signer.address} balance: `, balance)
 
   console.log('Verifing testDai allowance...')
-  const allowance = await testDAI.allowance(addresses[0].address, gammaPacks.address)
-  console.log(`${addresses[0].address} allowance to use with $ gamaPackAddress (${gammaPacks.address}): `, allowance)
-
-  if (isHardhat || isLocalhost) {
-    /*
-    let gasLimit = ethers.BigNumber.from((30000000).toString()) 
-    try {
-      console.log('buying Pack (estimating gas)...')
-      const estimatedGas = await gammaPacks.estimateGas.buyPack({ from: addresses[0].address });
-      console.log('buying Pack, estimated gas', estimatedGas)
-      gasLimit = estimatedGas.add(20000) // security-margin
-    } catch {
-      // none
-    }
-    */
-
-    console.log('buying Pack (real operation)...')
-    // const tokenId = await gammaPacks.connect(addresses[0]).buyPack({ gasLimit });
-    const tokenId = await gammaPacks.connect(addresses[0]).buyPack();
-    await tokenId.wait()
-    console.log('Buyed Pack token Id', tokenId.value)
-  
-    console.log('Verifing testDai balance...')
-    const balance2 = await testDAI.balanceOf(addresses[0].address)
-    console.log(`${addresses[0].address} balance: `, balance2)
-  
-    console.log('Verifing testDai allowance...')
-    const allowance2 = await testDAI.allowance(addresses[0].address, gammaPacks.address)
-    console.log(`${addresses[0].address} allowance to use with $ gamaPackAddress (${gammaPacks.address}): `, allowance2)
-  
-    console.log('Verifing pack owner...')
-    const packOwner = await gammaPacks.getPackOwner(tokenId.value)
-    console.log(`Owner of TokenId ${tokenId.value}: ${packOwner}`)
-  
-    /*
-    console.log('buying 2 Packs (estimating gas)...')
-    const estimatedGasTenPacks = await gammaPacks.estimateGas.buyPacks(2);
-    console.log('buying 2 Packs, estimated gas', estimatedGasTenPacks)
-    */
-
-    console.log('buying 2 Packs (operation)...')
-    // const gasLimitTenPacks = estimatedGasTenPacks.add(20000) // security-margin
-    // const trxBuypacks = await gammaPacks.connect(addresses[0]).buyPacks(2, { gasLimit: gasLimitTenPacks });
-    const trxBuypacks = await gammaPacks.connect(addresses[0]).buyPacks(2);
-    await trxBuypacks.wait()
-  
-    console.log('Verifing user\'s packs...')
-    const packs:[any] = await gammaPacks.getPacksByUser(addresses[0].address)
-  
-    console.log('User\'s packs')
-    for (let i = 0; i < packs.length-1; i++) {
-      console.log(`\tPack ${i+1} Id: ${packs[i]}`)
-    }
-
-    /*
-    console.log('Added all cards by user', addresses[1].address)
-    const transactionTestCards = await gammaCards.testAddCards({ from: addresses[0].address })
-    await transactionTestCards.wait()
-    */
-
-  }
+  const allowance = await testDAI.connect(signer).allowance(signer.address, gammaPacks.address)
+  console.log(`${signer.address} allowance to use with $ gamaPackAddress (${gammaPacks.address}): `, allowance)
 
 }
 
+async function gammaCircuitPack(signer: SignerWithAddress, testDAI: Contract, gammaPacks: Contract, gammaCards: Contract) {
+
+  const packPrice = 10000000000000000000
+  const TenPacksPrice = ethers.BigNumber.from((packPrice * 10).toString()) 
+
+  console.log('buying Pack...')
+  const tokenId = await gammaPacks.buyPackByUser(signer.address);
+  await tokenId.wait()
+  console.log('Buyed Pack token Id', tokenId.value)
+
+  console.log('Verifing testDai balance...')
+  const balance2 = await testDAI.balanceOf(signer.address)
+  console.log(`${signer.address} balance: `, balance2)
+
+  console.log('Verifing testDai allowance...')
+  const allowance2 = await testDAI.allowance(signer.address, gammaPacks.address)
+  console.log(`${signer.address} allowance to use with $ gamaPackAddress (${gammaPacks.address}): `, allowance2)
+
+  console.log('Verifing pack owner...')
+  const packOwner = await gammaPacks.connect(signer).getPackOwner(tokenId.value)
+  console.log(`Owner of TokenId ${tokenId.value}: ${packOwner}`)
+
+  console.log('buying 2 Packs...')
+  const trxBuypacks = await gammaPacks.buyPacksByUser(signer.address, 2);
+  await trxBuypacks.wait()
+  console.log('Buyed 2 Pack tokens Ids', trxBuypacks.value)
+
+  console.log('Verifing user\'s packs...')
+  const packs:[any] = await gammaPacks.getPacksByUser(signer.address)
+  for (let i = 0; i < packs.length-1; i++) {
+    console.log(`\tPack ${i+1} Id: ${packs[i]}`)
+  }
+}
+
+async function gammaCircuitAllCards(signer: SignerWithAddress, gammaCards: Contract) {
+    console.log('Adding all cards to user', signer.address)
+    const transactionTestCards = await gammaCards.testAddCards(signer.address)
+    await transactionTestCards.wait()
+}
+
+
+async function createGammaMockData( 
+  addresses: SignerWithAddress[], testDAI: Contract, 
+  gammaPacks: Contract, gammaCards: Contract) {
+      
+  console.log('\n----------------------------------')
+  console.log('Creating Gamma Mock Data')
+  console.log('----------------------------------\n')
+
+  await gammaDaiBySigner(addresses[0], testDAI, gammaPacks, gammaCards)
+  await gammaDaiBySigner(addresses[1], testDAI, gammaPacks, gammaCards)
+  await gammaDaiBySigner(addresses[2], testDAI, gammaPacks, gammaCards)
+  await gammaDaiBySigner(addresses[3], testDAI, gammaPacks, gammaCards)
+  await gammaCircuitPack(addresses[0], testDAI, gammaPacks, gammaCards)
+  await gammaCircuitPack(addresses[1], testDAI, gammaPacks, gammaCards)
+  await gammaCircuitPack(addresses[2], testDAI, gammaPacks, gammaCards)
+  await gammaCircuitPack(addresses[3], testDAI, gammaPacks, gammaCards)
+  await gammaCircuitAllCards(addresses[4], gammaCards)
+  await gammaCircuitAllCards(addresses[5], gammaCards)
+  await gammaCircuitAllCards(addresses[6], gammaCards)
+
+}
+
+async function gammaOfferBuyPack(signer: SignerWithAddress, gammaPacks: Contract, gammaCards: Contract, packData: number[]) {
+  const packId1 = await gammaPacks.buyPackByUser(signer.address)
+  await gammaCards.testOpenPack(signer.address, packId1.value, packData)
+}
+
+async function printCardsByUser(wallet: SignerWithAddress, cards: any[]) {
+  
+  if (!cards || cards.length === 0) {
+    console.log('no cards for wallet', wallet)
+    return
+  } 
+
+  cards[0].forEach((card: number, index: number) => {
+    console.log(`wallet: ${wallet}, card: ${card}, quantity: ${cards[1][index]}, offered: ${cards[2][index]}`)
+  })
+}
 
 async function createOfferMockData( 
   addresses: SignerWithAddress[], 
-  testDAI: Contract,
   gammaPacks: Contract, 
   gammaCards: Contract, 
   gammaOffers: Contract) {
       
-  console.log('\nCreating Gamma Offers Mock Data...\n')
+  console.log('\n----------------------------------')
+  console.log('Creating Gamma Offers Mock Data')
+  console.log('----------------------------------\n')
 
-  type getCardsByUserType = any[][]
-  const pack0Data = [25,62,94,71,41,77,100,90,3,58,113,28] // valid only with pack 0
   await gammaCards.changeRequireOpenPackSignerValidation(false)
-  
-  // user 0
-  const address0  = addresses[0].address
-  const packId1 = await gammaPacks.buyPack({ from: address0 })
-  await gammaCards.testOpenPack(packId1.value, pack0Data)
 
-  const packId2 = await gammaPacks.buyPack({ from: address0 })
-  await gammaCards.testOpenPack(packId2.value, pack0Data)
+  await gammaOfferBuyPack(addresses[0], gammaPacks, gammaCards, [25,62,94,71,41,77,100,90,3,58,113,28])
+  await gammaOfferBuyPack(addresses[0], gammaPacks, gammaCards, [0,1,2,4,5,6,7,8,9,10,11,12])
 
-  const packId3 = await gammaPacks.buyPack({ from: address0 })
-  await gammaCards.testOpenPack(packId3.value, pack0Data)
+  await gammaOffers.connect(addresses[0]).createOffer(3, [24,4,5,6,7,8])
+  await gammaOffers.connect(addresses[0]).createOffer(25, [24,4,0,119,7,1])
+  await gammaOffers.connect(addresses[0]).createOffer(28, [110,32,2])
+  await gammaOffers.connect(addresses[0]).createOffer(1, [117,118,119])
 
-  let cardsUser1: getCardsByUserType = await gammaCards.getCardsByUser(address0)
+  await gammaOfferBuyPack(addresses[1], gammaPacks, gammaCards, [90,91,92,93,94,95,96,97,98,99,100,101])
+  await gammaOfferBuyPack(addresses[1], gammaPacks, gammaCards, [102,103,104,105,106,107,108,109,110,111,112])
 
-  await gammaOffers.createOffer(cardsUser1[0][0], [24,4,5,6,7,8]) // card #3
-  await gammaOffers.createOffer(cardsUser1[0][3], [56, 78, 79, 80, 81, 82, 83, 84, 85, 86]) // card #3 (2da ofeta)
-  await gammaOffers.createOffer(cardsUser1[0][1], [24,4,0,119,7,1]) // card #25
-  await gammaOffers.createOffer(cardsUser1[0][2], [110,32, 2]) // card $28
+  await gammaOffers.connect(addresses[1]).createOffer(90, [0,1,2])
+  await gammaOffers.connect(addresses[1]).createOffer(102, [32,2,4,5,6,7])
 
-  const offers = await gammaOffers.getOffers()
-  console.log(cardsUser1, offers)
+  let offers = await gammaOffers.getOffers()
+  offers.forEach((offer: any[]) => {
+    console.log(`offer: ${offer[0]}, offerCard: ${offer[1]}, offerWallet: ${offer[3]}, wantedCards: ${offer[2].join (',')}`)
+  });
 
-  // user 1
-  /*
-  const address1  = addresses[1].address 
-  const allowance = await testDAI.allowance(address1, gammaPacks.address)
-  console.log(`${addresses[0].address} allowance to use with $ gamaPackAddress (${gammaPacks.address}): `, allowance)
+  printCardsByUser(addresses[0].address, await gammaCards.getCardsByUser(addresses[0].address))
+  printCardsByUser(addresses[1].address, await gammaCards.getCardsByUser(addresses[1].address))
 
-  tokenId = await gammaPacks._buyPack( address1 )
-  await gammaCards.testOpenPack(tokenId.value, pack0Data)
-  let cardsUser2: getCardsByUserType = await gammaCards.getCardsByUser(address1)
-  await gammaOffers.createOffer(address1, cardsUser2[0][0], [24,4,5,6,7,8]) // card #3
-
-  const offers = await gammaOffers.getOffers()
-  console.log(cardsUser2, cardsUser2, offers)
-  */
 }
-
 
 async function main() {
   try {
     const addresses: SignerWithAddress[] = await getInitData()
-    
     const contracts: { 
       testDAI: Contract;
       alpha: Contract;
@@ -186,12 +186,12 @@ async function main() {
       gammaOffers: Contract;
       signatureMethod: string;
     } = await deployContracts (addresses)
-    
-    // await createAlphaMockData(addresses, contracts.testDAI, contracts.alpha);
 
-    await createGammaMockData(addresses, contracts.testDAI, contracts.gammaPacks, contracts.gammaCards, contracts.signatureMethod);
-
-    await createOfferMockData (addresses, contracts.testDAI, contracts.gammaPacks, contracts.gammaCards, contracts.gammaOffers);
+    if (isHardhat || isLocalhost) {
+      // await createAlphaMockData(addresses, contracts.testDAI, contracts.alpha);
+      await createGammaMockData(addresses, contracts.testDAI, contracts.gammaPacks, contracts.gammaCards);
+      await createOfferMockData (addresses, contracts.gammaPacks, contracts.gammaCards, contracts.gammaOffers);
+    }
     process.exit(0);
   } catch (error) {
     console.error(error);

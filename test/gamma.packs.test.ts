@@ -39,10 +39,11 @@ describe('NoF - Gamma Packs Tests', function () {
     expect(packOwner).to.equal(address0.address)
   })
 
-  it('Pack could be open by its owner (pack-contract)', async () => {
+  it('Pack could be open by an owner (pack-contract)', async () => {
     const { gammaPacks, address0 } = await loadFixture(deployNofFixture)
-    const tokenId = await gammaPacks.buyPack({ from: address0.address }) 
+    const tokenId = await gammaPacks.buyPack() 
     await gammaPacks.testOpenPack(tokenId.value, address0.address)
   })
+
 
 })
