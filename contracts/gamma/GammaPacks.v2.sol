@@ -60,6 +60,10 @@ contract NofGammaPacksV2 is Ownable {
     }
 
     function buyPack() public returns (uint256){
+        return _buyPack (msg.sender);
+    }
+
+    function _buyPack(address user) public onlyOwners returns (uint256) {
         require(address(gammaCardsContract) != address(0), "GammaCardsContract not set."); 
     
         uint256 tokenId = _tokenIdCounter.current();
@@ -67,19 +71,19 @@ contract NofGammaPacksV2 is Ownable {
         require(tokenId < totalSupply, "There are no more packs.");
         _tokenIdCounter.increment();
         
-        packs[tokenId] = msg.sender;
-        packsByUser[msg.sender].push(tokenId);
+        packs[tokenId] = user;
+        packsByUser[user].push(tokenId);
         
         uint256 prizesAmount = packPrice - packPrice / 6;
         gammaCardsContract.receivePrizesBalance(prizesAmount);
 
         // send prize amount to the card contract
-        IERC20(DAI_TOKEN).transferFrom(msg.sender, address(gammaCardsContract), prizesAmount); 
+        IERC20(DAI_TOKEN).transferFrom(user, address(gammaCardsContract), prizesAmount); 
         
         // send profit amount to NoF account
-        IERC20(DAI_TOKEN).transferFrom(msg.sender, balanceReceiver, packPrice - prizesAmount); 
+        IERC20(DAI_TOKEN).transferFrom(user, balanceReceiver, packPrice - prizesAmount); 
 
-        emit PackPurchase(msg.sender, tokenId);
+        emit PackPurchase(user, tokenId);
         return tokenId;
     }
 

@@ -216,6 +216,9 @@ contract NofGammaCardsV3 is ERC721, ERC721URIStorage, ERC721Burnable, Ownable {
         address to, uint8 cardNumberTo) external onlyGammaOffersContract {
         require(from != address(0), "Invalid address.");
         require(to != address(0), "Invalid address.");
+        require(cardsByUser[from][cardNumberFrom] > 0, "User (from) does not have card (from).");
+        require(cardsByUser[to][cardNumberTo] > 0, "User (to) does not have card (to).");
+
         cardsByUser[from][cardNumberFrom]--;
         cardsByUser[to][cardNumberFrom]++;
         cardsByUser[to][cardNumberTo]--;
