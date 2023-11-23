@@ -4,6 +4,7 @@ import dotenv from 'dotenv';
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 import Web3 from 'web3';
 import { config } from 'hardhat';
+import { isAddress } from 'ethers/lib/utils';
 
 export const isLocalhost = (network.name === 'localhost') || (network.name === '127.0.0.1')
 export const isHardhat = (network.name === 'hardhat') 
@@ -127,8 +128,10 @@ export async function deployContracts(wallets: SignerWithAddress[]) {
   console.log('Gamma Packs balance receiver setted:', balanceReceiverAddress);
   console.log('Gamma Cards micro-services Signature Wallets Addresses setted:', microServiceSignatureWalletsAddresses[0]);
 
+  const walletsString = wallets.map(item => item.address)
+  const addressString = walletsString.join (',')
+  console.log(`\nMinting some DAIs for these wallet address:\n ${addressString}`)
   for (const wallet of wallets) {
-    console.log(`\nMinting some DAIs for these wallet address ${wallet.address}`)
     await testDAI._mint(wallet.address, ethers.BigNumber.from('900000000000000000000'));
   }
 
@@ -137,7 +140,7 @@ export async function deployContracts(wallets: SignerWithAddress[]) {
   if (microServiceSignatureWalletsAddresses.length > 1) {
     // Se skipea la primera posición que fue incorporada en el deploy de gammaCards
     const additionalSignatureWallets = microServiceSignatureWalletsAddresses.slice(1);
-    console.log(`\nAdded these additional signature wallets addresses in Gamma Cards Contract`, additionalSignatureWallets.join(','))
+    console.log(`\nAdded these additional signature wallets addresses in Gamma Cards Contract:\n`, additionalSignatureWallets.join(','))
     for (const walletAddress of additionalSignatureWallets) {
       const alreadySigner = await gammaCards.signers(walletAddress);
       if (!alreadySigner) {
@@ -147,7 +150,7 @@ export async function deployContracts(wallets: SignerWithAddress[]) {
   }
 
   if (additionalOwners.length > 0) {
-    console.log(`\nAdded these additional owners wallets addresses in Gamma Cards Contract`, additionalOwners.join(','))
+    console.log(`\nAdded these additional owners wallets addresses in Gamma Cards Contract:\m`, additionalOwners.join(','))
     for (const walletAddress of additionalOwners) {
       const alreadyOwner = await gammaCards.owners(walletAddress);
       if (!alreadyOwner) {
@@ -155,7 +158,7 @@ export async function deployContracts(wallets: SignerWithAddress[]) {
       }
     }
 
-    console.log(`\nAdded these additional owners wallets addresses in Gamma Packs Contract`, additionalOwners.join(','))
+    console.log(`\nAdded these additional owners wallets addresses in Gamma Packs Contract:\n`, additionalOwners.join(','))
     for (const walletAddress of additionalOwners) {
       const alreadyOwner = await gammaPacks.owners(walletAddress);
       if (!alreadyOwner) {
