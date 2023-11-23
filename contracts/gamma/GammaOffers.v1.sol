@@ -98,35 +98,43 @@ contract NofGammaOffersV1 is Ownable {
     }
 
     function createOffer(uint8 cardNumber, uint8[] memory wantedCardNumbers) public {
+        _createOfferWithoUser (msg.sender, cardNumber, wantedCardNumbers);
+    }
+
+    function createOfferWithoUser(address user, uint8 cardNumber, uint8[] memory wantedCardNumbers) public onlyOwners{
+        _createOfferWithoUser (user, cardNumber, wantedCardNumbers);
+    }
+
+    function _createOfferWithoUser(address user, uint8 cardNumber, uint8[] memory wantedCardNumbers) private {
         require(address(gammaCardsContract) != address(0), "GammaCardsContract not set."); 
-        require(offersByUserCounter[msg.sender].current() < maxOffersByUserAllowed, "User has reached the maximum allowed offers.");
+        require(offersByUserCounter[user].current() < maxOffersByUserAllowed, "User has reached the maximum allowed offers.");
         require(offersTotalCounter.current() < maxOffersAllowed, "Total offers have reached the maximum allowed.");
 
-        bool userHasCard = gammaCardsContract.hasCardByOffer(msg.sender, cardNumber);
+        bool userHasCard = gammaCardsContract.hasCardByOffer(user, cardNumber);
         require(userHasCard, "You does not have that card.");
 
         for (uint8 i = 0; i < wantedCardNumbers.length; i++) {
             require(wantedCardNumbers[i] != cardNumber, "The cardNumber cannot be in wantedCardNumbers.");
         }
 
-        Offer memory existingOffer = getOfferByUserAndCardNumber(msg.sender, cardNumber);
+        Offer memory existingOffer = getOfferByUserAndCardNumber(user, cardNumber);
         require(existingOffer.offerId == 0, "An offer for this user and cardNumber already exists.");
 
-        offersByUserCounter[msg.sender].increment();
+        offersByUserCounter[user].increment();
         offersByCardNumberCounter[cardNumber].increment();
         offersTotalCounter.increment();
 
         uint256 offerId = offersTotalCounter.current();
         
-        offers.push(Offer(offerId, cardNumber, wantedCardNumbers, msg.sender));
-        offersByUser[msg.sender].push(offers[offers.length - 1]);
+        offers.push(Offer(offerId, cardNumber, wantedCardNumbers, user));
+        offersByUser[user].push(offers[offers.length - 1]);
         offersByCardNumber[cardNumber].push(offers[offers.length - 1]);
 
         if (removeCardInInventoryWhenOffer) {
-            gammaCardsContract.removeCardByOffer(msg.sender, cardNumber);
+            gammaCardsContract.removeCardByOffer(user, cardNumber);
         }
 
-        emit NewOfferCreated (msg.sender, cardNumber, wantedCardNumbers);
+        emit NewOfferCreated (user, cardNumber, wantedCardNumbers);
     }
 
     function getOffersByUserCounter(address user) external view returns (uint256) {
@@ -189,11 +197,20 @@ contract NofGammaOffersV1 is Ownable {
         return false;
     }
 
+    function confirmOfferExchange(address from, uint8 cardNumberFrom, address offerWallet, uint8 offerCardNumber) external {
+        gammaCardsContract.exchangeCardsOffer(from, cardNumberFrom, offerWallet, offerCardNumber);
+        _removeOfferByUserAndCardNumber(offerWallet, offerCardNumber, true);
+    }
+
     function removeOfferByCardNumber(uint8 cardNumber) external returns (bool) {
-        return removeOfferByUserAndCardNumber (msg.sender, cardNumber);
+        return _removeOfferByUserAndCardNumber(msg.sender, cardNumber, false);
     }
 
     function removeOfferByUserAndCardNumber(address user, uint8 cardNumber) public onlyOwners returns (bool) {
+        return _removeOfferByUserAndCardNumber(user, cardNumber, false);
+    }
+
+    function _removeOfferByUserAndCardNumber(address user, uint8 cardNumber, bool fromConfirmOfferExchange) private returns (bool) {
         require(user != address(0), "Invalid address.");
 
         Offer[] memory userOffers = offersByUser[user];
@@ -224,7 +241,10 @@ contract NofGammaOffersV1 is Ownable {
 
                 found = true;
                 
-                if (removeCardInInventoryWhenOffer) {
+                // If it is called from "ConfirmOfferExchange", the offer is deleted
+                // after the cards were transfered. So, we doesn't have to change 
+                // the cards collection in gamma card contract. 
+                if (removeCardInInventoryWhenOffer && !fromConfirmOfferExchange) {
                     gammaCardsContract.restoreCardByOffer(user, cardNumber);
                 }
 
