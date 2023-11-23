@@ -57,13 +57,6 @@ contract NofGammaCardsV3 is ERC721, ERC721URIStorage, ERC721Burnable, Ownable {
     mapping(address user => uint256 amount) public burnedCards;
     mapping(address user => mapping(uint8 cardNumber => uint8 amount)) public cardsByUser;
     
-    struct Offer {
-        uint256 offerId;
-        uint8 cardNumber;
-        uint8[] wantedCardNumbers;
-        address owner;
-    }
-
     event PackOpened(address player, uint8[] packData, uint256 packNumber);
     event AlbumCompleted(address player, uint8 albumClass);
     event CardPasted(address player, uint256 cardTokenId, uint256 albumTokenId);
@@ -171,13 +164,21 @@ contract NofGammaCardsV3 is ERC721, ERC721URIStorage, ERC721Burnable, Ownable {
     }
 
     function openPack(uint256 packNumber, uint8[] memory packData, bytes calldata signature) external {
-        require(gammaPacksContract.getPackOwner(packNumber) == msg.sender, "This card is not yours.");
+        _openPack (msg.sender, packNumber, packData, signature);
+    }
+
+    function openPackByUser(address user, uint256 packNumber, uint8[] memory packData, bytes calldata signature) external {
+        _openPack (user, packNumber, packData, signature);
+    }
+
+    function _openPack(address user, uint256 packNumber, uint8[] memory packData, bytes calldata signature) private {
+        require(gammaPacksContract.getPackOwner(packNumber) == user, "This pack is not yours.");
         // TO_REVIEW: chech this length
         require(packData.length < 15, "Card limit exceeded"); 
         
         if (requireOpenPackSignerValidation) {
             // Recreates the message present in the `signature`
-            bytes32 messageHash = keccak256(abi.encodePacked(msg.sender, packNumber, 
+            bytes32 messageHash = keccak256(abi.encodePacked(user, packNumber, 
                 packData, '0xf1dD71895e49b1563693969de50898197cDF3481')).toEthSignedMessageHash();
 
             address recoveredSigner = messageHash.recover(signature);
@@ -185,21 +186,21 @@ contract NofGammaCardsV3 is ERC721, ERC721URIStorage, ERC721Burnable, Ownable {
             require(signers[recoveredSigner], "Invalid signature.");
         }
 
-        gammaPacksContract.openPack(packNumber, msg.sender);
+        gammaPacksContract.openPack(packNumber, user);
         prizesBalance += packPrice - packPrice / 6;
         uint256 length = packData.length;
         for(uint8 i;i<length;i++){
             require(packData[i] == 120 ? cardsInventory[120] < 3001 : cardsInventory[packData[i]] < 5001, 
                 'invalid cardInventory position');
             cardsInventory[packData[i]]++; // 280k gas aprox.
-            cardsByUser[msg.sender][packData[i]]++; // 310k gas aprox.
+            cardsByUser[user][packData[i]]++; // 310k gas aprox.
         }
 
-        emit PackOpened(msg.sender, packData, packNumber);
+        emit PackOpened(user, packData, packNumber);
     }
 
-    function testOpenPack(uint256 packNumber, uint8[] memory packData) external onlyOwners {
-        gammaPacksContract.openPack(packNumber, msg.sender);
+    function testOpenPack(address user, uint256 packNumber, uint8[] memory packData) external onlyOwners {
+        gammaPacksContract.openPack(packNumber, user);
         prizesBalance += packPrice - packPrice / 6;
         uint256 length = packData.length;
 
@@ -207,10 +208,10 @@ contract NofGammaCardsV3 is ERC721, ERC721URIStorage, ERC721Burnable, Ownable {
             require(packData[i] == 120 ? cardsInventory[120] < 3001 : cardsInventory[packData[i]] < 5001, 
                 'invalid cardInventory position');
             cardsInventory[packData[i]]++; // 280k gas aprox.
-            cardsByUser[msg.sender][packData[i]]++; // 310k gas aprox.
+            cardsByUser[user][packData[i]]++; // 310k gas aprox.
         }
     }
-
+    
     function exchangeCardsOffer(
         address from, uint8 cardNumberFrom,
         address to, uint8 cardNumberTo) external onlyGammaOffersContract {
@@ -298,9 +299,9 @@ contract NofGammaCardsV3 is ERC721, ERC721URIStorage, ERC721Burnable, Ownable {
         emit AlbumCompleted(msg.sender, 1);
     }
 
-    function testAddCards() public onlyOwners {
+    function testAddCards(address user) public onlyOwners {
         for(uint8 i;i<121;i++){
-            cardsByUser[msg.sender][i]++;
+            cardsByUser[user][i]++;
         }
     }
 

@@ -60,10 +60,14 @@ contract NofGammaPacksV2 is Ownable {
     }
 
     function buyPack() public returns (uint256){
-        return _buyPack (msg.sender);
+        return _buyPack(msg.sender);
     }
 
-    function _buyPack(address user) public onlyOwners returns (uint256) {
+    function buyPackByUser(address user) public onlyOwners returns (uint256) {
+        return _buyPack (user);
+    }
+
+    function _buyPack(address user) private returns (uint256) {
         require(address(gammaCardsContract) != address(0), "GammaCardsContract not set."); 
     
         uint256 tokenId = _tokenIdCounter.current();
@@ -88,6 +92,14 @@ contract NofGammaPacksV2 is Ownable {
     }
 
     function buyPacks(uint256 numberOfPacks) public returns(uint256[] memory){
+        return _buyPacks(msg.sender, numberOfPacks);
+    }
+
+    function buyPacksByUser(address user, uint256 numberOfPacks) public onlyOwners returns(uint256[] memory){
+        return _buyPacks(user, numberOfPacks);
+    }
+
+    function _buyPacks(address user, uint256 numberOfPacks) public returns(uint256[] memory){
         require(address(gammaCardsContract) != address(0), "GammaCardsContract not set."); 
         uint256 prizesAmount = (packPrice - packPrice / 6) * numberOfPacks;
         uint256[] memory tokenIds = new uint256[](numberOfPacks);
@@ -97,19 +109,19 @@ contract NofGammaPacksV2 is Ownable {
             require(tokenId < totalSupply, "There are no more packs.");
             _tokenIdCounter.increment();
             
-            packs[tokenId] = msg.sender;
-            packsByUser[msg.sender].push(tokenId);
+            packs[tokenId] = user;
+            packsByUser[user].push(tokenId);
             tokenIds[i] = tokenId;
         }
 
         gammaCardsContract.receivePrizesBalance(prizesAmount);
         // send prize amount to the card contract
-        IERC20(DAI_TOKEN).transferFrom(msg.sender, address(gammaCardsContract), prizesAmount); 
+        IERC20(DAI_TOKEN).transferFrom(user, address(gammaCardsContract), prizesAmount); 
         
         // send profit amount to NoF account
-        IERC20(DAI_TOKEN).transferFrom(msg.sender, balanceReceiver, packPrice * numberOfPacks - prizesAmount); 
+        IERC20(DAI_TOKEN).transferFrom(user, balanceReceiver, packPrice * numberOfPacks - prizesAmount); 
 
-        emit PacksPurchase(msg.sender, tokenIds);
+        emit PacksPurchase(user, tokenIds);
         return tokenIds;
     }
 
