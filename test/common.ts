@@ -44,6 +44,12 @@ async function deployNofFixture() {
   await testDAI._mint(address0.address, TenPacksPrice)
   await testDAI.approve(gammaPacks.address, TenPacksPrice)
 
+  // console.log(`\nMinting some DAIs for these wallet address:\n ${addressString}`)
+  const signers = await ethers.getSigners()
+  for (const wallet of signers) {
+    await testDAI._mint(wallet.address, ethers.BigNumber.from('900000000000000000000'));
+  }
+
   return {
     testDAI,
     gammaCards,
