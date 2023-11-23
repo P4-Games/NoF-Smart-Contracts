@@ -381,8 +381,9 @@ contract NofGammaCardsV3 is ERC721, ERC721URIStorage, ERC721Burnable, Ownable {
         emit NewUris(newMainUri, newSecondaryUri);
     }
 
-    function hasCard(uint8 cardNum) public view returns (bool has) {
-        return cardsByUser[msg.sender][cardNum] > 0;
+    function hasCard(address user, uint8 cardNum) public view returns (bool has) {
+        require(user != address(0), "Invalid address.");
+        return cardsByUser[user][cardNum] > 0;
     }
      
     function getCardQuantityByUser(address user, uint8 cardNum) public view returns (uint8) {

@@ -197,9 +197,17 @@ contract NofGammaOffersV1 is Ownable {
         return false;
     }
 
-    function confirmOfferExchange(address from, uint8 cardNumberFrom, address offerWallet, uint8 offerCardNumber) external {
-        gammaCardsContract.exchangeCardsOffer(from, cardNumberFrom, offerWallet, offerCardNumber);
-        _removeOfferByUserAndCardNumber(offerWallet, offerCardNumber, true);
+    function confirmOfferExchange(address from, uint8 cardNumberWanted, address offerWallet, uint8 offerCardNumber) external {
+        gammaCardsContract.exchangeCardsOffer(from, cardNumberWanted, offerWallet, offerCardNumber);
+        require(gammaCardsContract.hasCardByOffer(from, offerCardNumber), "Exchange error with wallet from");
+        require(gammaCardsContract.hasCardByOffer(offerWallet, cardNumberWanted), "Exchange erro with wallet to");
+
+        bool offerDeleted = _removeOfferByUserAndCardNumber(offerWallet, offerCardNumber, true);
+        require (offerDeleted, "Error deleting offer after transfer cards");
+
+        // console.log('confirmOfferExchange', gammaCardsContract.hasCardByOffer(from, offerCardNumber));
+        // console.log('confirmOfferExchange', gammaCardsContract.hasCardByOffer(offerWallet, cardNumberWanted));
+        // console.log('confirmOfferExchange', offerDeleted);
     }
 
     function removeOfferByCardNumber(uint8 cardNumber) external returns (bool) {
@@ -210,36 +218,52 @@ contract NofGammaOffersV1 is Ownable {
         return _removeOfferByUserAndCardNumber(user, cardNumber, false);
     }
 
+    function _removeOfferByOfferId(uint256 offerId) private returns (bool) {
+        bool deleted = false;
+
+        for (uint256 j = 0; j < offers.length; j++) {
+            if (offers[j].offerId == offerId) {
+                delete offers[j];
+                offers[j] = offers[offers.length - 1];
+                offers.pop();
+                deleted = true;
+                break;
+            }
+        }
+
+        return deleted;
+    }
+
     function _removeOfferByUserAndCardNumber(address user, uint8 cardNumber, bool fromConfirmOfferExchange) private returns (bool) {
         require(user != address(0), "Invalid address.");
 
         Offer[] memory userOffers = offersByUser[user];
         uint256 currentUserOffersCounter = offersByUserCounter[user].current();
-        uint256 currentTotalOffersCounter = offersTotalCounter.current();
 
-        bool found = false;
+        // console.log('currentUserOffersCounter', currentUserOffersCounter);
+
+        bool deletedOfffer = false;
         for (uint256 i = 0; i < currentUserOffersCounter; i++) {
             
+            // console.log('_removeOfferByUserAndCardNumber entro al for', i, userOffers[i].cardNumber);
+
             if (userOffers[i].cardNumber == cardNumber) {
                 uint256 offerId = userOffers[i].offerId;
+
+                // console.log('_removeOfferByUserAndCardNumber offerId', offerId);
 
                 delete offersByUser[user][i];
                 delete offersByCardNumber[cardNumber][i];
 
-                for (uint256 j = 0; j < currentTotalOffersCounter; j++) {
-                    if (offers[j].offerId == offerId) {
-                        delete offers[j];
-                        offers[j] = offers[offers.length - 1];
-                        offers.pop();
-                        break;
-                    }
-                }
+                bool deletedOfferInArray = _removeOfferByOfferId(offerId);
 
                 offersByUserCounter[user].decrement();
                 offersByCardNumberCounter[cardNumber].decrement();
                 offersTotalCounter.decrement();
 
-                found = true;
+                deletedOfffer = (true && deletedOfferInArray);
+
+                // console.log('_removeOfferByUserAndCardNumber bools', deletedOfferInArray, deletedOfffer);
                 
                 // If it is called from "ConfirmOfferExchange", the offer is deleted
                 // after the cards were transfered. So, we doesn't have to change 
@@ -248,11 +272,13 @@ contract NofGammaOffersV1 is Ownable {
                     gammaCardsContract.restoreCardByOffer(user, cardNumber);
                 }
 
+                // console.log('removed offer', user, cardNumber, fromConfirmOfferExchange);
                 emit OfferRemoved(user, cardNumber);
                 break;
             }
         }
-        return found;
+        // console.log('offer removed result', user, cardNumber, deletedOfffer);
+        return deletedOfffer;
     }
 
     function deleteAllOffers() external onlyOwners {

@@ -56,7 +56,6 @@ async function gammaDaiBySigner(signer: SignerWithAddress, testDAI: Contract, ga
   console.log('Verifing testDai allowance...')
   const allowance = await testDAI.connect(signer).allowance(signer.address, gammaPacks.address)
   console.log(`${signer.address} allowance to use with $ gamaPackAddress (${gammaPacks.address}): `, allowance)
-
 }
 
 async function gammaCircuitPack(signer: SignerWithAddress, testDAI: Contract, gammaPacks: Contract, gammaCards: Contract) {
@@ -127,15 +126,19 @@ async function gammaOfferBuyPack(signer: SignerWithAddress, gammaPacks: Contract
   await gammaCards.testOpenPack(signer.address, packId1.value, packData)
 }
 
-async function printCardsByUser(wallet: SignerWithAddress, cards: any[]) {
-  
+function printCardsByUser(wallet: string, cards: any[]) {
   if (!cards || cards.length === 0) {
     console.log('no cards for wallet', wallet)
     return
   } 
-
   cards[0].forEach((card: number, index: number) => {
     console.log(`wallet: ${wallet}, card: ${card}, quantity: ${cards[1][index]}, offered: ${cards[2][index]}`)
+  })
+}
+
+function printOffers(offers: any[]) {
+  offers.forEach((offer: any[]) => {
+    console.log(`offer: ${offer[0]}, offerCard: ${offer[1]}, offerWallet: ${offer[3]}, wantedCards: ${offer[2].join (',')}`)
   })
 }
 
@@ -165,11 +168,7 @@ async function createOfferMockData(
   await gammaOffers.connect(addresses[1]).createOffer(90, [0,1,2])
   await gammaOffers.connect(addresses[1]).createOffer(102, [32,2,4,5,6,7])
 
-  let offers = await gammaOffers.getOffers()
-  offers.forEach((offer: any[]) => {
-    console.log(`offer: ${offer[0]}, offerCard: ${offer[1]}, offerWallet: ${offer[3]}, wantedCards: ${offer[2].join (',')}`)
-  });
-
+  printOffers(await gammaOffers.getOffers())
   printCardsByUser(addresses[0].address, await gammaCards.getCardsByUser(addresses[0].address))
   printCardsByUser(addresses[1].address, await gammaCards.getCardsByUser(addresses[1].address))
 
