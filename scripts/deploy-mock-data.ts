@@ -112,12 +112,67 @@ async function createGammaMockData(
       console.log(`\tPack ${i+1} Id: ${packs[i]}`)
     }
 
-    console.log('Added all cards by 1 user', addresses[1].address)
+    /*
+    console.log('Added all cards by user', addresses[1].address)
     const transactionTestCards = await gammaCards.testAddCards({ from: addresses[0].address })
     await transactionTestCards.wait()
+    */
+
   }
 
 }
+
+
+async function createOfferMockData( 
+  addresses: SignerWithAddress[], 
+  testDAI: Contract,
+  gammaPacks: Contract, 
+  gammaCards: Contract, 
+  gammaOffers: Contract) {
+      
+  console.log('\nCreating Gamma Offers Mock Data...\n')
+
+  type getCardsByUserType = any[][]
+  const pack0Data = [25,62,94,71,41,77,100,90,3,58,113,28] // valid only with pack 0
+  await gammaCards.changeRequireOpenPackSignerValidation(false)
+  
+  // user 0
+  const address0  = addresses[0].address
+  const packId1 = await gammaPacks.buyPack({ from: address0 })
+  await gammaCards.testOpenPack(packId1.value, pack0Data)
+
+  const packId2 = await gammaPacks.buyPack({ from: address0 })
+  await gammaCards.testOpenPack(packId2.value, pack0Data)
+
+  const packId3 = await gammaPacks.buyPack({ from: address0 })
+  await gammaCards.testOpenPack(packId3.value, pack0Data)
+
+  let cardsUser1: getCardsByUserType = await gammaCards.getCardsByUser(address0)
+
+  await gammaOffers.createOffer(cardsUser1[0][0], [24,4,5,6,7,8]) // card #3
+  await gammaOffers.createOffer(cardsUser1[0][3], [56, 78, 79, 80, 81, 82, 83, 84, 85, 86]) // card #3 (2da ofeta)
+  await gammaOffers.createOffer(cardsUser1[0][1], [24,4,0,119,7,1]) // card #25
+  await gammaOffers.createOffer(cardsUser1[0][2], [110,32, 2]) // card $28
+
+  const offers = await gammaOffers.getOffers()
+  console.log(cardsUser1, offers)
+
+  // user 1
+  /*
+  const address1  = addresses[1].address 
+  const allowance = await testDAI.allowance(address1, gammaPacks.address)
+  console.log(`${addresses[0].address} allowance to use with $ gamaPackAddress (${gammaPacks.address}): `, allowance)
+
+  tokenId = await gammaPacks._buyPack( address1 )
+  await gammaCards.testOpenPack(tokenId.value, pack0Data)
+  let cardsUser2: getCardsByUserType = await gammaCards.getCardsByUser(address1)
+  await gammaOffers.createOffer(address1, cardsUser2[0][0], [24,4,5,6,7,8]) // card #3
+
+  const offers = await gammaOffers.getOffers()
+  console.log(cardsUser2, cardsUser2, offers)
+  */
+}
+
 
 async function main() {
   try {
@@ -128,13 +183,15 @@ async function main() {
       alpha: Contract;
       gammaPacks: Contract;
       gammaCards: Contract;
+      gammaOffers: Contract;
       signatureMethod: string;
     } = await deployContracts (addresses)
     
-    await createAlphaMockData(addresses, contracts.testDAI, contracts.alpha);
+    // await createAlphaMockData(addresses, contracts.testDAI, contracts.alpha);
 
     await createGammaMockData(addresses, contracts.testDAI, contracts.gammaPacks, contracts.gammaCards, contracts.signatureMethod);
 
+    await createOfferMockData (addresses, contracts.testDAI, contracts.gammaPacks, contracts.gammaCards, contracts.gammaOffers);
     process.exit(0);
   } catch (error) {
     console.error(error);
