@@ -207,4 +207,10 @@ describe('NoF - Gamma Offers Tests', function () {
   });
 
 
+
+  /*
+  it('Should transfer cards from offer between 2 users', async () => {
+    
+  });
+  */
 })
