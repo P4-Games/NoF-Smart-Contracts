@@ -172,6 +172,13 @@ async function createOfferMockData(
   printCardsByUser(addresses[0].address, await gammaCards.getCardsByUser(addresses[0].address))
   printCardsByUser(addresses[1].address, await gammaCards.getCardsByUser(addresses[1].address))
 
+  console.log('Doing one offer exchange...')
+  await gammaOffers.confirmOfferExchange(addresses[1].address, 110, addresses[0].address, 28, 1);
+
+  printOffers(await gammaOffers.getOffers())
+  printCardsByUser(addresses[0].address, await gammaCards.getCardsByUser(addresses[0].address))
+  printCardsByUser(addresses[1].address, await gammaCards.getCardsByUser(addresses[1].address))
+
 }
 
 async function main() {
