@@ -21,7 +21,7 @@ interface IgammaOffersContract {
         returns ( uint256, uint8, uint8[] memory , address );
 }
 
-contract NofGammaCardsV3 is ERC721, ERC721URIStorage, ERC721Burnable, Ownable {
+contract NofGammaCardsV4 is ERC721, ERC721URIStorage, ERC721Burnable, Ownable {
     using Counters for Counters.Counter;
     using ECDSA for bytes32;
 

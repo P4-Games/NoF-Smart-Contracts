@@ -357,7 +357,7 @@ describe('NoF - Gamma Offers Tests', function () {
       await expect (await gammaOffers.hasOffer(address0.address, 3)).to.be.equal(true);
       await expect (await gammaCards.hasCard(address1.address, 90)).to.be.equal(true);
 
-      await gammaOffers.confirmOfferExchange(address1.address, 90, address0.address, 3);
+      await gammaOffers.confirmOfferExchange(address1.address, 90, address0.address, 3, 1);
 
       offers = await gammaOffers.getOffers()
       offersCount = offers.length
