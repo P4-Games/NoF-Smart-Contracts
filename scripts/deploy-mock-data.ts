@@ -58,7 +58,7 @@ async function gammaDaiBySigner(signer: SignerWithAddress, testDAI: Contract, ga
   console.log(`${signer.address} allowance to use with $ gamaPackAddress (${gammaPacks.address}): `, allowance)
 }
 
-async function gammaCircuitPack(signer: SignerWithAddress, testDAI: Contract, gammaPacks: Contract, gammaCards: Contract) {
+async function gammaCircuitPack(signer: SignerWithAddress, testDAI: Contract, gammaPacks: Contract) {
 
   const packPrice = 10000000000000000000
   const TenPacksPrice = ethers.BigNumber.from((packPrice * 10).toString()) 
@@ -92,12 +92,47 @@ async function gammaCircuitPack(signer: SignerWithAddress, testDAI: Contract, ga
   }
 }
 
+async function gammaCircuitPackWithoutOwner(
+  signer: SignerWithAddress, testDAI: Contract, 
+  gammaPacks: Contract, gammaCards: Contract, packData: number[]) {
+
+  const packPrice = 10000000000000000000
+  const TenPacksPrice = ethers.BigNumber.from((packPrice * 10).toString()) 
+
+  console.log('buying Pack...')
+  const tokenId = await gammaPacks.connect(signer).buyPack();
+  await tokenId.wait()
+  console.log('Buyed Pack token Id', tokenId.value)
+
+  console.log('Verifing testDai balance...')
+  const balance2 = await testDAI.balanceOf(signer.address)
+  console.log(`${signer.address} balance: `, balance2)
+
+  console.log('Verifing testDai allowance...')
+  const allowance2 = await testDAI.allowance(signer.address, gammaPacks.address)
+  console.log(`${signer.address} allowance to use with $ gamaPackAddress (${gammaPacks.address}): `, allowance2)
+
+  console.log('Verifing pack owner...')
+  const packOwner = await gammaPacks.connect(signer).getPackOwner(tokenId.value)
+  console.log(`Owner of TokenId ${tokenId.value}: ${packOwner}`)
+
+  console.log('Verifing user\'s packs...')
+  const packs:[any] = await gammaPacks.getPacksByUser(signer.address)
+  for (let i = 0; i < packs.length-1; i++) {
+    console.log(`\tPack ${i+1} Id: ${packs[i]}`)
+  }
+
+  console.log('Open pack...')
+  const trxBuypacks = await gammaCards.connect(signer).openPack(packs[0], packData, []);
+  await trxBuypacks.wait()
+  
+}
+
 async function gammaCircuitAllCards(signer: SignerWithAddress, gammaCards: Contract) {
     console.log('Adding all cards to user', signer.address)
     const transactionTestCards = await gammaCards.testAddCards(signer.address)
     await transactionTestCards.wait()
 }
-
 
 async function createGammaMockData( 
   addresses: SignerWithAddress[], testDAI: Contract, 
@@ -111,10 +146,14 @@ async function createGammaMockData(
   await gammaDaiBySigner(addresses[1], testDAI, gammaPacks, gammaCards)
   await gammaDaiBySigner(addresses[2], testDAI, gammaPacks, gammaCards)
   await gammaDaiBySigner(addresses[3], testDAI, gammaPacks, gammaCards)
-  await gammaCircuitPack(addresses[0], testDAI, gammaPacks, gammaCards)
-  await gammaCircuitPack(addresses[1], testDAI, gammaPacks, gammaCards)
-  await gammaCircuitPack(addresses[2], testDAI, gammaPacks, gammaCards)
-  await gammaCircuitPack(addresses[3], testDAI, gammaPacks, gammaCards)
+  await gammaCircuitPack(addresses[0], testDAI, gammaPacks)
+  await gammaCircuitPack(addresses[1], testDAI, gammaPacks)
+  await gammaCircuitPack(addresses[2], testDAI, gammaPacks)
+  await gammaCircuitPack(addresses[3], testDAI, gammaPacks)
+
+  await gammaCircuitPackWithoutOwner(addresses[0], testDAI, gammaPacks, gammaCards, [25,62,94,71,41,77,100,90,3,58,113,28])
+  await gammaCircuitPackWithoutOwner(addresses[1], testDAI, gammaPacks, gammaCards, [25,62,94,71,41,77,100,90,3,58,113,28])
+  
   await gammaCircuitAllCards(addresses[4], gammaCards)
   await gammaCircuitAllCards(addresses[5], gammaCards)
   await gammaCircuitAllCards(addresses[6], gammaCards)
@@ -173,7 +212,7 @@ async function createOfferMockData(
   printCardsByUser(addresses[1].address, await gammaCards.getCardsByUser(addresses[1].address))
 
   console.log('Doing one offer exchange...')
-  await gammaOffers.confirmOfferExchange(addresses[1].address, 110, addresses[0].address, 28, 1);
+  await gammaOffers.confirmOfferExchange(addresses[1].address, 110, addresses[0].address, 28);
 
   printOffers(await gammaOffers.getOffers())
   printCardsByUser(addresses[0].address, await gammaCards.getCardsByUser(addresses[0].address))
