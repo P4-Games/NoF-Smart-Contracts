@@ -19,6 +19,7 @@ contract NofGammaPacksV2 is Ownable {
     uint256 public packPrice = 12e17; // 1.2 DAI
     address public balanceReceiver;
     Counters.Counter private _tokenIdCounter;
+    bool transferDai = false;
 
     mapping(uint256 tokenId => address owner) public packs;
     mapping(address owner => uint256[] tokenIds) public packsByUser;
@@ -34,6 +35,7 @@ contract NofGammaPacksV2 is Ownable {
         DAI_TOKEN = _daiTokenAddress;
         balanceReceiver = _balanceReceiver;
         owners[msg.sender] = true;
+        transferDai = false;
     }
 
     modifier onlyOwners() {
@@ -81,12 +83,26 @@ contract NofGammaPacksV2 is Ownable {
         uint256 prizesAmount = packPrice - packPrice / 6;
         gammaCardsContract.receivePrizesBalance(prizesAmount);
 
-        // send prize amount to the card contract
-        IERC20(DAI_TOKEN).transferFrom(user, address(gammaCardsContract), prizesAmount); 
-        
-        // send profit amount to NoF account
-        IERC20(DAI_TOKEN).transferFrom(user, balanceReceiver, packPrice - prizesAmount); 
 
+        if (transferDai) {
+            // send prize amount to the card contract
+            /*
+            IERC20 erc20Token = IERC20(DAI_TOKEN);
+            require(erc20Token.balanceOf(user) >= prizesAmount, "Insufficient balance to transfer prizes amount.");
+            bool successTx1 = erc20Token.transferFrom(user, address(gammaCardsContract), prizesAmount);
+            require(successTx1, "Error sending prizes amount to gammaCardsContract.");
+            */
+            IERC20(DAI_TOKEN).transferFrom(user, address(gammaCardsContract), prizesAmount); 
+            
+            // send profit amount to NoF account
+            /*
+            require(erc20Token.balanceOf(user) >= (packPrice - prizesAmount), "Insufficient balance to transfer profit amount.");
+            bool successTx2 = erc20Token.transferFrom(user, balanceReceiver, packPrice - prizesAmount);
+            require(successTx2, "Error sending profit amount to NoF account.");
+            */
+            IERC20(DAI_TOKEN).transferFrom(user, balanceReceiver, packPrice - prizesAmount); 
+        }
+        
         emit PackPurchase(user, tokenId);
         return tokenId;
     }
@@ -115,11 +131,25 @@ contract NofGammaPacksV2 is Ownable {
         }
 
         gammaCardsContract.receivePrizesBalance(prizesAmount);
-        // send prize amount to the card contract
-        IERC20(DAI_TOKEN).transferFrom(user, address(gammaCardsContract), prizesAmount); 
+
+        if (transferDai) {
+            // send prize amount to the card contract
+            /*
+            IERC20 erc20Token = IERC20(DAI_TOKEN);
+            require(erc20Token.balanceOf(user) >= prizesAmount, "Insufficient balance to transfer prizes amount.");
+            bool successTx1 = erc20Token.transferFrom(user, address(gammaCardsContract), prizesAmount);
+            require(successTx1, "Error sending prize amount to gammaCardsContract");
+            */
+            IERC20(DAI_TOKEN).transferFrom(user, address(gammaCardsContract), prizesAmount); 
         
-        // send profit amount to NoF account
-        IERC20(DAI_TOKEN).transferFrom(user, balanceReceiver, packPrice * numberOfPacks - prizesAmount); 
+            // send profit amount to NoF account
+            /*
+            require(erc20Token.balanceOf(user) >= (packPrice - prizesAmount), "Insufficient balance to transfer profit amount.");
+            bool successTx2 = erc20Token.transferFrom(user, balanceReceiver, packPrice * numberOfPacks - prizesAmount);
+            require(successTx2, "Error sending profit amount to NoF account.");
+            */
+            IERC20(DAI_TOKEN).transferFrom(user, balanceReceiver, packPrice * numberOfPacks - prizesAmount); 
+        }
 
         emit PacksPurchase(user, tokenIds);
         return tokenIds;
@@ -161,6 +191,10 @@ contract NofGammaPacksV2 is Ownable {
         packPrice = _newPrice;
         gammaCardsContract.changePackPrice(_newPrice);
         emit NewPrice(_newPrice);
+    }
+
+    function changeTransferDaiFlag(bool _transferDai) public onlyOwners {
+        transferDai = _transferDai;
     }
 
     function setGammaCardsContract(address _gammaCardsContract) public onlyOwners {
