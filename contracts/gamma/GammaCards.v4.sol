@@ -64,6 +64,7 @@ contract NofGammaCardsV4 is ERC721, ERC721URIStorage, ERC721Burnable, Ownable {
     event NewSigner(address newSigner);
     event NewUris(string newMainUri, string newSecondaryUri);
     event NewGammaOffersContract(address newGammaOffersContract);
+    event NewGammaPacksContract(address newGammaPacksContract);
 
     constructor(address _daiTokenAddress, address _gammaPacksContract, string memory _baseUri, address _signer) 
         ERC721("GammaCards", "NOF_GC") {
@@ -373,6 +374,12 @@ contract NofGammaCardsV4 is ERC721, ERC721URIStorage, ERC721Burnable, Ownable {
 
     function changePackPrice(uint256 newPackPrice) external onlyGammaPacksContract {
         packPrice = newPackPrice;
+    }
+
+    function setGammaPacksContract(address _gammaPacksContract) public onlyOwners {
+        require(_gammaPacksContract != address(0), "Invalid address.");
+        gammaPacksContract = IgammaPacksContract(_gammaPacksContract);
+        emit NewGammaPacksContract(_gammaPacksContract);
     }
 
     function setUris(string memory newMainUri, string memory newSecondaryUri) public onlyOwners {
