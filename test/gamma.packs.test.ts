@@ -45,5 +45,26 @@ describe('NoF - Gamma Packs Tests', function () {
     await gammaPacks.testOpenPack(tokenId.value, address0.address)
   })
 
+  it('Transfer pack twice', async () => {
+    const { gammaPacks, address0, address1 } = await loadFixture(deployNofFixture)
+    const tokenId = await gammaPacks.buyPacks(4) 
+    await expect(tokenId).to.not.be.equals(0)
+
+    let userPacks = await gammaPacks.getPacksByUser(address0.address)
+    await expect(userPacks.length).to.be.equals(4)
+      
+    await gammaPacks.transferPack (address1.address, userPacks[3])
+    await expect((await gammaPacks.getPacksByUser(address0.address)).length).to.be.equals(3)
+    
+    const packsUser1 = await gammaPacks.getPacksByUser(address1.address)
+    await expect(packsUser1.length).to.be.equals(1)
+
+    await gammaPacks.testOpenPack(packsUser1[0], address1.address)
+    await expect((await gammaPacks.getPacksByUser(address1.address)).length).to.be.equals(0)
+
+    await gammaPacks.transferPack (address1.address, userPacks[2])
+    await expect((await gammaPacks.getPacksByUser(address0.address)).length).to.be.equals(2)
+    await expect((await gammaPacks.getPacksByUser(address1.address)).length).to.be.equals(1)
+  })
 
 })
