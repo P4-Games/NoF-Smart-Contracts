@@ -2,7 +2,7 @@ import "@nomiclabs/hardhat-ethers";
 import { ethers } from "hardhat"; 
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { Contract } from "ethers";
-import { /*generateSignature,*/ getInitData, deployContracts, isHardhat, isLocalhost } from "./common";
+import { /*generateSignature,*/ gammaDaiBySigner, getInitData, deployContracts, isHardhat, isLocalhost } from "./common";
 
 async function createAlphaMockData( addresses: SignerWithAddress[], testDAI: Contract, alpha: Contract ) {
   // Alpha Data
@@ -40,22 +40,6 @@ async function createAlphaMockData( addresses: SignerWithAddress[], testDAI: Con
   } catch (ex) {
     console.error ({ ex })
   }
-}
-
-async function gammaDaiBySigner(signer: SignerWithAddress, testDAI: Contract, gammaPacks: Contract, gammaCards: Contract) {
-  const packPrice = 10000000000000000000
-  const TenPacksPrice = ethers.BigNumber.from((packPrice * 10).toString()) 
-
-  console.log('approving in testDai...')
-  await testDAI.connect(signer).approve(gammaPacks.address, TenPacksPrice);
-
-  console.log('Verifing testDai balance...')
-  const balance = await testDAI.balanceOf(signer.address)
-  console.log(`${signer.address} balance: `, balance)
-
-  console.log('Verifing testDai allowance...')
-  const allowance = await testDAI.connect(signer).allowance(signer.address, gammaPacks.address)
-  console.log(`${signer.address} allowance to use with $ gamaPackAddress (${gammaPacks.address}): `, allowance)
 }
 
 async function gammaCircuitPack(signer: SignerWithAddress, testDAI: Contract, gammaPacks: Contract) {
@@ -142,10 +126,10 @@ async function createGammaMockData(
   console.log('Creating Gamma Mock Data')
   console.log('----------------------------------\n')
 
-  await gammaDaiBySigner(addresses[0], testDAI, gammaPacks, gammaCards)
-  await gammaDaiBySigner(addresses[1], testDAI, gammaPacks, gammaCards)
-  await gammaDaiBySigner(addresses[2], testDAI, gammaPacks, gammaCards)
-  await gammaDaiBySigner(addresses[3], testDAI, gammaPacks, gammaCards)
+  await gammaDaiBySigner(addresses[0], testDAI, gammaPacks)
+  await gammaDaiBySigner(addresses[1], testDAI, gammaPacks)
+  await gammaDaiBySigner(addresses[2], testDAI, gammaPacks)
+  await gammaDaiBySigner(addresses[3], testDAI, gammaPacks)
   await gammaCircuitPack(addresses[0], testDAI, gammaPacks)
   await gammaCircuitPack(addresses[1], testDAI, gammaPacks)
   await gammaCircuitPack(addresses[2], testDAI, gammaPacks)

@@ -4,6 +4,7 @@ import dotenv from 'dotenv';
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 import Web3 from 'web3';
 import { config } from 'hardhat';
+import { Contract } from 'ethers';
 
 export const isLocalhost = (network.name === 'localhost') || (network.name === '127.0.0.1')
 export const isHardhat = (network.name === 'hardhat') 
@@ -23,7 +24,7 @@ export async function getInitData() {
   const acc = await deployer.getAddress();
   const addresses = await ethers.getSigners()
   console.log(
-    `Deploying the contracts with the account ${acc}, current acc balance: ${balance}`
+    `Deploying the contracts with the account ${acc}, current acc balance: ${ethers.utils.formatEther(balance)}`
   );
 
   return addresses
@@ -231,4 +232,23 @@ async function generateSignature2(address: string, packNumber: number) {
   } catch (e) {
     console.error({ e })
   }
+}
+
+export async function gammaDaiBySigner(signer: SignerWithAddress, testDAI: Contract, gammaPacks: Contract) {
+  const packPrice = 10000000000000000000
+  const TenPacksPrice = ethers.BigNumber.from((packPrice * 10).toString()) 
+
+  console.log(`Minting some DAIs for this wallet address:\n ${signer.address}`)
+  await testDAI._mint(signer.address, ethers.BigNumber.from('900000000000000000000'));
+ 
+  console.log('approving in testDai...')
+  await testDAI.connect(signer).approve(gammaPacks.address, TenPacksPrice);
+
+  console.log('Verifing testDai balance...')
+  const balance = await testDAI.balanceOf(signer.address)
+  console.log(`${signer.address} balance: `, balance)
+
+  console.log('Verifing testDai allowance...')
+  const allowance = await testDAI.connect(signer).allowance(signer.address, gammaPacks.address)
+  console.log(`${signer.address} allowance to use with gamaPackAddress (${gammaPacks.address}): `, allowance)
 }

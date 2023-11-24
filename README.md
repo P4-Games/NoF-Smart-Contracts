@@ -61,36 +61,37 @@ NOF_ALPHA_CONTRACT_NAME='NofAlphaV2'
 NOF_GAMMA_PACKS_CONTRACT_NAME='NofGammaPacksV2'
 NOF_GAMMA_CARDS_CONTRACT_NAME='NofGammaCardsV3'
 NOF_GAMMA_OFFERS_CONTRACT_NAME='NofGammaOffersV1'
-# Se dejó en el código dos métodos para hacer una firma de datos.
-# El metodo 1 es un custom que se usa de manera local. 
-# El método 2 es el que usa al app en los ambientes, desplegado en 
-# un micro-servicio de backend.
+
+# Two methods were left in the code to create a data signature.
+# Method 1 is a custom one used locally.
+# Method 2 is used by the app in environments, deployed in a backend micro-service.
 SIGNATURE_METHOD='1'
 
-# Esta variable contiene una lista (separador: ",") de las wallets addresses
-# que han firmado packs.
-# El micro-servicio de backend genera una firma. En el SC que llama la landing, 
-# se valida esa firma.
-# Última wallet seteada en el micro-servicio: 0x20517cf8c140f7f393f92cea6158f57385a75733 
-# Se deja seteadas varias, por las distintas wallets que han firmado packs.
+# This variable contains a list (separator: ",") of wallet addresses
+# that have signed packs.
+# The backend micro-service generates a signature. In the smart contract calling the landing,
+# that signature is validated.
+# Last wallet set in the micro-service: 0x20517cf8c140f7f393f92cea6158f57385a75733
+# Multiple wallets are set due to different wallets that have signed packs.
 MICRO_SERVICE_SIGNATURE_WALLETS_ADDRESSES=''
 
-# Dirección de la wallet del balance receiver que quedará condigurado en el contrato
-# gamma-packs
+# Address of the wallet of the balance receiver that will be configured in the gamma-packs contract
 BALANCE_RECEIVER_WALLET_ADDRESS=''
 
-# Lista de direcciones de owners adicionales (al que desplega) para sumar a los contratos 
-# (separar los valores por ",")
+# List of additional owner addresses (to the deployer) to add to the contracts
+# (separate values by ",")
 ADDITIONAL_OWNERS_WALLETS_ADDRESSES=''
 
-# Direcciones de contatos existentes, para no re-desplegar al ejecutar el script deploy.hs
-# (usará las definidas en éstas variables)
+# Addresses of existing contracts, to avoid re-deployment when executing the deploy.hs script
+# (it will use the ones defined in these variables)
 NOF_DAI_CONTRACT_CURRENT_ADDRESS=''
 NOF_ALPHA_CONTRACT_CURRENT_ADDRESS=''
 NOF_GAMMA_PACKS_CONTRACT_CURRENT_ADDRESS=''
 NOF_GAMMA_CARDS_CONTRACT_CURRENT_ADDRESS=''
 NOF_GAMMA_OFFERS_CONTRACT_CURRENT_ADDRESS=''
 
+# Addresses to mint DAIs using a script (scripts/mint-dais.ts)
+NOF_DAI_MINT_EXTRA_WALLET_ADDRESSES=''
 ```
 
 > Note: You can find more info about the other required `.env` variables inside the `example_env` file.
