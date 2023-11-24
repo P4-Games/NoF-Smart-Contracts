@@ -1,10 +1,7 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.4;
+pragma solidity ^0.8.16;
 
-/**
- * https://github.com/maticnetwork/pos-portal/blob/master/contracts/common/ContextMixin.sol
- */
-abstract contract ContextMixin {
+abstract contract ContextMixinV2 {
     function msgSender()
         internal
         view

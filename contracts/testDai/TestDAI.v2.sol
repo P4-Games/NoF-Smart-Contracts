@@ -1,12 +1,5 @@
-/**
- *Submitted for verification at polygonscan.com on 2021-06-15
-*/
-
-// File: @openzeppelin/contracts/GSN/Context.sol
-
 // SPDX-License-Identifier: MIT
-
-pragma solidity ^0.6.0;
+pragma solidity ^0.8.16;
 
 /*
  * @dev Provides information about the current execution context, including the
@@ -20,20 +13,22 @@ pragma solidity ^0.6.0;
  */
 abstract contract Context {
     function _msgSender() internal view virtual returns (address payable) {
-        return msg.sender;
+        return payable(address(msg.sender));
     }
 
     function _msgData() internal view virtual returns (bytes memory) {
-        this; // silence state mutability warning without generating bytecode - see https://github.com/ethereum/solidity/issues/2691
+        // silence state mutability warning without generating bytecode
+        // more info: see https://github.com/ethereum/solidity/issues/2691
+        this; 
         return msg.data;
     }
 }
 
 // File: @openzeppelin/contracts/token/ERC20/IERC20.sol
 
-// SPDX-License-Identifier: MIT
 
-pragma solidity ^0.6.0;
+
+pragma solidity ^0.8.16;
 
 /**
  * @dev Interface of the ERC20 standard as defined in the EIP.
@@ -111,9 +106,9 @@ interface IERC20 {
 
 // File: @openzeppelin/contracts/math/SafeMath.sol
 
-// SPDX-License-Identifier: MIT
 
-pragma solidity ^0.6.0;
+
+pragma solidity ^0.8.16;
 
 /**
  * @dev Wrappers over Solidity's arithmetic operations with added overflow
@@ -273,9 +268,9 @@ library SafeMath {
 
 // File: @openzeppelin/contracts/utils/Address.sol
 
-// SPDX-License-Identifier: MIT
 
-pragma solidity ^0.6.2;
+
+pragma solidity ^0.8.16;
 
 /**
  * @dev Collection of functions related to the address type
@@ -323,7 +318,6 @@ library Address {
      * IMPORTANT: because control is transferred to `recipient`, care must be
      * taken to not create reentrancy vulnerabilities. Consider using
      * {ReentrancyGuard} or the
-     * https://solidity.readthedocs.io/en/v0.5.11/security-considerations.html#use-the-checks-effects-interactions-pattern[checks-effects-interactions pattern].
      */
     function sendValue(address payable recipient, uint256 amount) internal {
         require(address(this).balance >= amount, "Address: insufficient balance");
@@ -342,7 +336,6 @@ library Address {
      * function (like regular Solidity function calls).
      *
      * Returns the raw returned data. To convert to the expected return value,
-     * use https://solidity.readthedocs.io/en/latest/units-and-global-variables.html?highlight=abi.decode#abi-encoding-and-decoding-functions[`abi.decode`].
      *
      * Requirements:
      *
@@ -361,7 +354,8 @@ library Address {
      *
      * _Available since v3.1._
      */
-    function functionCall(address target, bytes memory data, string memory errorMessage) internal returns (bytes memory) {
+    function functionCall(address target, bytes memory data, string memory errorMessage) internal 
+        returns (bytes memory) {
         return _functionCallWithValue(target, data, 0, errorMessage);
     }
 
@@ -386,12 +380,18 @@ library Address {
      *
      * _Available since v3.1._
      */
-    function functionCallWithValue(address target, bytes memory data, uint256 value, string memory errorMessage) internal returns (bytes memory) {
+    function functionCallWithValue(
+        address target, bytes memory data, 
+        uint256 value, string memory errorMessage) internal returns (bytes memory) {
+
         require(address(this).balance >= value, "Address: insufficient balance for call");
         return _functionCallWithValue(target, data, value, errorMessage);
     }
 
-    function _functionCallWithValue(address target, bytes memory data, uint256 weiValue, string memory errorMessage) private returns (bytes memory) {
+    function _functionCallWithValue(
+        address target, bytes memory data, 
+        uint256 weiValue, string memory errorMessage) private returns (bytes memory) {
+        
         require(isContract(target), "Address: call to non-contract");
 
         // solhint-disable-next-line avoid-low-level-calls
@@ -417,10 +417,9 @@ library Address {
 
 // File: contracts/child/ChildToken/UpgradeableChildERC20/ERC20.sol
 
-// SPDX-License-Identifier: MIT
 
-pragma solidity ^0.6.0;
 
+pragma solidity ^0.8.16;
 
 
 
@@ -480,9 +479,9 @@ contract ERC20 is Context, IERC20 {
      * All three of these values are immutable: they can only be set once during
      * construction.
      */
-    constructor (string memory name, string memory symbol) public {
-        _name = name;
-        _symbol = symbol;
+    constructor (string memory __name, string memory __symbol) {
+        _name = __name;
+        _symbol = __symbol;
         _decimals = 18;
     }
 
@@ -590,7 +589,8 @@ contract ERC20 is Context, IERC20 {
      */
     function transferFrom(address sender, address recipient, uint256 amount) public virtual override returns (bool) {
         _transfer(sender, recipient, amount);
-        _approve(sender, _msgSender(), _allowances[sender][_msgSender()].sub(amount, "ERC20: transfer amount exceeds allowance"));
+        _approve(sender, _msgSender(), _allowances[sender][_msgSender()].sub(amount, 
+            "ERC20: transfer amount exceeds allowance"));
         return true;
     }
 
@@ -626,7 +626,8 @@ contract ERC20 is Context, IERC20 {
      * `subtractedValue`.
      */
     function decreaseAllowance(address spender, uint256 subtractedValue) public virtual returns (bool) {
-        _approve(_msgSender(), spender, _allowances[_msgSender()][spender].sub(subtractedValue, "ERC20: decreased allowance below zero"));
+        _approve(_msgSender(), spender, _allowances[_msgSender()][spender].sub(subtractedValue, 
+            "ERC20: decreased allowance below zero"));
         return true;
     }
 
@@ -662,9 +663,9 @@ contract ERC20 is Context, IERC20 {
      *
      * Requirements
      *
-     * - `to` cannot be the zero address.
+     * - `to` cannot be the zero address. 
      */
-    function _mint(address account, uint256 amount) public virtual { // @NOF_dev original is internal, now set to public to mint DAI
+    function _mint(address account, uint256 amount) public virtual { 
         require(account != address(0), "ERC20: mint to the zero address");
 
         _beforeTokenTransfer(address(0), account, amount);
@@ -746,9 +747,9 @@ contract ERC20 is Context, IERC20 {
 
 // File: @openzeppelin/contracts/utils/EnumerableSet.sol
 
-// SPDX-License-Identifier: MIT
 
-pragma solidity ^0.6.0;
+
+pragma solidity ^0.8.16;
 
 /**
  * @dev Library for managing
@@ -893,7 +894,7 @@ library EnumerableSet {
      * already present.
      */
     function add(AddressSet storage set, address value) internal returns (bool) {
-        return _add(set._inner, bytes32(uint256(value)));
+        return _add(set._inner, bytes32(uint256(uint160(value))));
     }
 
     /**
@@ -903,14 +904,14 @@ library EnumerableSet {
      * present.
      */
     function remove(AddressSet storage set, address value) internal returns (bool) {
-        return _remove(set._inner, bytes32(uint256(value)));
+        return _remove(set._inner, bytes32(uint256(uint160(value))));
     }
 
     /**
      * @dev Returns true if the value is in the set. O(1).
      */
     function contains(AddressSet storage set, address value) internal view returns (bool) {
-        return _contains(set._inner, bytes32(uint256(value)));
+        return _contains(set._inner, bytes32(uint256(uint160(value))));
     }
 
     /**
@@ -931,7 +932,7 @@ library EnumerableSet {
     * - `index` must be strictly less than {length}.
     */
     function at(AddressSet storage set, uint256 index) internal view returns (address) {
-        return address(uint256(_at(set._inner, index)));
+        return address(uint160(uint256(_at(set._inner, index))));
     }
 
 
@@ -992,9 +993,9 @@ library EnumerableSet {
 
 // File: @openzeppelin/contracts/access/AccessControl.sol
 
-// SPDX-License-Identifier: MIT
 
-pragma solidity ^0.6.0;
+
+pragma solidity ^0.8.16;
 
 
 
@@ -1098,7 +1099,7 @@ abstract contract AccessControl is Context {
      *
      * WARNING: When using {getRoleMember} and {getRoleMemberCount}, make sure
      * you perform all queries on the same block. See the following
-     * https://forum.openzeppelin.com/t/iterating-over-elements-on-enumerableset-in-openzeppelin-contracts/2296[forum post]
+     * https://forum.openzeppelin.com/t/iterating-over-elements-on-enumerableset-in-openzeppelin-contracts/2296
      * for more information.
      */
     function getRoleMember(bytes32 role, uint256 index) public view returns (address) {
@@ -1211,7 +1212,7 @@ abstract contract AccessControl is Context {
 
 // File: contracts/common/AccessControlMixin.sol
 
-pragma solidity 0.6.6;
+pragma solidity ^0.8.16;
 
 
 contract AccessControlMixin is AccessControl {
@@ -1231,7 +1232,7 @@ contract AccessControlMixin is AccessControl {
 
 // File: contracts/child/ChildToken/IChildToken.sol
 
-pragma solidity 0.6.6;
+pragma solidity ^0.8.16;
 
 interface IChildToken {
     function deposit(address user, bytes calldata depositData) external;
@@ -1239,7 +1240,7 @@ interface IChildToken {
 
 // File: contracts/common/Initializable.sol
 
-pragma solidity 0.6.6;
+pragma solidity ^0.8.16;
 
 contract Initializable {
     bool inited = false;
@@ -1253,7 +1254,7 @@ contract Initializable {
 
 // File: contracts/common/EIP712Base.sol
 
-pragma solidity 0.6.6;
+pragma solidity ^0.8.16;
 
 
 contract EIP712Base is Initializable {
@@ -1300,7 +1301,7 @@ contract EIP712Base is Initializable {
         return domainSeperator;
     }
 
-    function getChainId() public pure returns (uint256) {
+    function getChainId() public view returns (uint256) {
         uint256 id;
         assembly {
             id := chainid()
@@ -1329,7 +1330,7 @@ contract EIP712Base is Initializable {
 
 // File: contracts/common/NativeMetaTransaction.sol
 
-pragma solidity 0.6.6;
+pragma solidity ^0.8.16;
 
 
 
@@ -1381,7 +1382,7 @@ contract NativeMetaTransaction is EIP712Base {
 
         emit MetaTransactionExecuted(
             userAddress,
-            msg.sender,
+            payable(msg.sender),
             functionSignature
         );
 
@@ -1435,7 +1436,7 @@ contract NativeMetaTransaction is EIP712Base {
 
 // File: contracts/ChainConstants.sol
 
-pragma solidity 0.6.6;
+pragma solidity ^0.8.16;
 
 contract ChainConstants {
     string constant public ERC712_VERSION = "1";
@@ -1449,7 +1450,7 @@ contract ChainConstants {
 
 // File: contracts/common/ContextMixin.sol
 
-pragma solidity 0.6.6;
+pragma solidity ^0.8.16;
 
 abstract contract ContextMixin {
     function msgSender()
@@ -1468,7 +1469,7 @@ abstract contract ContextMixin {
                 )
             }
         } else {
-            sender = msg.sender;
+            sender = payable(msg.sender);
         }
         return sender;
     }
@@ -1476,7 +1477,7 @@ abstract contract ContextMixin {
 
 // File: contracts/child/ChildToken/UpgradeableChildERC20/UChildERC20.sol
 
-pragma solidity 0.6.6;
+pragma solidity ^0.8.16;
 
 
 
@@ -1495,7 +1496,7 @@ contract UChildERC20 is
 {
     bytes32 public constant DEPOSITOR_ROLE = keccak256("DEPOSITOR_ROLE");
 
-    constructor() public ERC20("", "") {}
+    constructor() ERC20("", "") {}
 
     /**
      * @notice Initialize the contract after it has been proxified
@@ -1564,11 +1565,12 @@ contract UChildERC20 is
 
 // File: contracts/child/ChildToken/DappTokens/UChildDAI.sol
 
-pragma solidity 0.6.6;
+pragma solidity ^0.8.16;
 
 
-contract UChildDAI is UChildERC20 {
-    // bytes32 public constant PERMIT_TYPEHASH = keccak256("Permit(address holder,address spender,uint256 nonce,uint256 expiry,bool allowed)");
+contract NofTestDAIV2 is UChildERC20 {
+    // bytes32 public constant PERMIT_TYPEHASH = 
+    //  keccak256("Permit(address holder,address spender,uint256 nonce,uint256 expiry,bool allowed)");
     bytes32 public constant PERMIT_TYPEHASH = 0xea2aa0a1be11a07ed86d755c93467f4f82362b452371d1ba94d1715123511acb;
 
     // --- Alias ---
@@ -1610,9 +1612,9 @@ contract UChildDAI is UChildERC20 {
         ));
 
         require(holder == ecrecover(digest, v, r, s), "UChildDAI: INVALID-PERMIT");
-        require(expiry == 0 || now <= expiry, "UChildDAI: PERMIT-EXPIRED");
+        require(expiry == 0 || block.timestamp <= expiry, "UChildDAI: PERMIT-EXPIRED");
         require(nonce == nonces[holder]++, "UChildDAI: INVALID-NONCE");
-        uint wad = allowed ? uint(-1) : 0;
+        uint wad = allowed ? type(uint).max : 0;
         _approve(holder, spender, wad);
     }
 }

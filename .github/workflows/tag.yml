@@ -1,0 +1,15 @@
+name: Create Tag
+on:
+  push:
+    branches:
+      - main
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+    - name: Run script file
+      run: |
+        chmod +x .github/workflows/scripts/gitTag.sh
+        .github/workflows/scripts/gitTag.sh -v patch
+      shell: bash
