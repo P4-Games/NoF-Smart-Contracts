@@ -24,10 +24,11 @@ contract NofGammaOffersV3 is Ownable {
     bool removeCardInInventoryWhenOffer = false;
 
     struct Offer {
-        uint256 offerId;
+        string offerId;
         uint8 cardNumber;
         uint8[] wantedCardNumbers;
         address owner;
+         uint256 timestamp;
     }
 
     Offer[] public offers;
@@ -97,15 +98,15 @@ contract NofGammaOffersV3 is Ownable {
         removeCardInInventoryWhenOffer = _value;
     }
 
-    function createOffer(uint8 cardNumber, uint8[] memory wantedCardNumbers) public {
-        _createOfferWithoUser (msg.sender, cardNumber, wantedCardNumbers);
+    function createOffer(string memory offerId, uint8 cardNumber, uint8[] memory wantedCardNumbers) public {
+        _createOfferWithoUser (offerId, msg.sender, cardNumber, wantedCardNumbers);
     }
 
-    function createOfferWithoUser(address user, uint8 cardNumber, uint8[] memory wantedCardNumbers) public onlyOwners{
-        _createOfferWithoUser (user, cardNumber, wantedCardNumbers);
+    function createOfferWithoUser(string memory offerId, address user, uint8 cardNumber, uint8[] memory wantedCardNumbers) public onlyOwners{
+        _createOfferWithoUser (offerId, user, cardNumber, wantedCardNumbers);
     }
 
-    function _createOfferWithoUser(address user, uint8 cardNumber, uint8[] memory wantedCardNumbers) private {
+    function _createOfferWithoUser(string memory offerId, address user, uint8 cardNumber, uint8[] memory wantedCardNumbers) private {
         require(address(gammaCardsContract) != address(0), "GammaCardsContract not set."); 
         require(wantedCardNumbers.length > 0, "wantedCardNumbers cannot be empty.");
         require(offersByUserCounter[user].current() < maxOffersByUserAllowed, "User has reached the maximum allowed offers.");
@@ -119,15 +120,13 @@ contract NofGammaOffersV3 is Ownable {
         }
 
         Offer memory existingOffer = getOfferByUserAndCardNumber(user, cardNumber);
-        require(existingOffer.offerId == 0, "An offer for this user and cardNumber already exists.");
+        require(existingOffer.owner == address(0), "An offer for this user and cardNumber already exists.");
 
         offersByUserCounter[user].increment();
         offersByCardNumberCounter[cardNumber].increment();
         offersTotalCounter.increment();
 
-        uint256 offerId = offersTotalCounter.current();
-        
-        offers.push(Offer(offerId, cardNumber, wantedCardNumbers, user));
+        offers.push(Offer(offerId, cardNumber, wantedCardNumbers, user, block.timestamp));
         offersByUser[user].push(offers[offers.length - 1]);
         offersByCardNumber[cardNumber].push(offers[offers.length - 1]);
 
@@ -168,13 +167,13 @@ contract NofGammaOffersV3 is Ownable {
         return offers[index];
     }
 
-    function getOfferByOfferId(uint256 offerId) external view returns (Offer memory) {
-        for (uint256 i = 0; i < offersTotalCounter.current(); i++) {
-            if (offers[i].offerId == offerId) {
+    function getOfferByOfferId(string memory offerId) external view returns (Offer memory) {
+        for (uint256 i = 0; i < offers.length; i++) {
+            if (keccak256(abi.encodePacked(offers[i].offerId)) == keccak256(abi.encodePacked(offerId))) {
                 return (offers[i]);
             }
         }
-        return Offer(0, 0, new uint8[](0), address(0));
+        return _emptyOffer();
     }
 
     function getOffersByUser(address user) external view returns (Offer[] memory) {
@@ -194,7 +193,7 @@ contract NofGammaOffersV3 is Ownable {
                 return offersByUser[user][i];
             }
         }
-        return Offer(0, 0, new uint8[](0), address(0));
+        return _emptyOffer();
     }
 
     function hasOffer(address user, uint8 cardNumber) public view returns (bool) {
@@ -251,7 +250,7 @@ contract NofGammaOffersV3 is Ownable {
         bool deletedOffer = false;
         for (uint256 i = 0; i < currentUserOffersCounter; i++) {
             if (userOffers[i].cardNumber == cardNumber) {
-                uint256 offerId = userOffers[i].offerId;
+                string memory offerId = userOffers[i].offerId;
 
                 _deleteOfferFromUserMapping(user, cardNumber, offerId);
                 _deleteOfferFromCardNumberMapping(user, cardNumber, offerId);
@@ -274,10 +273,10 @@ contract NofGammaOffersV3 is Ownable {
         return deletedOffer;
     }
 
-    function _deleteOfferFromUserMapping(address user, uint8 cardNumber, uint256 offerId) private {
+    function _deleteOfferFromUserMapping(address user, uint8 cardNumber, string memory offerId) private {
         Offer[] storage userOffers = offersByUser[user];
         for (uint256 i = 0; i < userOffers.length; i++) {
-            if (userOffers[i].offerId == offerId) {
+            if (_sameOfferId(userOffers[i].offerId, offerId)) {
                 
                 require(userOffers[i].owner == user, "_deleteOfferFromUserMapping: owner does not match.");
                 require(userOffers[i].cardNumber == cardNumber, "_deleteOfferFromUserMapping: cardNumber does not match.");
@@ -291,11 +290,11 @@ contract NofGammaOffersV3 is Ownable {
         }
     }
 
-    function _deleteOfferFromCardNumberMapping(address user, uint8 cardNumber, uint256 offerId) private {
+    function _deleteOfferFromCardNumberMapping(address user, uint8 cardNumber, string memory offerId) private {
         Offer[] storage cardOffers = offersByCardNumber[cardNumber];
 
         for (uint256 i = 0; i < cardOffers.length; i++) {
-            if (cardOffers[i].offerId == offerId) {
+            if (_sameOfferId(cardOffers[i].offerId, offerId)) {
 
                 require(cardOffers[i].owner == user, "_deleteOfferFromCardNumberMapping: owner does not match.");
                 require(cardOffers[i].cardNumber == cardNumber, "_deleteOfferFromCardNumberMapping: cardNumber does not match.");
@@ -309,10 +308,10 @@ contract NofGammaOffersV3 is Ownable {
         }
     }
 
-    function _removeOfferByOfferId(uint256 offerId) private returns (bool) {
+    function _removeOfferByOfferId(string memory offerId) private returns (bool) {
         bool deleted = false;
         for (uint256 j = 0; j < offers.length; j++) {
-            if (j < offers.length && offers[j].offerId == offerId) {
+            if (j < offers.length && _sameOfferId(offers[j].offerId, offerId)) {
                 delete offers[j];
                 offers[j] = offers[offers.length - 1];
                 offers.pop();
@@ -322,5 +321,12 @@ contract NofGammaOffersV3 is Ownable {
         }
         return deleted;
     }
-  
+
+     function _emptyOffer() internal pure returns (Offer memory) {
+        return Offer("", 0, new uint8[](0), address(0), 0);
+     }
+
+     function _sameOfferId(string memory offerId1, string memory offerId2) internal pure returns (bool) {
+        return keccak256(abi.encodePacked(offerId1)) == keccak256(abi.encodePacked(offerId2));
+     }
 }

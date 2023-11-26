@@ -2,6 +2,7 @@ import "@nomiclabs/hardhat-ethers";
 import { ethers } from "hardhat"; 
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { Contract } from "ethers";
+import { v4 as uuidv4 } from 'uuid';
 import { /*generateSignature,*/ gammaDaiBySigner, getInitData, deployContracts, isHardhat, isLocalhost } from "./common";
 
 async function createAlphaMockData( addresses: SignerWithAddress[], testDAI: Contract, alpha: Contract ) {
@@ -160,6 +161,7 @@ function printCardsByUser(wallet: string, cards: any[]) {
 }
 
 function printOffers(offers: any[]) {
+  console.log('\n')
   offers.forEach((offer: any[]) => {
     console.log(`offer: ${offer[0]}, offerCard: ${offer[1]}, offerWallet: ${offer[3]}, wantedCards: ${offer[2].join (',')}`)
   })
@@ -180,27 +182,38 @@ async function createOfferMockData(
   await gammaOfferBuyPack(addresses[0], gammaPacks, gammaCards, [25,62,94,71,41,77,100,90,3,58,113,28])
   await gammaOfferBuyPack(addresses[0], gammaPacks, gammaCards, [0,1,2,4,5,6,7,8,9,10,11,12])
 
-  await gammaOffers.connect(addresses[0]).createOffer(3, [24,4,5,6,7,8])
-  await gammaOffers.connect(addresses[0]).createOffer(25, [24,4,0,119,7,1])
-  await gammaOffers.connect(addresses[0]).createOffer(28, [110,32,2])
-  await gammaOffers.connect(addresses[0]).createOffer(1, [117,118,119])
+  await gammaOffers.connect(addresses[0]).createOffer(uuidv4(), 3, [24,4,5,6,7,8])
+  await gammaOffers.connect(addresses[0]).createOffer(uuidv4(), 25, [24,4,0,119,7,1])
+  await gammaOffers.connect(addresses[0]).createOffer(uuidv4(), 28, [110,32,2])
+  await gammaOffers.connect(addresses[0]).createOffer(uuidv4(), 1, [117,118,119])
 
   await gammaOfferBuyPack(addresses[1], gammaPacks, gammaCards, [90,91,92,93,94,95,96,97,98,99,100,101])
   await gammaOfferBuyPack(addresses[1], gammaPacks, gammaCards, [102,103,104,105,106,107,108,109,110,111,112])
 
-  await gammaOffers.connect(addresses[1]).createOffer(90, [0,1,2])
-  await gammaOffers.connect(addresses[1]).createOffer(102, [32,2,4,5,6,7])
+  await gammaOffers.connect(addresses[1]).createOffer(uuidv4(), 90, [0,1,2])
+  await gammaOffers.connect(addresses[1]).createOffer(uuidv4(), 102, [32,2,4,5,6,7])
 
+  /*
   printOffers(await gammaOffers.getOffers())
   printCardsByUser(addresses[0].address, await gammaCards.getCardsByUser(addresses[0].address))
   printCardsByUser(addresses[1].address, await gammaCards.getCardsByUser(addresses[1].address))
-
+  */
+  // printOffers(await gammaOffers.getOffers())
   console.log('Doing one offer exchange...')
   await gammaOffers.confirmOfferExchange(addresses[1].address, 110, addresses[0].address, 28);
+  // printOffers(await gammaOffers.getOffers())
 
+  console.log('deleting offer and doing the same...')
   printOffers(await gammaOffers.getOffers())
-  printCardsByUser(addresses[0].address, await gammaCards.getCardsByUser(addresses[0].address))
-  printCardsByUser(addresses[1].address, await gammaCards.getCardsByUser(addresses[1].address))
+  await gammaOffers.createOffer(uuidv4(), 113, [1,2,24,4,5,6,7,8])
+  printOffers(await gammaOffers.getOffers())
+  await gammaOffers.removeOfferByUserAndCardNumber(addresses[0].address, 113);
+  printOffers(await gammaOffers.getOffers())
+  await gammaOffers.createOffer(uuidv4(), 113, [0,4,10,20,30,40,50])
+  printOffers(await gammaOffers.getOffers())
+
+  // printCardsByUser(addresses[0].address, await gammaCards.getCardsByUser(addresses[0].address))
+  // printCardsByUser(addresses[1].address, await gammaCards.getCardsByUser(addresses[1].address))
 
 }
 

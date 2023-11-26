@@ -1,25 +1,12 @@
 import { loadFixture } from '@nomicfoundation/hardhat-network-helpers'
 import { expect } from 'chai'
 import { ethers } from 'hardhat'
-import { deployNofFixture, getOnePackData, getCardsByUserType, log } from './common'
+import { 
+  deployNofFixture, getOnePackData, 
+  getCardsByUserType, log, printOffers } from './common'
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers'
 import { Contract } from 'ethers'
-
-function printOffers(offers: any[], called: string) {
-  
-  if (offers.length === 0 || parseInt(offers[0].offerId) === 0) {
-    log(`No offers, called: ${called}`)
-  } else {
-    offers.forEach((offer: any[]) => {
-      let wantedCards = []
-      try {
-        wantedCards = offer[2] ? offer[2].join (',') : []
-      } catch {}
-      
-      log(`offer: ${offer[0]}, offerCard: ${offer[1]}, offerWallet: ${offer[3]}, wantedCards: ${wantedCards}, called: ${called}`)
-    })
-  }
-}
+import { v4 as uuidv4 } from 'uuid'
 
 function printCardsByUser(wallet: string, cards: any[]) {
   if (!cards || cards.length === 0) {
@@ -47,7 +34,6 @@ async function gammaDaiBySigner(signer: SignerWithAddress, testDAI: Contract, ga
   // log(`${signer.address} allowance to use with $ gamaPackAddress (${gammaPacks.address}): `, allowance)
 }
 
-
 async function verifyOfferAfterCreate(gammaOffers: Contract, gammaCards:Contract, wallet: any, cardNumber: number) {
   const offers = await gammaOffers.getOffers()
   const offersCount = offers.length
@@ -72,7 +58,7 @@ async function verifyOfferAfterCreate(gammaOffers: Contract, gammaCards:Contract
 }
 
 function isEmptyOfferArray(offers: any) {
-  return offers.length === 0 || parseInt(offers[0].offerId) === 0
+  return offers.length === 0 || offers[0].offerId === ""
 }
 
 async function verifyOffersAfterRemove(
@@ -138,44 +124,8 @@ async function gammaOfferBuyPack(signer: SignerWithAddress, gammaPacks: Contract
   await gammaCards.testOpenPack(signer.address, packId1.value, packData)
 }
 
-async function gammaCircuitPack(signer: SignerWithAddress, testDAI: Contract, gammaPacks: Contract, gammaCards: Contract) {
-
-  const packPrice = 10000000000000000000
-  const TenPacksPrice = ethers.BigNumber.from((packPrice * 10).toString()) 
-
-  // log('buying Pack...')
-  const tokenId = await gammaPacks.buyPackByUser(signer.address);
-  await tokenId.wait()
-  // log('Buyed Pack token Id', tokenId.value)
-
-  // log('Verifing testDai balance...')
-  const balance2 = await testDAI.balanceOf(signer.address)
-  // log(`${signer.address} balance: `, balance2)
-
-  // log('Verifing testDai allowance...')
-  const allowance2 = await testDAI.allowance(signer.address, gammaPacks.address)
-  // log(`${signer.address} allowance to use with $ gamaPackAddress (${gammaPacks.address}): `, allowance2)
-
-  // log('Verifing pack owner...')
-  const packOwner = await gammaPacks.connect(signer).getPackOwner(tokenId.value)
-  // log(`Owner of TokenId ${tokenId.value}: ${packOwner}`)
-
-  // log('buying 2 Packs...')
-  const trxBuypacks = await gammaPacks.buyPacksByUser(signer.address, 2);
-  await trxBuypacks.wait()
-  // log('Buyed 2 Pack tokens Ids', trxBuypacks.value)
-
-  /*
-  log('Verifing user\'s packs...')
-  const packs:[any] = await gammaPacks.getPacksByUser(signer.address)
-  for (let i = 0; i < packs.length-1; i++) {
-    log(`\tPack ${i+1} Id: ${packs[i]}`)
-  }
-  */
-}
-
 describe('NoF - Gamma Offers Tests', function () {
-
+  
   it('Add owner should revert when the address is invalid', async () => {
     const { gammaOffers } = await loadFixture(deployNofFixture)
     await expect(gammaOffers.addOwner(ethers.constants.AddressZero)).to.be.revertedWith("Invalid address.")
@@ -215,7 +165,7 @@ describe('NoF - Gamma Offers Tests', function () {
     const { gammaPacks, gammaCards, gammaOffers, address0 } = await loadFixture(deployNofFixture)
     const getCardsByUserResult: getCardsByUserType = await getOnePackData(gammaPacks, gammaCards, address0)
     await expect(
-      gammaOffers.createOffer(getCardsByUserResult[0][0], [getCardsByUserResult[0][0],2,24,4,5,6,7,8])
+      gammaOffers.createOffer(uuidv4(), getCardsByUserResult[0][0], [getCardsByUserResult[0][0],2,24,4,5,6,7,8])
     ).to.be.revertedWith('The cardNumber cannot be in wantedCardNumbers.')
   })
   
@@ -223,7 +173,7 @@ describe('NoF - Gamma Offers Tests', function () {
     const { gammaPacks, gammaCards, gammaOffers, address0 } = await loadFixture(deployNofFixture)
     const getCardsByUserResult: getCardsByUserType = await getOnePackData(gammaPacks, gammaCards, address0)
     await expect(
-      gammaOffers.createOffer(140, [getCardsByUserResult[0][0],2,24,4,5,6,7,8])
+      gammaOffers.createOffer(uuidv4(), 140, [getCardsByUserResult[0][0],2,24,4,5,6,7,8])
     ).to.be.revertedWith('You does not have that card.')
   })
 
@@ -231,20 +181,20 @@ describe('NoF - Gamma Offers Tests', function () {
     const { gammaPacks, gammaCards, gammaOffers, address0 } = await loadFixture(deployNofFixture)
     const getCardsByUserResult: getCardsByUserType = await getOnePackData(gammaPacks, gammaCards, address0)
 
-    await gammaOffers.createOffer(getCardsByUserResult[0][0], [1,2,24,4,5,6,7,8])
+    await gammaOffers.createOffer(uuidv4(), getCardsByUserResult[0][0], [1,2,24,4,5,6,7,8])
     const offers = await gammaOffers.getOffers()
     await expect(offers.length).not.equal(0)
     await expect(offers[offers.length-1].owner).to.be.equal(address0.address)
 
     await expect(
-      gammaOffers.createOffer(getCardsByUserResult[0][0], [1,2,24,4,5,6,7,8])
+      gammaOffers.createOffer(uuidv4(), getCardsByUserResult[0][0], [1,2,24,4,5,6,7,8])
     ).to.be.revertedWith('An offer for this user and cardNumber already exists.')
   })
   
   it('Should retrieve an offer using getOfferByIndex', async () => {
     const { gammaPacks, gammaCards, gammaOffers, address0 } = await loadFixture(deployNofFixture)
     const getCardsByUserResult: getCardsByUserType = await getOnePackData(gammaPacks, gammaCards, address0)
-    await gammaOffers.createOffer(getCardsByUserResult[0][0], [1,2,24,4,5,6,7,8])
+    await gammaOffers.createOffer(uuidv4(), getCardsByUserResult[0][0], [1,2,24,4,5,6,7,8])
     const offers = await gammaOffers.getOfferByIndex(0)
     await expect(offers.length).not.equal(0)
     await expect(offers[0].offerId).not.equal(0)
@@ -253,7 +203,7 @@ describe('NoF - Gamma Offers Tests', function () {
   it('Should retrieve an offer using getOfferByOfferId', async () => {
     const { gammaPacks, gammaCards, gammaOffers, address0 } = await loadFixture(deployNofFixture)
     const getCardsByUserResult: getCardsByUserType = await getOnePackData(gammaPacks, gammaCards, address0)
-    await gammaOffers.createOffer(getCardsByUserResult[0][0], [1,2,24,4,5,6,7,8])
+    await gammaOffers.createOffer(uuidv4(), getCardsByUserResult[0][0], [1,2,24,4,5,6,7,8])
     const offers = await gammaOffers.getOfferByOfferId(1)
     await expect(offers.length).not.equal(0)
     await expect(offers[0].offerId).not.equal(0)
@@ -262,7 +212,7 @@ describe('NoF - Gamma Offers Tests', function () {
   it('Should retrieve an offer using getOffersByUser', async () => {
     const { gammaPacks, gammaCards, gammaOffers, address0 } = await loadFixture(deployNofFixture)
     const getCardsByUserResult: getCardsByUserType = await getOnePackData(gammaPacks, gammaCards, address0)
-    await gammaOffers.createOffer(getCardsByUserResult[0][0], [1,2,24,4,5,6,7,8])
+    await gammaOffers.createOffer(uuidv4(), getCardsByUserResult[0][0], [1,2,24,4,5,6,7,8])
     const offers = await gammaOffers.getOffersByUser(address0.address)
     await expect(offers.length).not.equal(0)
     await expect(offers[0].offerId).not.equal(0)
@@ -271,7 +221,7 @@ describe('NoF - Gamma Offers Tests', function () {
   it('Should retrieve an offer using getOffersByCardNumber', async () => {
     const { gammaPacks, gammaCards, gammaOffers, address0 } = await loadFixture(deployNofFixture)
     const getCardsByUserResult: getCardsByUserType = await getOnePackData(gammaPacks, gammaCards, address0)
-    await gammaOffers.createOffer(getCardsByUserResult[0][0], [1,2,24,4,5,6,7,8])
+    await gammaOffers.createOffer(uuidv4(), getCardsByUserResult[0][0], [1,2,24,4,5,6,7,8])
     const offers = await gammaOffers.getOffersByCardNumber(getCardsByUserResult[0][0])
     await expect(offers.length).not.equal(0)
     await expect(offers[0].offerId).not.equal(0)
@@ -282,7 +232,7 @@ describe('NoF - Gamma Offers Tests', function () {
     const { gammaPacks, gammaCards, gammaOffers, address0 } = await loadFixture(deployNofFixture)
     const getCardsByUserResult: getCardsByUserType = await getOnePackData(gammaPacks, gammaCards, address0)
     const cardNumber = getCardsByUserResult[0][0]
-    await gammaOffers.createOffer(cardNumber, [1,2,24,4,5,6,7,8])
+    await gammaOffers.createOffer(uuidv4(), cardNumber, [1,2,24,4,5,6,7,8])
     const offers = await gammaOffers.getOfferByUserAndCardNumber(address0.address, cardNumber)
     await expect(offers.offerId).not.equal(0)
     await expect(offers.cardNumber).to.be.equal(cardNumber)
@@ -293,7 +243,7 @@ describe('NoF - Gamma Offers Tests', function () {
     const { gammaPacks, gammaCards, gammaOffers, address0 } = await loadFixture(deployNofFixture)
     const getCardsByUserResult: getCardsByUserType = await getOnePackData(gammaPacks, gammaCards, address0)
     
-    await gammaOffers.createOffer(3, [1,2,24,4,5,6,7,8])
+    await gammaOffers.createOffer(uuidv4(), 3, [1,2,24,4,5,6,7,8])
     const offers = await gammaOffers.getOffers()
     await expect(offers.length).not.equal(0)
     await expect(offers[offers.length-1].owner).to.be.equal(address0.address)
@@ -315,8 +265,8 @@ describe('NoF - Gamma Offers Tests', function () {
     await expect(await gammaCards.hasCard(address0.address, card3)).to.be.true;
 
     await gammaOffers.changeRemoveCardinInventoryWhenOffer(true);
-    await gammaOffers.createOffer(card1, [1,2,24,4,5,6,7,8])
-    await gammaOffers.createOffer(card2, [1,2,24,4,5,6,7,8])
+    await gammaOffers.createOffer(uuidv4(), card1, [1,2,24,4,5,6,7,8])
+    await gammaOffers.createOffer(uuidv4(), card2, [1,2,24,4,5,6,7,8])
 
     await expect (await gammaOffers.hasOffer(address0.address, card1)).to.be.equal(true);
     await expect (await gammaOffers.hasOffer(address0.address, card2)).to.be.equal(true);
@@ -346,7 +296,7 @@ describe('NoF - Gamma Offers Tests', function () {
 
     const offer = await gammaOffers.getOfferByUserAndCardNumber(address0.address, card1);
 
-    await expect(offer.offerId).to.be.equal(0, 'offer should be deleted');
+    await expect(offer.offerId).to.be.equal("", 'offer should be deleted');
     await expect(offersCounter).to.be.equal(1, 'offers counter should be 0');
     await expect(offersByUserCounter).to.be.equal(1, 'offers by user counter should be 0');
     await expect(offersByCardNumberCounter1).to.be.equal(0, 'offers by card number 1 counter should be 0');
@@ -358,7 +308,7 @@ describe('NoF - Gamma Offers Tests', function () {
 
   });
 
-  it('Should delete all multiple offers', async () => {
+  it('Should delete multiple offers', async () => {
     const { 
       testDAI, gammaPacks, gammaCards, gammaOffers, 
       address0, address1, address2, address3 } = await loadFixture(deployNofFixture)
@@ -371,16 +321,16 @@ describe('NoF - Gamma Offers Tests', function () {
       await gammaOfferBuyPack(address0, gammaPacks, gammaCards, [25,62,94,71,41,77,100,90,3,58,113,28])
       await gammaOfferBuyPack(address0, gammaPacks, gammaCards, [0,1,2,4,5,6,7,8,9,10,11,12])
 
-      await gammaOffers.connect(address0).createOffer(3, [24,4,5,6,7,8])
-      await gammaOffers.connect(address0).createOffer(25, [24,4,0,119,7,1])
-      await gammaOffers.connect(address0).createOffer(28, [110,32,2])
-      await gammaOffers.connect(address0).createOffer(1, [117,118,119])
+      await gammaOffers.connect(address0).createOffer(uuidv4(), 3, [24,4,5,6,7,8])
+      await gammaOffers.connect(address0).createOffer(uuidv4(), 25, [24,4,0,119,7,1])
+      await gammaOffers.connect(address0).createOffer(uuidv4(), 28, [110,32,2])
+      await gammaOffers.connect(address0).createOffer(uuidv4(), 1, [117,118,119])
 
       await gammaOfferBuyPack(address1, gammaPacks, gammaCards, [90,91,92,93,94,95,96,97,98,99,100,101])
       await gammaOfferBuyPack(address1, gammaPacks, gammaCards, [102,103,104,105,106,107,108,109,110,111,112])
 
-      await gammaOffers.connect(address1).createOffer(90, [0,1,2])
-      await gammaOffers.connect(address1).createOffer(102, [32,2,4,5,6,7])
+      await gammaOffers.connect(address1).createOffer(uuidv4(), 90, [0,1,2])
+      await gammaOffers.connect(address1).createOffer(uuidv4(), 102, [32,2,4,5,6,7])
 
       printOffers(await gammaOffers.getOffers(), 'getOffers')
       printCardsByUser(address0.address, await gammaCards.getCardsByUser(address0.address))
@@ -436,7 +386,7 @@ describe('NoF - Gamma Offers Tests', function () {
       await gammaOfferBuyPack(address0, gammaPacks, gammaCards, [25,62,94,71,41,77,100,90,3,58,113,28])
       await gammaOfferBuyPack(address0, gammaPacks, gammaCards, [0,1,2,4,5,6,7,8,9,10,11,12])
 
-      await gammaOffers.connect(address0).createOffer(3, [24,4,5,6,7,8])
+      await gammaOffers.connect(address0).createOffer(uuidv4(), 3, [24,4,5,6,7,8])
 
       await gammaOfferBuyPack(address1, gammaPacks, gammaCards, [90,91,92,93,94,95,96,97,98,99,100,101])
       await gammaOfferBuyPack(address1, gammaPacks, gammaCards, [102,103,104,105,106,107,108,109,110,111,112])
@@ -477,15 +427,16 @@ describe('NoF - Gamma Offers Tests', function () {
     await gammaDaiBySigner(address0, testDAI, gammaPacks, gammaCards)
     await gammaOfferBuyPack(address0, gammaPacks, gammaCards, [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12])
 
-    await gammaOffers.connect(address0).createOffer(3, [90, 91, 92, 93])
+    await gammaOffers.connect(address0).createOffer(uuidv4(), 3, [90, 91, 92, 93])
     await verifyOfferAfterCreate(gammaOffers, gammaCards, address0, 3)
 
-    await gammaOffers.removeOfferByCardNumber (3)
+    await gammaOffers.removeOfferByCardNumber(3)
     await verifyOffersAfterRemove(gammaOffers, gammaCards, address0, 3)
 
-    await gammaOffers.connect(address0).createOffer(3, [90, 91, 92, 93])
+    await gammaOffers.connect(address0).createOffer(uuidv4(), 3, [90, 91, 92, 93])
     await verifyOfferAfterCreate(gammaOffers, gammaCards, address0, 3)
   });
+
 
   it('Should allow to create a second offer for the same cardNumber (qtty=2) and User if first one was exchanged', async () => {
     const { testDAI, gammaPacks, gammaCards, gammaOffers, address0, address1} = await loadFixture(deployNofFixture)
@@ -498,13 +449,13 @@ describe('NoF - Gamma Offers Tests', function () {
     await gammaOfferBuyPack(address0, gammaPacks, gammaCards, [0, 1, 2, 3, 20, 30, 40, 41, 42, 43, 44])
     await gammaOfferBuyPack(address1, gammaPacks, gammaCards, [90,91,92,93,94,95,96,97,98,99,100,101])
 
-    await gammaOffers.connect(address0).createOffer(3, [90, 91, 92, 93])
+    await gammaOffers.connect(address0).createOffer(uuidv4(), 3, [90, 91, 92, 93])
     await verifyOfferAfterCreate(gammaOffers, gammaCards, address0, 3)
 
     await gammaOffers.confirmOfferExchange(address1.address, 90, address0.address, 3)
     await verifyOffersAfterExchange (gammaOffers, gammaCards, address1, 90, address0, 3)
 
-    await gammaOffers.connect(address0).createOffer(3, [90, 91, 92, 93])
+    await gammaOffers.connect(address0).createOffer(uuidv4(), 3, [90, 91, 92, 93])
     await verifyOfferAfterCreate(gammaOffers, gammaCards, address0, 3)
 
   });
@@ -519,8 +470,8 @@ describe('NoF - Gamma Offers Tests', function () {
     await gammaOfferBuyPack(address0, gammaPacks, gammaCards, [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12])
     await gammaOfferBuyPack(address1, gammaPacks, gammaCards, [3, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35])
 
-    await gammaOffers.connect(address0).createOffer(3, [90, 91, 92, 93])
-    await gammaOffers.connect(address1).createOffer(3, [0, 2, 6, 4])
+    await gammaOffers.connect(address0).createOffer(uuidv4(), 3, [90, 91, 92, 93])
+    await gammaOffers.connect(address1).createOffer(uuidv4(), 3, [0, 2, 6, 4])
     await verifyOfferAfterCreate(gammaOffers, gammaCards, address0, 3)
     await verifyOfferAfterCreate(gammaOffers, gammaCards, address1, 3)
   });
@@ -542,9 +493,9 @@ describe('NoF - Gamma Offers Tests', function () {
     await gammaOfferBuyPack(address2, gammaPacks, gammaCards, [65, 66, 67, 68, 69, 70, 71, 72, 73, 74])
     await gammaOfferBuyPack(address2, gammaPacks, gammaCards, [75, 76, 77, 78, 79, 80, 81, 82, 83, 84])
 
-    await gammaOffers.connect(address0).createOffer(3, [90, 91, 92, 93])
-    await gammaOffers.connect(address1).createOffer(90, [25, 26, 27, 28, 30, 31, 32, 33, 34])
-    await gammaOffers.connect(address2).createOffer(75, [102, 103, 90, 0, 1, 2])
+    await gammaOffers.connect(address0).createOffer(uuidv4(), 3, [90, 91, 92, 93])
+    await gammaOffers.connect(address1).createOffer(uuidv4(), 90, [25, 26, 27, 28, 30, 31, 32, 33, 34])
+    await gammaOffers.connect(address2).createOffer(uuidv4(), 75, [102, 103, 90, 0, 1, 2])
 
     await verifyOfferAfterCreate (gammaOffers, gammaCards, address0, 3)
     await verifyOfferAfterCreate (gammaOffers, gammaCards, address1, 90)
