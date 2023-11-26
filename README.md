@@ -92,6 +92,9 @@ NOF_GAMMA_OFFERS_CONTRACT_CURRENT_ADDRESS=''
 
 # Addresses to mint DAIs using a script (scripts/mint-dais.ts)
 NOF_DAI_MINT_EXTRA_WALLET_ADDRESSES=''
+
+# Just a flag to enable ('1') print to console or not ('0' - default -)
+PRINT_LOG='0'
 ```
 
 > Note: You can find more info about the other required `.env` variables inside the `example_env` file.
@@ -130,3 +133,16 @@ slither .
 ## Gamma Logic Detaills
 
 See detaills about gamma Smart Contracts in this [file](./.doc/contracts-info.md)
+
+## Deployed Contracts last Addresses
+
+### Mumbai 
+* DAI: 0x291FaB5F25B87d1672452aE28dcEB1b8Cd2F82f7
+* Alpha: '0x643A6255Fe5aBdb26f43296284F535219E6dD13C
+* Gamma Packs: '0xFC24dFdb838b4544b91436F93da70d2B2476b634
+* Gamma Cards: 0xb2da44Bd77e922142F3Ef20504826e83D4e9fc0C
+* Gamma Offers: 0x18537721EDfdEa2060640314BD996672E0DB921D
+
+### Mainet
+
+(not yet)
