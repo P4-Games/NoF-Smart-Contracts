@@ -1,23 +1,33 @@
 import { loadFixture } from '@nomicfoundation/hardhat-network-helpers'
 import { expect } from 'chai'
 import { ethers } from 'hardhat'
-import { deployNofFixture, getOnePackData, getCardsByUserType } from './common'
+import { deployNofFixture, getOnePackData, getCardsByUserType, log } from './common'
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers'
 import { Contract } from 'ethers'
 
-function printOffers(offers: any[]) {
-  offers.forEach((offer: any[]) => {
-    console.log(`offer: ${offer[0]}, offerCard: ${offer[1]}, offerWallet: ${offer[3]}, wantedCards: ${offer[2].join (',')}`)
-  })
+function printOffers(offers: any[], called: string) {
+  
+  if (offers.length === 0 || parseInt(offers[0].offerId) === 0) {
+    log(`No offers, called: ${called}`)
+  } else {
+    offers.forEach((offer: any[]) => {
+      let wantedCards = []
+      try {
+        wantedCards = offer[2] ? offer[2].join (',') : []
+      } catch {}
+      
+      log(`offer: ${offer[0]}, offerCard: ${offer[1]}, offerWallet: ${offer[3]}, wantedCards: ${wantedCards}, called: ${called}`)
+    })
+  }
 }
 
 function printCardsByUser(wallet: string, cards: any[]) {
   if (!cards || cards.length === 0) {
-    console.log('no cards for wallet', wallet)
+    log('no cards for wallet', wallet)
     return
   } 
   cards[0].forEach((card: number, index: number) => {
-    console.log(`wallet: ${wallet}, card: ${card}, quantity: ${cards[1][index]}, offered: ${cards[2][index]}`)
+    log(`wallet: ${wallet}, card: ${card}, quantity: ${cards[1][index]}, offered: ${cards[2][index]}`)
   })
 }
 
@@ -25,16 +35,102 @@ async function gammaDaiBySigner(signer: SignerWithAddress, testDAI: Contract, ga
   const packPrice = 10000000000000000000
   const TenPacksPrice = ethers.BigNumber.from((packPrice * 10).toString()) 
 
-  // console.log('approving in testDai...')
+  // log('approving in testDai...')
   await testDAI.connect(signer).approve(gammaPacks.address, TenPacksPrice);
 
-  // console.log('Verifing testDai balance...')
+  // log('Verifing testDai balance...')
   const balance = await testDAI.balanceOf(signer.address)
-  // console.log(`${signer.address} balance: `, balance)
+  // log(`${signer.address} balance: `, balance)
 
-  // console.log('Verifing testDai allowance...')
+  // log('Verifing testDai allowance...')
   const allowance = await testDAI.connect(signer).allowance(signer.address, gammaPacks.address)
-  // console.log(`${signer.address} allowance to use with $ gamaPackAddress (${gammaPacks.address}): `, allowance)
+  // log(`${signer.address} allowance to use with $ gamaPackAddress (${gammaPacks.address}): `, allowance)
+}
+
+
+async function verifyOfferAfterCreate(gammaOffers: Contract, gammaCards:Contract, wallet: any, cardNumber: number) {
+  const offers = await gammaOffers.getOffers()
+  const offersCount = offers.length
+  const offersCountContract = await gammaOffers.getOffersCounter()
+  const offersByUserCounter = await gammaOffers.getOffersByUserCounter(wallet.address)
+  const offersByCardNumberCounter = await gammaOffers.getOffersByCardNumberCounter(cardNumber)
+  const offersByUser = await gammaOffers.getOffersByUser(wallet.address)
+  const offersByCardNumber = await gammaOffers.getOffersByCardNumber(cardNumber)
+  const offerByUserAndCardNumber = await gammaOffers.getOfferByUserAndCardNumber(wallet.address, cardNumber)
+
+  await expect(offers.length).to.not.be.equal(0);
+  await expect(isEmptyOfferArray([offerByUserAndCardNumber])).to.be.equal(false);
+  await expect(offersCountContract).to.be.equal(offersCount)
+  await expect(offersByUser.length).to.be.equal(offersByUserCounter)
+  await expect(offersByCardNumber.length).to.be.equal(offersByCardNumberCounter)
+
+  log('\nverifyOfferAfterCreate')
+  printOffers(offers, 'getOffers')
+  printOffers(offersByUser, 'getOffersByUser')
+  printOffers(offersByCardNumber, 'getOffersByCardNumber')
+  printOffers([offerByUserAndCardNumber], 'getOfferByUserAndCardNumber')
+}
+
+function isEmptyOfferArray(offers: any) {
+  return offers.length === 0 || parseInt(offers[0].offerId) === 0
+}
+
+async function verifyOffersAfterRemove(
+  gammaOffers: Contract, gammaCards:Contract, 
+  walletOffer: any, cardNumberOffer: number) {
+  const offers = await gammaOffers.getOffers()
+  const offersCount = offers.length
+  const offersCountContract = await gammaOffers.getOffersCounter()
+  const offersByUserCounter = await gammaOffers.getOffersByUserCounter(walletOffer.address)
+  const offersByCardNumberCounter = await gammaOffers.getOffersByCardNumberCounter(cardNumberOffer)
+  const offersByUser = await gammaOffers.getOffersByUser(walletOffer.address)
+  const offersByCardNumber = await gammaOffers.getOffersByCardNumber(cardNumberOffer)
+  const offerByUserAndCardNumber = await gammaOffers.getOfferByUserAndCardNumber(walletOffer.address, cardNumberOffer)
+
+  log('\nverifyOffersAfterRemove')
+  printOffers(offers, 'getOffers')
+  printOffers(offersByUser, 'getOffersByUser')
+  printOffers(offersByCardNumber, 'getOffersByCardNumber')
+  printOffers([offerByUserAndCardNumber], 'getOfferByUserAndCardNumber')
+
+  expect(isEmptyOfferArray([offerByUserAndCardNumber])).to.be.equal(true);
+  expect(offersCountContract).to.be.equal(offersCount)
+  expect(offersByUser.length).to.be.equal(offersByUserCounter)
+  expect(offersByCardNumber.length).to.be.equal(offersByCardNumberCounter)
+
+  await expect (await gammaOffers.hasOffer(walletOffer.address, cardNumberOffer)).to.be.equal(false)
+  await expect (await gammaCards.hasCard(walletOffer.address, cardNumberOffer)).to.be.equal(true)
+}
+
+async function verifyOffersAfterExchange(
+  gammaOffers: Contract, gammaCards:Contract, 
+  walletFrom: any, cardNumberWanted: number,
+  walletOffer: any, cardNumberOffer: number) {
+  const offers = await gammaOffers.getOffers()
+  const offersCount = offers.length
+  const offersCountContract = await gammaOffers.getOffersCounter()
+  const offersByUserCounter = await gammaOffers.getOffersByUserCounter(walletOffer.address)
+  const offersByCardNumberCounter = await gammaOffers.getOffersByCardNumberCounter(cardNumberOffer)
+  const offersByUser = await gammaOffers.getOffersByUser(walletOffer.address)
+  const offersByCardNumber = await gammaOffers.getOffersByCardNumber(cardNumberOffer)
+  const offerByUserAndCardNumber = await gammaOffers.getOfferByUserAndCardNumber(walletOffer.address, cardNumberOffer)
+
+  log('\nverifyOffersAfterExchange')
+  printOffers(offers, 'getOffers')
+  printOffers(offersByUser, 'getOffersByUser')
+  printOffers(offersByCardNumber, 'getOffersByCardNumber')
+  printOffers([offerByUserAndCardNumber], 'getOfferByUserAndCardNumber')
+
+  expect(isEmptyOfferArray([offerByUserAndCardNumber])).to.be.equal(true);
+  expect(offersCountContract).to.be.equal(offersCount)
+  expect(offersByUser.length).to.be.equal(offersByUserCounter)
+  expect(offersByCardNumber.length).to.be.equal(offersByCardNumberCounter)
+
+  await expect (await gammaCards.hasCard(walletFrom.address, cardNumberOffer)).to.be.equal(true);
+  await expect (await gammaCards.hasCard(walletFrom.address, cardNumberWanted)).to.be.equal(false);
+  await expect (await gammaOffers.hasOffer(walletOffer.address, cardNumberOffer)).to.be.equal(false);
+  await expect (await gammaCards.hasCard(walletOffer.address, cardNumberWanted)).to.be.equal(true);
+  await expect (await gammaOffers.hasOffer(walletOffer.address, cardNumberOffer)).to.be.equal(false);
 }
 
 async function gammaOfferBuyPack(signer: SignerWithAddress, gammaPacks: Contract, gammaCards: Contract, packData: number[]) {
@@ -47,33 +143,33 @@ async function gammaCircuitPack(signer: SignerWithAddress, testDAI: Contract, ga
   const packPrice = 10000000000000000000
   const TenPacksPrice = ethers.BigNumber.from((packPrice * 10).toString()) 
 
-  // console.log('buying Pack...')
+  // log('buying Pack...')
   const tokenId = await gammaPacks.buyPackByUser(signer.address);
   await tokenId.wait()
-  // console.log('Buyed Pack token Id', tokenId.value)
+  // log('Buyed Pack token Id', tokenId.value)
 
-  // console.log('Verifing testDai balance...')
+  // log('Verifing testDai balance...')
   const balance2 = await testDAI.balanceOf(signer.address)
-  // console.log(`${signer.address} balance: `, balance2)
+  // log(`${signer.address} balance: `, balance2)
 
-  // console.log('Verifing testDai allowance...')
+  // log('Verifing testDai allowance...')
   const allowance2 = await testDAI.allowance(signer.address, gammaPacks.address)
-  // console.log(`${signer.address} allowance to use with $ gamaPackAddress (${gammaPacks.address}): `, allowance2)
+  // log(`${signer.address} allowance to use with $ gamaPackAddress (${gammaPacks.address}): `, allowance2)
 
-  // console.log('Verifing pack owner...')
+  // log('Verifing pack owner...')
   const packOwner = await gammaPacks.connect(signer).getPackOwner(tokenId.value)
-  // console.log(`Owner of TokenId ${tokenId.value}: ${packOwner}`)
+  // log(`Owner of TokenId ${tokenId.value}: ${packOwner}`)
 
-  // console.log('buying 2 Packs...')
+  // log('buying 2 Packs...')
   const trxBuypacks = await gammaPacks.buyPacksByUser(signer.address, 2);
   await trxBuypacks.wait()
-  // console.log('Buyed 2 Pack tokens Ids', trxBuypacks.value)
+  // log('Buyed 2 Pack tokens Ids', trxBuypacks.value)
 
   /*
-  console.log('Verifing user\'s packs...')
+  log('Verifing user\'s packs...')
   const packs:[any] = await gammaPacks.getPacksByUser(signer.address)
   for (let i = 0; i < packs.length-1; i++) {
-    console.log(`\tPack ${i+1} Id: ${packs[i]}`)
+    log(`\tPack ${i+1} Id: ${packs[i]}`)
   }
   */
 }
@@ -205,7 +301,6 @@ describe('NoF - Gamma Offers Tests', function () {
     const cardsByUser = await gammaCards.getCardsByUser(address0.address)
     await expect(cardsByUser[2][0]).to.be.equals(true)
 
-    // console.log(printOffers(offers), printCardsByUser(address0.address, cardsByUser))
   })
 
   it('Should allow to delete an offer by user and cardNumber', async () => {
@@ -257,9 +352,9 @@ describe('NoF - Gamma Offers Tests', function () {
     await expect(offersByCardNumberCounter1).to.be.equal(0, 'offers by card number 1 counter should be 0');
     await expect(offersByCardNumberCounter2).to.be.equal(1, 'offers by card number 2 counter should be 1');
 
-    // const finalOffers = await gammaOffers.getOffers()
-    // const finalCardsByUser = await gammaCards.getCardsByUser(address0.address)
-    // console.log(printOffers(finalOffers), printCardsByUser(address0.address, finalCardsByUser))
+    const finalOffers = await gammaOffers.getOffers()
+    const finalCardsByUser = await gammaCards.getCardsByUser(address0.address)
+    log(printOffers(finalOffers, 'getOffers'), printCardsByUser(address0.address, finalCardsByUser))
 
   });
 
@@ -287,9 +382,9 @@ describe('NoF - Gamma Offers Tests', function () {
       await gammaOffers.connect(address1).createOffer(90, [0,1,2])
       await gammaOffers.connect(address1).createOffer(102, [32,2,4,5,6,7])
 
-      // printOffers(await gammaOffers.getOffers())
-      // printCardsByUser(address0.address, await gammaCards.getCardsByUser(address0.address))
-      // printCardsByUser(address1.address, await gammaCards.getCardsByUser(address1.address))
+      printOffers(await gammaOffers.getOffers(), 'getOffers')
+      printCardsByUser(address0.address, await gammaCards.getCardsByUser(address0.address))
+      printCardsByUser(address1.address, await gammaCards.getCardsByUser(address1.address))
 
       let offers = await gammaOffers.getOffers()
       let offersCount = offers.length
@@ -372,6 +467,93 @@ describe('NoF - Gamma Offers Tests', function () {
       await expect (await gammaOffers.hasOffer(address0.address, 3)).to.be.equal(false, 'should not have offers');
       await expect (await gammaCards.hasCard(address1.address, 90)).to.be.equal(false, 'should not have card 90');
       await expect (await gammaCards.hasCard(address1.address, 3)).to.be.equal(true, 'should have card 3');
+  });
+
+  it('Should allow to create a second offer for the same cardNumber and User if first one was unpublished', async () => {
+    const { testDAI, gammaPacks, gammaCards, gammaOffers, address0} = await loadFixture(deployNofFixture)
+
+    await gammaCards.changeRequireOpenPackSignerValidation(false)
+
+    await gammaDaiBySigner(address0, testDAI, gammaPacks, gammaCards)
+    await gammaOfferBuyPack(address0, gammaPacks, gammaCards, [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12])
+
+    await gammaOffers.connect(address0).createOffer(3, [90, 91, 92, 93])
+    await verifyOfferAfterCreate(gammaOffers, gammaCards, address0, 3)
+
+    await gammaOffers.removeOfferByCardNumber (3)
+    await verifyOffersAfterRemove(gammaOffers, gammaCards, address0, 3)
+
+    await gammaOffers.connect(address0).createOffer(3, [90, 91, 92, 93])
+    await verifyOfferAfterCreate(gammaOffers, gammaCards, address0, 3)
+  });
+
+  it('Should allow to create a second offer for the same cardNumber (qtty=2) and User if first one was exchanged', async () => {
+    const { testDAI, gammaPacks, gammaCards, gammaOffers, address0, address1} = await loadFixture(deployNofFixture)
+
+    await gammaCards.changeRequireOpenPackSignerValidation(false)
+
+    await gammaDaiBySigner(address0, testDAI, gammaPacks, gammaCards)
+    await gammaDaiBySigner(address1, testDAI, gammaPacks, gammaCards)
+    await gammaOfferBuyPack(address0, gammaPacks, gammaCards, [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12])
+    await gammaOfferBuyPack(address0, gammaPacks, gammaCards, [0, 1, 2, 3, 20, 30, 40, 41, 42, 43, 44])
+    await gammaOfferBuyPack(address1, gammaPacks, gammaCards, [90,91,92,93,94,95,96,97,98,99,100,101])
+
+    await gammaOffers.connect(address0).createOffer(3, [90, 91, 92, 93])
+    await verifyOfferAfterCreate(gammaOffers, gammaCards, address0, 3)
+
+    await gammaOffers.confirmOfferExchange(address1.address, 90, address0.address, 3)
+    await verifyOffersAfterExchange (gammaOffers, gammaCards, address1, 90, address0, 3)
+
+    await gammaOffers.connect(address0).createOffer(3, [90, 91, 92, 93])
+    await verifyOfferAfterCreate(gammaOffers, gammaCards, address0, 3)
+
+  });
+
+  it('Should allow to create a second offer for the same cardNumber and different User', async () => {
+    const { testDAI, gammaPacks, gammaCards, gammaOffers, address0, address1} = await loadFixture(deployNofFixture)
+
+    await gammaCards.changeRequireOpenPackSignerValidation(false)
+
+    await gammaDaiBySigner(address0, testDAI, gammaPacks, gammaCards)
+    await gammaDaiBySigner(address1, testDAI, gammaPacks, gammaCards)
+    await gammaOfferBuyPack(address0, gammaPacks, gammaCards, [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12])
+    await gammaOfferBuyPack(address1, gammaPacks, gammaCards, [3, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35])
+
+    await gammaOffers.connect(address0).createOffer(3, [90, 91, 92, 93])
+    await gammaOffers.connect(address1).createOffer(3, [0, 2, 6, 4])
+    await verifyOfferAfterCreate(gammaOffers, gammaCards, address0, 3)
+    await verifyOfferAfterCreate(gammaOffers, gammaCards, address1, 3)
+  });
+
+  it('Should keep offers count by total, user and cardNumber after Exchange', async () => {
+    const { 
+      testDAI, gammaPacks, gammaCards, gammaOffers, 
+      address0, address1, address2 } = await loadFixture(deployNofFixture)
+
+    await gammaCards.changeRequireOpenPackSignerValidation(false)
+
+    await gammaDaiBySigner(address0, testDAI, gammaPacks, gammaCards)
+    await gammaDaiBySigner(address1, testDAI, gammaPacks, gammaCards)
+    await gammaDaiBySigner(address2, testDAI, gammaPacks, gammaCards)
+    await gammaOfferBuyPack(address0, gammaPacks, gammaCards, [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12])
+    await gammaOfferBuyPack(address0, gammaPacks, gammaCards, [25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35])
+    await gammaOfferBuyPack(address1, gammaPacks, gammaCards, [90,91,92,93,94,95,96,97,98,99,100,101])
+    await gammaOfferBuyPack(address1, gammaPacks, gammaCards, [102,103,104,105,106,107,108,109,110,111,112])
+    await gammaOfferBuyPack(address2, gammaPacks, gammaCards, [65, 66, 67, 68, 69, 70, 71, 72, 73, 74])
+    await gammaOfferBuyPack(address2, gammaPacks, gammaCards, [75, 76, 77, 78, 79, 80, 81, 82, 83, 84])
+
+    await gammaOffers.connect(address0).createOffer(3, [90, 91, 92, 93])
+    await gammaOffers.connect(address1).createOffer(90, [25, 26, 27, 28, 30, 31, 32, 33, 34])
+    await gammaOffers.connect(address2).createOffer(75, [102, 103, 90, 0, 1, 2])
+
+    await verifyOfferAfterCreate (gammaOffers, gammaCards, address0, 3)
+    await verifyOfferAfterCreate (gammaOffers, gammaCards, address1, 90)
+    await verifyOfferAfterCreate (gammaOffers, gammaCards, address2, 75)
+
+    await gammaOffers.confirmOfferExchange(address1.address, 90, address0.address, 3)
+
+    await verifyOffersAfterExchange (gammaOffers, gammaCards, address1, 90, address0, 3)
+
   });
 
 })
