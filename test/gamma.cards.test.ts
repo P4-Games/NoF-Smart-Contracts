@@ -2,6 +2,7 @@ import { loadFixture } from '@nomicfoundation/hardhat-network-helpers'
 import { expect } from 'chai'
 import { ethers } from 'hardhat'
 import { deployNofFixture, getCardsByUserType } from './common'
+import { v4 as uuidv4 } from 'uuid'
 
 describe('NoF - Gamma Cards Tests', function () {
 
@@ -78,7 +79,7 @@ describe('NoF - Gamma Cards Tests', function () {
     const { gammaPacks, gammaCards, gammaOffers, address0 } = await loadFixture(deployNofFixture)
     const getCardsByUserResult: getCardsByUserType = await getOnePackData(gammaPacks, gammaCards, address0)
     
-    await gammaOffers.createOffer(getCardsByUserResult[0][0], [1,2,24,4,5,6,7,8])
+    await gammaOffers.createOffer(uuidv4(), getCardsByUserResult[0][0], [1,2,24,4,5,6,7,8])
     
     let offers = await gammaOffers.getOffers();
     await expect(offers.length).to.not.be.equal(0);
@@ -93,7 +94,7 @@ describe('NoF - Gamma Cards Tests', function () {
     const { gammaPacks, gammaCards, gammaOffers, address0 } = await loadFixture(deployNofFixture)
     const getCardsByUserResult: getCardsByUserType = await getOnePackData(gammaPacks, gammaCards, address0)
     
-    await gammaOffers.createOffer(getCardsByUserResult[0][0], [1,2,24,4,5,6,7,8])
+    await gammaOffers.createOffer(uuidv4(), getCardsByUserResult[0][0], [1,2,24,4,5,6,7,8])
     
     let offers = await gammaOffers.getOffers();
     await expect(offers.length).to.not.be.equal(0);
@@ -112,7 +113,7 @@ describe('NoF - Gamma Cards Tests', function () {
     let quantity = await gammaCards.getCardQuantityByUser(address0.address, cardNumber);
     await expect(quantity).to.be.equal(2);
 
-    await gammaOffers.createOffer(cardNumber, [1,2,24,4,5,6,7,8])
+    await gammaOffers.createOffer(uuidv4(), cardNumber, [1,2,24,4,5,6,7,8])
     let offers = await gammaOffers.getOffers();
     await expect(offers.length).to.not.be.equal(0);
 
@@ -126,7 +127,7 @@ describe('NoF - Gamma Cards Tests', function () {
     const { gammaPacks, gammaCards, gammaOffers, address0, address1 } = await loadFixture(deployNofFixture)
     const getCardsByUserResult: getCardsByUserType = await getOnePackData(gammaPacks, gammaCards, address0)
     
-    await gammaOffers.createOffer(getCardsByUserResult[0][0], [1,2,24,4,5,6,7,8])
+    await gammaOffers.createOffer(uuidv4(), getCardsByUserResult[0][0], [1,2,24,4,5,6,7,8])
     
     let offers = await gammaOffers.getOffers();
     await expect(offers.length).to.not.be.equal(0);
@@ -141,7 +142,7 @@ describe('NoF - Gamma Cards Tests', function () {
     const { gammaPacks, gammaCards, gammaOffers, address0, address1 } = await loadFixture(deployNofFixture)
     const getCardsByUserResult: getCardsByUserType = await getOnePackData(gammaPacks, gammaCards, address0)
     
-    await gammaOffers.createOffer(getCardsByUserResult[0][0], [1,2,24,4,5,6,7,8])
+    await gammaOffers.createOffer(uuidv4(), getCardsByUserResult[0][0], [1,2,24,4,5,6,7,8])
     let offers = await gammaOffers.getOffers();
     await expect(offers.length).to.not.be.equal(0);
 
@@ -159,7 +160,7 @@ describe('NoF - Gamma Cards Tests', function () {
     let quantity = await gammaCards.getCardQuantityByUser(address0.address, cardNumber);
     await expect(quantity).to.be.equal(2);
 
-    await gammaOffers.createOffer(cardNumber, [1,2,24,4,5,6,7,8])
+    await gammaOffers.createOffer(uuidv4(), cardNumber, [1,2,24,4,5,6,7,8])
     let offers = await gammaOffers.getOffers();
     await expect(offers.length).to.not.be.equal(0);
 
