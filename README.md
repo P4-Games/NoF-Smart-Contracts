@@ -141,7 +141,7 @@ See detaills about gamma Smart Contracts in this [file](./.doc/contracts-info.md
 * Alpha: '0x643A6255Fe5aBdb26f43296284F535219E6dD13C
 * Gamma Packs: '0xFC24dFdb838b4544b91436F93da70d2B2476b634
 * Gamma Cards: 0xb2da44Bd77e922142F3Ef20504826e83D4e9fc0C
-* Gamma Offers: 0x18537721EDfdEa2060640314BD996672E0DB921D
+* Gamma Offers: 0xc2E8cEE4dC93F24b9Bc70A100083C0A6075694cE
 
 ### Mainet
 
