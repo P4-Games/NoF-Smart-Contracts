@@ -204,13 +204,13 @@ async function createOfferMockData(
   // printOffers(await gammaOffers.getOffers())
 
   console.log('deleting offer and doing the same...')
-  printOffers(await gammaOffers.getOffers())
+  // printOffers(await gammaOffers.getOffers())
   await gammaOffers.createOffer(uuidv4(), 113, [1,2,24,4,5,6,7,8])
-  printOffers(await gammaOffers.getOffers())
+  // printOffers(await gammaOffers.getOffers())
   await gammaOffers.removeOfferByUserAndCardNumber(addresses[0].address, 113);
-  printOffers(await gammaOffers.getOffers())
+  // printOffers(await gammaOffers.getOffers())
   await gammaOffers.createOffer(uuidv4(), 113, [0,4,10,20,30,40,50])
-  printOffers(await gammaOffers.getOffers())
+  // printOffers(await gammaOffers.getOffers())
 
   // printCardsByUser(addresses[0].address, await gammaCards.getCardsByUser(addresses[0].address))
   // printCardsByUser(addresses[1].address, await gammaCards.getCardsByUser(addresses[1].address))

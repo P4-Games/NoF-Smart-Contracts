@@ -196,6 +196,14 @@ contract NofGammaOffersV3 is Ownable {
         return _emptyOffer();
     }
 
+    function canUserPublishOffer(address user) public view returns (bool) {
+        return maxOffersByUserAllowed > offersByUserCounter[user].current();
+    }
+
+    function canAnyUserPublishOffer() public view returns (bool) {
+        return maxOffersAllowed > offersTotalCounter.current();
+    }
+
     function hasOffer(address user, uint8 cardNumber) public view returns (bool) {
         require(user != address(0), "Invalid address.");
         for (uint256 i = 0; i < offersByUserCounter[user].current(); i++) {
