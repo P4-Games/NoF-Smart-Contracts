@@ -9,7 +9,8 @@ const nofDaiContractName = process.env.NOF_DAI_CONTRACT_NAME || 'NofTestDAIV2'
 const nofAlphaContractName = process.env.NOF_ALPHA_CONTRACT_NAME || 'NofAlphaV2'
 const nofGammaPacksContractName = process.env.NOF_GAMMA_PACKS_CONTRACT_NAME || 'NofGammaPacksV2'
 const nofGammaCardsContractName = process.env.NOF_GAMMA_CARDS_CONTRACT_NAME || 'NofGammaCardsV4'
-const nofGammaOffersContractName = process.env.NOF_GAMMA_OFFERS_CONTRACT_NAME || 'NofGammaOffersV1'
+const nofGammaOffersContractName = process.env.NOF_GAMMA_OFFERS_CONTRACT_NAME || 'NofGammaOffersV3'
+const pringLogs = process.env.PRINT_LOGS_IN_TESTS || '0'
 
 async function deployNofFixture() {
  
@@ -79,9 +80,32 @@ async function getOnePackData (gammaPacks: any, gammaCards: any, address0: any):
   return result
 }
 
+function log (...args: any[]) {
+  if (parseInt(pringLogs) === 0) return
+  for (let index = 0; index < args.length; index++) {
+    console.log(args[index])
+  }
+}
+
+function printOffers(offers: any[], called: string) {
+  
+  if (offers.length === 0 || offers[0].offerId === "") {
+    log(`No offers, called: ${called}`)
+  } else {
+    offers.forEach((offer: any[]) => {
+      let wantedCards = []
+      try {
+        wantedCards = offer[2] ? offer[2].join (',') : []
+      } catch {}
+      
+      log(`offer: ${offer[0]}, offerCard: ${offer[1]}, offerWallet: ${offer[3]}, wantedCards: ${wantedCards}, called: ${called}`)
+    })
+  }
+}
+
 export {
   nofDaiContractName, nofAlphaContractName, 
   nofGammaPacksContractName, nofGammaCardsContractName,
   nofGammaOffersContractName, deployNofFixture,
-  getOnePackData, getCardsByUserType
+  getOnePackData, getCardsByUserType, log, printOffers
 }
