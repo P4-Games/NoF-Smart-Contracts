@@ -7,6 +7,16 @@ dotenv.config()
 const INFURA_API_KEY = process.env.INFURA_API_KEY || 'INFURA_API_KEY'
 const ALCHEMY_API_KEY = process.env.ALCHEMY_API_KEY || 'ALCHEMY_API_KEY'
 const PRIVATE_KEY = process.env.PRIVATE_KEY
+const solidityVersions = ["0.6.0", "0.6.2", "0.6.6", "0.8.18"]
+const compilers = solidityVersions.map((version) => ({
+  version,
+  settings: {
+    optimizer: {
+      enabled: true,
+      runs: 200
+    }
+  }
+}))
 
 const config: HardhatUserConfig = {
   defaultNetwork: 'hardhat',
@@ -29,17 +39,7 @@ const config: HardhatUserConfig = {
     }
   },
   solidity: {
-    compilers: [
-      {
-        version: "0.8.18",
-        settings: {
-          optimizer: {
-            enabled: true,
-            runs: 200
-          }
-        }
-      }
-    ]    
+    compilers
   },
   paths: {
     sources: './contracts',

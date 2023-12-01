@@ -16,9 +16,12 @@
     "lint:fix": "npx eslint --ignore-path .gitignore . --fix",
     "prettier": "npx prettier --log-level warn --ignore-path .gitignore \"{contracts,test}/**/*.{js,ts,.sol}\" --check",
     "prettier:fix": "npx prettier --log-level warn --ignore-path .gitignore \"{contracts,test}/**/*.{js,ts,.sol}\" --write",
-    "slither": "slither . --filter-paths \" *v1.sol\""
+    "slither": "slither . --filter-paths \" *v1.sol\"",
+    "commitlint-check-comit-msg": "npx --no-install commitlint --edit \"$1\""
   },
   "devDependencies": {
+    "@commitlint/cli": "^18.4.3",
+    "@commitlint/config-conventional": "^18.4.3",
     "@ethersproject/abi": "^5.4.7",
     "@ethersproject/providers": "^5.4.7",
     "@nomicfoundation/hardhat-chai-matchers": "^1.0.0",
@@ -57,7 +60,8 @@
   "pre-commit": {
     "precommit.silent": true,
     "run": [
-      "prettier"
+      "prettier",
+      "commitlint-check-comit-msg"
     ]
   },
   "dependencies": {
