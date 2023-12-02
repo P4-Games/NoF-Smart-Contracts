@@ -127,8 +127,6 @@ solhint 'contracts/**/*.sol'
 slither .
 ```
 
----
-
 
 ## Gamma Logic Detaills
 
@@ -138,11 +136,57 @@ See detaills about gamma Smart Contracts in this [file](./.doc/contracts-info.md
 
 ### Mumbai 
 * DAI: 0x291FaB5F25B87d1672452aE28dcEB1b8Cd2F82f7
-* Alpha: '0x643A6255Fe5aBdb26f43296284F535219E6dD13C
-* Gamma Packs: '0xFC24dFdb838b4544b91436F93da70d2B2476b634
+* Alpha: 0x643A6255Fe5aBdb26f43296284F535219E6dD13C
+* Gamma Packs: 0xFC24dFdb838b4544b91436F93da70d2B2476b634
 * Gamma Cards: 0xb2da44Bd77e922142F3Ef20504826e83D4e9fc0C
 * Gamma Offers: 0xc2E8cEE4dC93F24b9Bc70A100083C0A6075694cE
 
 ### Mainet
 
 (not yet)
+
+
+## Contribution
+
+### commit changes
+
+The application uses a linter for commit messages, requiring them to be specified in the following format:
+
+```
+- type: message
+- type: :icono: message
+```
+
+Example: 
+
+```
+- commit -m chore: add commitlinter
+- commit -m chore: :sparkles: add commitlinter (to commit with an icon, you can use [gitmoji](https://gitmoji.dev/))
+```
+
+The allowed standard types are:
+
+```
+- feat: A new feature for the user.
+- fix: Fixes a bug that affects the user.
+- perf: Changes that improve site performance.
+- build: Changes in the build system, deployment tasks, or installation.
+- ci: Changes in continuous integration.
+- docs: Changes in documentation.
+- refactor: Code refactoring such as variable or function name changes.
+- style: Changes in formatting, tabs, spaces, or semicolons, etc.; do not affect the user.
+- test: Adds tests or refactors an existing one.
+- chore: Other changes that don't modify src or test files.
+- revert: Reverts a previous commit.
+```
+
+Failing to comply with these standards will cause the pre-commit to fail. To remove the last commit (without losing changes), run:
+
+
+```sh
+git reset --soft HEAD~1
+```
+
+For more information, refer to: [commitlint](https://commitlint.js.org/#/).
+
+
