@@ -166,7 +166,8 @@ contract NofGammaCardsV5 is ERC721, ERC721URIStorage, ERC721Burnable, Ownable {
         _openPack (msg.sender, packNumber, packData, signature);
     }
 
-    function openPackByUser(address user, uint256 packNumber, uint8[] memory packData, bytes calldata signature) external {
+    function openPackByUser(address user, uint256 packNumber, uint8[] memory packData, bytes calldata signature) 
+        external onlyOwners {
         _openPack (user, packNumber, packData, signature);
     }
 
