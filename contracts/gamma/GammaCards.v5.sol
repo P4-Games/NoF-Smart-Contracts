@@ -274,7 +274,8 @@ contract NofGammaCardsV5 is ERC721, ERC721URIStorage, ERC721Burnable, Ownable {
     function finishAlbum() public {
         // requires the user to have at least one 120 album
         require(cardsByUser[msg.sender][120] > 0, "You does not have any album.");
-        require(prizesBalance >= mainAlbumPrize, "Insufficient funds.");
+        require(prizesBalance >= mainAlbumPrize, "Insufficient funds (open-packs balance).");
+        require(address(this).balance >= mainAlbumPrize, "Insufficient funds (contract).");
 
         // check that you have at least one card of each number
         // TO-REVIEW: check if this part is necessary because the subtraction of cards 
