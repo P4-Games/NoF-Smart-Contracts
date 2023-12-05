@@ -11,8 +11,13 @@ import "./ContextMixin.v2.sol";
 contract NofAlphaV2 is ERC721, ERC721URIStorage, Ownable, ContextMixinV2 {
     using Counters for Counters.Counter;
     Counters.Counter private _tokenIdCounter;
-    // NOF Alpha Custom Code --> 
+    uint8[7] private prizes = [20, 14, 12, 10, 8, 6, 5];
     string public baseUri;
+    address public balanceReceiver;
+    string[] public seasonNames;
+    uint256[] public seasonPrices;
+    uint256 public prizesBalance;
+    address public DAI_TOKEN;
 
     struct Season {
         uint    price;
@@ -31,19 +36,10 @@ contract NofAlphaV2 is ERC721, ERC721URIStorage, Ownable, ContextMixinV2 {
         uint    number;
     }
 
-    address public balanceReceiver;
-    mapping (string => Season) public seasons;
-    mapping (uint => Card) public cards;// this uint is the tokenId
     mapping (string => address[]) private winners;
+    mapping (string => Season) public seasons;
+    mapping (uint => Card) public cards; // this uint is the tokenId
     mapping (address => mapping(string => Card[])) public cardsByUserBySeason;
-    uint8[7] private prizes = [20, 14, 12, 10, 8, 6, 5];
-    string[] public seasonNames;
-    uint256[] public seasonPrices;
-    uint256 public prizesBalance;
-
-    address public DAI_TOKEN;
-
-    // <-- NOF Alpha Custom Code
 
     event BuyPack(address buyer, string seasonName);
     event Winner(address winner, string season, uint256 position);

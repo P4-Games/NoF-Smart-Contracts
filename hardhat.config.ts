@@ -1,13 +1,14 @@
 import dotenv from "dotenv";
 import { HardhatUserConfig } from "hardhat/config";
 import "@nomicfoundation/hardhat-toolbox";
+import '@openzeppelin/hardhat-upgrades';
 
 dotenv.config()
 
 const INFURA_API_KEY = process.env.INFURA_API_KEY || 'INFURA_API_KEY'
 const ALCHEMY_API_KEY = process.env.ALCHEMY_API_KEY || 'ALCHEMY_API_KEY'
 const PRIVATE_KEY = process.env.PRIVATE_KEY
-const solidityVersions = ["0.6.0", "0.6.2", "0.6.6", "0.8.18"]
+const solidityVersions = ["0.6.0", "0.6.2", "0.6.6", "0.8.18", "0.8.20"]
 const compilers = solidityVersions.map((version) => ({
   version,
   settings: {
