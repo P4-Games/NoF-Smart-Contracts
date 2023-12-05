@@ -17,8 +17,6 @@ describe('NoF - Gamma Cards Tests', function () {
     return cardData
   }
 
-  /*
-
   it('Add Owner should revert when the address is invalid', async () => {
     const { gammaCards } = await loadFixture(deployNofFixture)
     await expect(gammaCards.addOwner(ethers.constants.AddressZero)).to.be.revertedWith("Invalid address.")
@@ -190,8 +188,6 @@ describe('NoF - Gamma Cards Tests', function () {
     await expect(quantity2).to.be.equal(0);
     await expect(quantity3).to.be.equal(0);
   });
-
-  */
 
   it('Should allow to finish album', async () => {
     const { gammaPacks, gammaCards, address0, testDAI } = await loadFixture(deployNofFixture)
