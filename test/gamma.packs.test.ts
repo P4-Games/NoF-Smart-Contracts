@@ -16,17 +16,17 @@ describe('NoF - Gamma Packs Tests', function () {
     await expect(gammaCards.addOwner(address1.address)).to.be.revertedWith("Address is already an owner.")
   });
 
-  it('Delete owner should revert when the address is invalid', async () => {
+  it('Remove owner should revert when the address is invalid', async () => {
     const { gammaCards } = await loadFixture(deployNofFixture)
     await expect(gammaCards.removeOwner (ethers.constants.AddressZero)).to.be.revertedWith("Invalid address.")
   });
 
-  it('Delete owner should revert when removing self as an owner', async () => {
+  it('Remove owner should revert when removing self as an owner', async () => {
     const { gammaCards, address0 } = await loadFixture(deployNofFixture)
     await expect(gammaCards.removeOwner (address0.address)).to.be.revertedWith("You cannot remove yourself as an owner.")
   });
 
-  it('Delete owner should revert when removing a non-existing owner', async () => {
+  it('Remove owner should revert when removing a non-existing owner', async () => {
     const { gammaCards } = await loadFixture(deployNofFixture)
     const nonExistingOwner = ethers.Wallet.createRandom().address
     await expect(gammaCards.removeOwner (nonExistingOwner)).to.be.revertedWith("Address is not an owner.")
