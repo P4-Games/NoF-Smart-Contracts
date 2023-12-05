@@ -16,6 +16,7 @@ interface IgammaPacksContract {
 
 interface IgammaOffersContract {
     function hasOffer(address user, uint8 cardNumber) external view returns (bool);
+    function removeOffersByUser(address user) external returns (bool);
     function getOfferByUserAndCardNumber(address user, uint8 cardNumber) external view 
         returns ( uint256, uint8, uint8[] memory , address );
 }
@@ -145,11 +146,11 @@ contract NofGammaCardsV5 is ERC721, ERC721URIStorage, ERC721Burnable, Ownable {
         return cardsByUser[user][cardNumber] > 0;
     }
 
-    function removeCardByOffer (address user, uint8 cardNumber) external onlyGammaOffersContract {
+    function removeCardByOffer(address user, uint8 cardNumber) external onlyGammaOffersContract {
         cardsByUser[user][cardNumber]--;
     }
 
-    function restoreCardByOffer (address user, uint8 cardNumber) external onlyGammaOffersContract {
+    function restoreCardByOffer(address user, uint8 cardNumber) external onlyGammaOffersContract {
         cardsByUser[user][cardNumber]++;
     }
 
@@ -271,11 +272,13 @@ contract NofGammaCardsV5 is ERC721, ERC721URIStorage, ERC721Burnable, Ownable {
 
     // user must call this function when they have at least 1 
     // card of each number (120 total) + a 120 album card
-    function finishAlbum() public {
+    function finishAlbum() public returns (bool) {
         // requires the user to have at least one 120 album
         require(cardsByUser[msg.sender][120] > 0, "You does not have any album.");
         require(prizesBalance >= mainAlbumPrize, "Insufficient funds (open-packs balance).");
-        require(address(this).balance >= mainAlbumPrize, "Insufficient funds (contract).");
+        
+        uint256 contractBalance = IERC20(DAI_TOKEN).balanceOf(address(this));
+        require(contractBalance >= mainAlbumPrize, "Insufficient funds (contract).");
 
         // check that you have at least one card of each number
         // TO-REVIEW: check if this part is necessary because the subtraction of cards 
@@ -288,16 +291,20 @@ contract NofGammaCardsV5 is ERC721, ERC721URIStorage, ERC721Burnable, Ownable {
             }
             cardsByUser[msg.sender][i]--;
         }
-        
         require(!unfinished, "Must complete the album.");
         
         // mint the completed album.
         safeMint(msg.sender, mainUri, 120, 2);
 
         // transfer prize in DAI.
-        prizesBalance -= mainAlbumPrize;
         IERC20(DAI_TOKEN).transfer(msg.sender, mainAlbumPrize);
+        prizesBalance -= mainAlbumPrize;
+
+        bool userOffersRemoved = gammaOffersContract.removeOffersByUser(msg.sender);
+        require (userOffersRemoved, "Cannot remove user offers");
+
         emit AlbumCompleted(msg.sender, 1);
+        return true;
     }
 
     function testAddCards(address user) public onlyOwners {
@@ -360,7 +367,7 @@ contract NofGammaCardsV5 is ERC721, ERC721URIStorage, ERC721Burnable, Ownable {
 	    _tokenIdCounter += 1;
     }
 
-    function receivePrizesBalance(uint256 amount) external onlyGammaPacksContract {
+    function setPrizesBalance(uint256 amount) external onlyGammaPacksContract {
         prizesBalance += amount;
     }
 

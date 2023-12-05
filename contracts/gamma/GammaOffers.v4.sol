@@ -36,11 +36,12 @@ contract NofGammaOffersV4 is Ownable {
     uint256 public offersTotalCounter;
 
     event NewGammaCardsContract(address newGammaCardsContract);
-    event NewOfferCreated (address user, uint8 cardNumber, uint8[] wantedCardNumbers);
-    event OfferRemoved (address user, uint8 cardNumber);
-    event NewOwnerAdded (address owner);
-    event OwnerRemoved (address owner);
-    event RemovedAllOffers ();
+    event NewOwnerAdded(address owner);
+    event OwnerRemoved(address owner);
+    event OfferCreated(address user, uint8 cardNumber, uint8[] wantedCardNumbers);
+    event OfferRemoved(address user, uint8 cardNumber);
+    event UserOffersRemoved(address user);
+    event AllOffersRemoved();
 
     constructor(address _cardsContract) {
         gammaCardsContract = IGammaCardsContract(_cardsContract);
@@ -65,7 +66,7 @@ contract NofGammaOffersV4 is Ownable {
         emit NewOwnerAdded (_newOwner);
     }
 
-    function removeOwner(address _ownerToRemove) external onlyOwners {
+    function removeOwner (address _ownerToRemove) external onlyOwners {
         require(_ownerToRemove != address(0), "Invalid address.");
         require(_ownerToRemove != msg.sender, "You cannot remove yourself as an owner.");
         require(owners[_ownerToRemove], "Address is not an owner.");
@@ -131,7 +132,7 @@ contract NofGammaOffersV4 is Ownable {
             gammaCardsContract.removeCardByOffer(user, cardNumber);
         }
 
-        emit NewOfferCreated (user, cardNumber, wantedCardNumbers);
+        emit OfferCreated (user, cardNumber, wantedCardNumbers);
     }
 
     function getOffersByUserCounter(address user) external view returns (uint256) {
@@ -215,13 +216,8 @@ contract NofGammaOffersV4 is Ownable {
         gammaCardsContract.exchangeCardsOffer(from, cardNumberWanted, offerWallet, offerCardNumber);
         require(gammaCardsContract.hasCardByOffer(from, offerCardNumber), "Exchange error with wallet from");
         require(gammaCardsContract.hasCardByOffer(offerWallet, cardNumberWanted), "Exchange error with wallet to");
-
-        // console.log('confirmOfferExchange', gammaCardsContract.hasCardByOffer(from, offerCardNumber));
-        // console.log('confirmOfferExchange', gammaCardsContract.hasCardByOffer(offerWallet, cardNumberWanted));
-        // bool offerDeleted = _removeOfferByUserAndCardNumber(offerWallet, offerCardNumber, true);
         bool offerDeleted = _removeOfferByUserAndCardNumber(offerWallet, offerCardNumber, true);
         require (offerDeleted, "Error deleting offer after transfer cards");
-        // console.log('confirmOfferExchange', offerDeleted);
     }
 
     function deleteAllOffers() external onlyOwners {
@@ -235,7 +231,7 @@ contract NofGammaOffersV4 is Ownable {
         offersTotalCounter = 0;
         delete offers;
 
-        emit RemovedAllOffers();
+        emit AllOffersRemoved();
     }
 
     function removeOfferByCardNumber(uint8 cardNumber) external returns (bool) {
@@ -244,6 +240,20 @@ contract NofGammaOffersV4 is Ownable {
 
     function removeOfferByUserAndCardNumber(address user, uint8 cardNumber) public onlyOwners returns (bool) {
         return _removeOfferByUserAndCardNumber(user, cardNumber, false);
+    }
+
+    function removeOffersByUser(address user) external onlyCardsContract returns (bool) {
+        require(user != address(0), "Invalid address.");
+        
+        Offer[] storage userOffers = offersByUser[user];
+        uint256 currentUserOffersCounter = offersByUserCounter[user];
+
+        for (uint256 i = 0; i < currentUserOffersCounter; i++) {
+            string memory offerId = userOffers[i].offerId;
+            _removeOfferInData (user, userOffers[i].cardNumber, offerId);
+            emit UserOffersRemoved(user);
+        }
+        return true;
     }
 
     function _removeOfferByUserAndCardNumber(address user, uint8 cardNumber, bool fromConfirmOfferExchange) private returns (bool) {
@@ -257,14 +267,7 @@ contract NofGammaOffersV4 is Ownable {
             if (userOffers[i].cardNumber == cardNumber) {
                 string memory offerId = userOffers[i].offerId;
 
-                _deleteOfferFromUserMapping(user, cardNumber, offerId);
-                _deleteOfferFromCardNumberMapping(user, cardNumber, offerId);
-                _removeOfferByOfferId(offerId);
-
-                offersByUserCounter[user] -= 1;
-                offersByCardNumberCounter[cardNumber] -= 1;
-                offersTotalCounter -= 1;
-
+                _removeOfferInData (user, cardNumber, offerId);
                 deletedOffer = true;
 
                 if (removeCardInInventoryWhenOffer && !fromConfirmOfferExchange) {
@@ -278,13 +281,22 @@ contract NofGammaOffersV4 is Ownable {
         return deletedOffer;
     }
 
-    function _deleteOfferFromUserMapping(address user, uint8 cardNumber, string memory offerId) private {
+    function _removeOfferInData(address user, uint8 cardNumber, string memory offerId) private {
+        _removeOfferFromUserMapping(user, cardNumber, offerId);
+        _removeOfferFromCardNumberMapping(user, cardNumber, offerId);
+        _removeOfferByOfferId(offerId);
+        offersByUserCounter[user] -= 1;
+        offersByCardNumberCounter[cardNumber] -= 1;
+        offersTotalCounter -= 1;
+    }
+
+    function _removeOfferFromUserMapping(address user, uint8 cardNumber, string memory offerId) private {
         Offer[] storage userOffers = offersByUser[user];
         for (uint256 i = 0; i < userOffers.length; i++) {
             if (_sameOfferId(userOffers[i].offerId, offerId)) {
                 
-                require(userOffers[i].owner == user, "_deleteOfferFromUserMapping: owner does not match.");
-                require(userOffers[i].cardNumber == cardNumber, "_deleteOfferFromUserMapping: cardNumber does not match.");
+                require(userOffers[i].owner == user, "_removeOfferFromUserMapping: owner does not match.");
+                require(userOffers[i].cardNumber == cardNumber, "_removeOfferFromUserMapping: cardNumber does not match.");
 
                 if (i < userOffers.length - 1) {
                     userOffers[i] = userOffers[userOffers.length - 1];
@@ -295,14 +307,14 @@ contract NofGammaOffersV4 is Ownable {
         }
     }
 
-    function _deleteOfferFromCardNumberMapping(address user, uint8 cardNumber, string memory offerId) private {
+    function _removeOfferFromCardNumberMapping(address user, uint8 cardNumber, string memory offerId) private {
         Offer[] storage cardOffers = offersByCardNumber[cardNumber];
 
         for (uint256 i = 0; i < cardOffers.length; i++) {
             if (_sameOfferId(cardOffers[i].offerId, offerId)) {
 
-                require(cardOffers[i].owner == user, "_deleteOfferFromCardNumberMapping: owner does not match.");
-                require(cardOffers[i].cardNumber == cardNumber, "_deleteOfferFromCardNumberMapping: cardNumber does not match.");
+                require(cardOffers[i].owner == user, "_removeOfferFromCardNumberMapping: owner does not match.");
+                require(cardOffers[i].cardNumber == cardNumber, "_removeOfferFromCardNumberMapping: cardNumber does not match.");
 
                 if (i < cardOffers.length - 1) {
                     cardOffers[i] = cardOffers[cardOffers.length - 1];

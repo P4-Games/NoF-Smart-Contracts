@@ -1,7 +1,7 @@
 import { loadFixture } from '@nomicfoundation/hardhat-network-helpers'
 import { expect } from 'chai'
 import { ethers } from 'hardhat'
-import { deployNofFixture, getCardsByUserType } from './common'
+import { deployNofFixture, getCardsByUserType, allowedToFinishAlbum } from './common'
 import { v4 as uuidv4 } from 'uuid'
 
 describe('NoF - Gamma Cards Tests', function () {
@@ -29,18 +29,18 @@ describe('NoF - Gamma Cards Tests', function () {
 
   it('Remove Owner should revert when the address is invalid', async () => {
     const { gammaCards } = await loadFixture(deployNofFixture)
-    await expect(gammaCards.removeOwner(ethers.constants.AddressZero)).to.be.revertedWith("Invalid address.")
+    await expect(gammaCards.removeOwner (ethers.constants.AddressZero)).to.be.revertedWith("Invalid address.")
   });
 
   it('Remove Owner should revert when removing self as an owner', async () => {
     const { gammaCards, address0 } = await loadFixture(deployNofFixture)
-    await expect(gammaCards.removeOwner(address0.address)).to.be.revertedWith("You cannot remove yourself as an owner.")
+    await expect(gammaCards.removeOwner (address0.address)).to.be.revertedWith("You cannot remove yourself as an owner.")
   });
 
   it('Remove Owner should revert when removing a non-existing owner', async () => {
     const { gammaCards } = await loadFixture(deployNofFixture)
     const nonExistingOwner = ethers.Wallet.createRandom().address
-    await expect(gammaCards.removeOwner(nonExistingOwner)).to.be.revertedWith("Address is not an owner.")
+    await expect(gammaCards.removeOwner (nonExistingOwner)).to.be.revertedWith("Address is not an owner.")
   });
 
   it('Pack could opened by its owner (card-contract)', async () => {
@@ -187,5 +187,83 @@ describe('NoF - Gamma Cards Tests', function () {
     await expect(quantity2).to.be.equal(0);
     await expect(quantity3).to.be.equal(0);
   });
+
+
+  it('Should allow to finish album', async () => {
+    const { gammaPacks, gammaCards, address0, testDAI } = await loadFixture(deployNofFixture)
+
+    // some settings
+    await gammaPacks.changeTransferDaiFlag(true);
+    await gammaCards.changeRequireOpenPackSignerValidation(false)
+
+    // Add all cards to user
+    await gammaCards.testAddCards(address0.address);
+    const getCardsByUserResult1: getCardsByUserType = await gammaCards.getCardsByUser(address0.address)
+    expect(getCardsByUserResult1.length).not.equal(0)
+
+    // Buy and open packs to increase prizesBalance
+    const packsToBuy = 40;
+    const amountRequiredToBuyPacks = await gammaPacks.getAmountRequiredToBuyPacks(packsToBuy);
+    const userBalanceToken = await testDAI.balanceOf(address0.address);
+
+    expect(userBalanceToken >= amountRequiredToBuyPacks).to.be.true;
+    await testDAI.approve(gammaPacks.address, amountRequiredToBuyPacks);
+
+    await gammaPacks.buyPacks(packsToBuy)
+    const pack0Data = [25,62,94,71,41,77,100,90,3,58,113,28] 
+
+    for (let index = 0; index < packsToBuy; index++) {
+      await gammaCards.testOpenPack(address0.address, index, pack0Data)
+    }
+
+    const allowedToFinish: boolean = await allowedToFinishAlbum(gammaCards, testDAI, address0.address)
+    expect(allowedToFinish).to.be.equal(true)
+
+    const finishResult = await gammaCards.finishAlbum();
+    await finishResult.wait()
+  })
+
+
+  it('Should allow to finish album and delete user offers', async () => {
+    const { gammaPacks, gammaCards, gammaOffers, address0, testDAI } = await loadFixture(deployNofFixture)
+
+    // some settings
+    await gammaPacks.changeTransferDaiFlag(true);
+    await gammaCards.changeRequireOpenPackSignerValidation(false)
+
+    // Add all cards to user
+    await gammaCards.testAddCards(address0.address);
+    const getCardsByUserResult1: getCardsByUserType = await gammaCards.getCardsByUser(address0.address)
+    expect(getCardsByUserResult1.length).not.equal(0)
+
+    // create offers
+    const getCardsByUserResult: getCardsByUserType = await getOnePackData(gammaPacks, gammaCards, address0)
+    await gammaOffers.createOffer(uuidv4(), getCardsByUserResult[0][0], [1,2,24,4,5,6,7,8])
+    
+    let offers = await gammaOffers.getOffers();
+    await expect(offers.length).to.not.be.equal(0);
+
+    // Buy and open packs to increase prizesBalance
+    const packsToBuy = 40;
+    const amountRequiredToBuyPacks = await gammaPacks.getAmountRequiredToBuyPacks(packsToBuy);
+    const userBalanceToken = await testDAI.balanceOf(address0.address);
+
+    expect(userBalanceToken >= amountRequiredToBuyPacks).to.be.true;
+    await testDAI.approve(gammaPacks.address, amountRequiredToBuyPacks);
+
+    await gammaPacks.buyPacks(packsToBuy)
+    const pack0Data = [25,62,94,71,41,77,100,90,3,58,113,28] 
+
+    for (let index = 0; index < packsToBuy; index++) {
+      await gammaCards.testOpenPack(address0.address, index, pack0Data)
+    }
+
+    const allowedToFinish: boolean = await allowedToFinishAlbum(gammaCards, testDAI, address0.address)
+    expect(allowedToFinish).to.be.equal(true)
+
+    const finishResult = await gammaCards.finishAlbum();
+    await finishResult.wait()
+  })
+
 
 })
