@@ -3,9 +3,10 @@ pragma solidity ^0.8.20;
 
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
+import "hardhat/console.sol";
 
 interface IGammaCardsContract {
-    function receivePrizesBalance(uint256 amount) external;
+    function setPrizesBalance(uint256 amount) external;
     function changePackPrice(uint256 amount) external;
 }
 
@@ -24,8 +25,9 @@ contract NofGammaPacksV3 is Ownable {
     
     event PackPurchase(address buyer, uint256 tokenId);
     event PacksPurchase(address buyer, uint256[] tokenIds);
-    event NewPrice(uint256 newPrice);
     event PackTransfer(address from, address to, uint256 tokenId);
+    event PackOpen(address user, uint256 tokenId);
+    event NewPrice(uint256 newPrice);
     event NewGammaCardsContract(address newCardsContract);
     
     constructor(address _daiTokenAddress, address _balanceReceiver) {
@@ -33,6 +35,11 @@ contract NofGammaPacksV3 is Ownable {
         balanceReceiver = _balanceReceiver;
         owners[msg.sender] = true;
         transferDai = false;
+    }
+
+    modifier onlyGammaCardsContract {
+        require(msg.sender == address(gammaCardsContract), "Only gamma cards contract can call this function.");
+        _;
     }
 
     modifier onlyOwners() {
@@ -46,7 +53,7 @@ contract NofGammaPacksV3 is Ownable {
         owners[_newOwner] = true;
     }
 
-    function removeOwner (address _ownerToRemove) external onlyOwners {
+    function removeOwner(address _ownerToRemove) external onlyOwners {
         require(_ownerToRemove != address(0), "Invalid address.");
         require(_ownerToRemove != msg.sender, "You cannot remove yourself as an owner.");
         require(owners[_ownerToRemove], "Address is not an owner.");
@@ -56,130 +63,6 @@ contract NofGammaPacksV3 is Ownable {
     function changeBalanceReceiver(address _newBalanceReceiver) external onlyOwners {
         require(_newBalanceReceiver != address(0), "Invalid address.");
         balanceReceiver = _newBalanceReceiver;
-    }
-
-    function buyPack() public returns (uint256){
-        return _buyPack(msg.sender);
-    }
-
-    function buyPackByUser(address user) public onlyOwners returns (uint256) {
-        return _buyPack (user);
-    }
-
-    function _buyPack(address user) private returns (uint256) {
-        require(address(gammaCardsContract) != address(0), "GammaCardsContract not set."); 
-    
-        uint256 tokenId = _tokenIdCounter;
-        require(tokenId < totalSupply, "There are no more packs.");
-
-        _tokenIdCounter += 1;
-        packs[tokenId] = user;
-        packsByUser[user].push(tokenId);
-        
-        uint256 prizesAmount = packPrice - packPrice / 6;
-        gammaCardsContract.receivePrizesBalance(prizesAmount);
-
-        if (transferDai) {
-            // send prize amount to the card contract
-            /*
-            IERC20 erc20Token = IERC20(DAI_TOKEN);
-            require(erc20Token.balanceOf(user) >= prizesAmount, "Insufficient balance to transfer prizes amount.");
-            bool successTx1 = erc20Token.transferFrom(user, address(gammaCardsContract), prizesAmount);
-            require(successTx1, "Error sending prizes amount to gammaCardsContract.");
-            */
-            IERC20(DAI_TOKEN).transferFrom(user, address(gammaCardsContract), prizesAmount); 
-            
-            // send profit amount to NoF account
-            /*
-            require(erc20Token.balanceOf(user) >= (packPrice - prizesAmount), "Insufficient balance to transfer profit amount.");
-            bool successTx2 = erc20Token.transferFrom(user, balanceReceiver, packPrice - prizesAmount);
-            require(successTx2, "Error sending profit amount to NoF account.");
-            */
-            IERC20(DAI_TOKEN).transferFrom(user, balanceReceiver, packPrice - prizesAmount); 
-        }
-        
-        emit PackPurchase(user, tokenId);
-        return tokenId;
-    }
-
-    function buyPacks(uint256 numberOfPacks) public returns(uint256[] memory){
-        return _buyPacks(msg.sender, numberOfPacks);
-    }
-
-    function buyPacksByUser(address user, uint256 numberOfPacks) public onlyOwners returns(uint256[] memory){
-        return _buyPacks(user, numberOfPacks);
-    }
-
-    function _buyPacks(address user, uint256 numberOfPacks) public returns(uint256[] memory){
-        require(address(gammaCardsContract) != address(0), "GammaCardsContract not set."); 
-        uint256 prizesAmount = (packPrice - packPrice / 6) * numberOfPacks;
-        uint256[] memory tokenIds = new uint256[](numberOfPacks);
-
-        for(uint256 i;i < numberOfPacks;i++){
-            uint256 tokenId = _tokenIdCounter;
-            require(tokenId < totalSupply, "There are no more packs.");
-            _tokenIdCounter += 1;
-            
-            packs[tokenId] = user;
-            packsByUser[user].push(tokenId);
-            tokenIds[i] = tokenId;
-        }
-
-        gammaCardsContract.receivePrizesBalance(prizesAmount);
-
-        if (transferDai) {
-            // send prize amount to the card contract
-            /*
-            IERC20 erc20Token = IERC20(DAI_TOKEN);
-            require(erc20Token.balanceOf(user) >= prizesAmount, "Insufficient balance to transfer prizes amount.");
-            bool successTx1 = erc20Token.transferFrom(user, address(gammaCardsContract), prizesAmount);
-            require(successTx1, "Error sending prize amount to gammaCardsContract");
-            */
-            IERC20(DAI_TOKEN).transferFrom(user, address(gammaCardsContract), prizesAmount); 
-        
-            // send profit amount to NoF account
-            /*
-            require(erc20Token.balanceOf(user) >= (packPrice - prizesAmount), "Insufficient balance to transfer profit amount.");
-            bool successTx2 = erc20Token.transferFrom(user, balanceReceiver, packPrice * numberOfPacks - prizesAmount);
-            require(successTx2, "Error sending profit amount to NoF account.");
-            */
-            IERC20(DAI_TOKEN).transferFrom(user, balanceReceiver, packPrice * numberOfPacks - prizesAmount); 
-        }
-
-        emit PacksPurchase(user, tokenIds);
-        return tokenIds;
-    }
-
-    function deleteTokenId(uint256 tokenId, address owner) internal {
-        uint256 packsByUserLength = packsByUser[owner].length;
-        for(uint256 i;i<packsByUserLength;i++){
-            if(packsByUser[owner][i] == tokenId) {
-                packsByUser[owner][i] = packsByUser[owner][packsByUser[owner].length - 1];
-                packsByUser[owner].pop();
-                break;
-            }
-        }
-    }
-
-    function transferPack(address to, uint256 tokenId) public {
-        require(packs[tokenId] == msg.sender, "THis pack is not yours.");
-        require(to != address(0), "Invalid address.");
-        packs[tokenId] = to;
-        deleteTokenId(tokenId, msg.sender);
-        packsByUser[to].push(tokenId);
-
-        emit PackTransfer(msg.sender, to, tokenId);
-    }
-
-    function openPack(uint256 tokenId, address owner) public {
-        require(msg.sender == address(gammaCardsContract), "It is not a card contract.");
-        deleteTokenId(tokenId, owner);
-        delete packs[tokenId];
-    }
-
-    function testOpenPack(uint256 tokenId, address owner) public onlyOwners {
-        deleteTokenId(tokenId, owner);
-        delete packs[tokenId];
     }
 
     function changePrice(uint256 _newPrice) public onlyOwners {
@@ -198,6 +81,21 @@ contract NofGammaPacksV3 is Ownable {
         emit NewGammaCardsContract(_gammaCardsContract);
     }
 
+    function getPrizeAmountToBuyPacks(uint256 numberOfPacks) public view returns(uint256) {
+        return (packPrice - (packPrice / 6)) * numberOfPacks;
+    }
+
+    function getPrizeNoFAccountAmountToBuyPacks(uint256 numberOfPacks) public view returns (uint256) {
+         uint256 prizesAmount = getPrizeAmountToBuyPacks(numberOfPacks);
+         return (packPrice * numberOfPacks) - prizesAmount;
+    }
+
+    function getAmountRequiredToBuyPacks(uint256 numberOfPacks) public view returns (uint256) {
+         uint256 prizesAmount = getPrizeAmountToBuyPacks(numberOfPacks);
+         uint256 NoFAccountAmount = getPrizeNoFAccountAmountToBuyPacks(numberOfPacks);
+         return prizesAmount + NoFAccountAmount;
+    }
+
     function getPacksByUser(address owner) public view returns(uint256[] memory) {
         return packsByUser[owner];
     }
@@ -205,4 +103,113 @@ contract NofGammaPacksV3 is Ownable {
     function getPackOwner(uint256 tokenId) public view returns(address) {
         return packs[tokenId];
     }
+
+    function buyPack() public returns (uint256){
+        return _buyPack(msg.sender);
+    }
+
+    function buyPackByUser(address user) public onlyOwners returns (uint256) {
+        return _buyPack(user);
+    }
+
+    function buyPacks(uint256 numberOfPacks) public returns(uint256[] memory){
+        return _buyPacks(msg.sender, numberOfPacks);
+    }
+
+    function buyPacksByUser(address user, uint256 numberOfPacks) public onlyOwners returns(uint256[] memory){
+        return _buyPacks(user, numberOfPacks);
+    }
+
+    function _buyPack(address user) private returns (uint256) {
+        require(address(gammaCardsContract) != address(0), "GammaCardsContract not set."); 
+    
+        uint256 tokenId = _tokenIdCounter;
+        require(tokenId < totalSupply, "There are no more packs.");
+        _tokenIdCounter += 1;
+        packs[tokenId] = user;
+        packsByUser[user].push(tokenId);
+        
+        bool tranferPrizeResult = _tranferPrizesAmounts(user, 1);
+        require(tranferPrizeResult, "The transfers related to the purchase of packs could not be completed.");
+
+        emit PackPurchase(user, tokenId);
+        return tokenId;
+    }
+
+    function _buyPacks(address user, uint256 numberOfPacks) private returns(uint256[] memory){
+        require(address(gammaCardsContract) != address(0), "GammaCardsContract not set."); 
+        uint256[] memory tokenIds = new uint256[](numberOfPacks);
+
+        for(uint256 i; i < numberOfPacks; i++){
+            uint256 tokenId = _tokenIdCounter;
+            require(tokenId < totalSupply, "There are no more packs.");
+            _tokenIdCounter += 1;
+            packs[tokenId] = user;
+            packsByUser[user].push(tokenId);
+            tokenIds[i] = tokenId;
+        }
+
+        bool tranferPrizeResult = _tranferPrizesAmounts(user, numberOfPacks);
+        require(tranferPrizeResult, "The transfers related to the purchase of packs could not be completed.");
+
+        emit PacksPurchase(user, tokenIds);
+        return tokenIds;
+    }
+
+    function _tranferPrizesAmounts(address user, uint256 numberOfPacks) private returns(bool) {
+        uint256 prizesAmount = getPrizeAmountToBuyPacks(numberOfPacks);
+        uint256 prizeNoFAccount = getPrizeNoFAccountAmountToBuyPacks(numberOfPacks);
+        gammaCardsContract.setPrizesBalance(prizesAmount);
+
+        if (transferDai) {
+            IERC20 erc20Token = IERC20(DAI_TOKEN);
+            uint256 userAllowance = erc20Token.allowance(user, address(this));
+            require(userAllowance >= (prizesAmount + prizeNoFAccount), 
+                "Insufficient allowance to transfer prizes amount and NOF Account amount.");
+            require(erc20Token.balanceOf(user) >= prizesAmount, "Insufficient balance to transfer prizes amount.");
+            require(erc20Token.balanceOf(user) >= prizeNoFAccount, "Insufficient balance to transfer profit amount.");
+
+            // send prize amount to the card contract
+            bool successTx1 = erc20Token.transferFrom(user, address(gammaCardsContract), prizesAmount);
+            require(successTx1, "Error sending prize amount to gammaCardsContract.");
+        
+            // send profit amount to NoF account
+            bool successTx2 = erc20Token.transferFrom(user, balanceReceiver, prizeNoFAccount);
+            require(successTx2, "Error sending profit amount to NoF account.");
+        }
+        return true;
+    }
+
+    function deleteTokenId(uint256 tokenId, address owner) internal {
+        uint256 packsByUserLength = packsByUser[owner].length;
+        for(uint256 i; i<packsByUserLength; i++){
+            if(packsByUser[owner][i] == tokenId) {
+                packsByUser[owner][i] = packsByUser[owner][packsByUser[owner].length - 1];
+                packsByUser[owner].pop();
+                break;
+            }
+        }
+    }
+
+    function transferPack(address to, uint256 tokenId) public {
+        require(to != address(0), "Invalid address.");
+        require(packs[tokenId] == msg.sender, "THis pack is not yours.");
+        packs[tokenId] = to;
+        deleteTokenId(tokenId, msg.sender);
+        packsByUser[to].push(tokenId);
+        emit PackTransfer(msg.sender, to, tokenId);
+    }
+
+    function openPack(uint256 tokenId, address owner) public onlyGammaCardsContract {
+        deleteTokenId(tokenId, owner);
+        delete packs[tokenId];       
+        emit PackOpen(owner, tokenId);
+    }
+
+    function testOpenPack(uint256 tokenId, address owner) public onlyOwners {
+        deleteTokenId(tokenId, owner);
+        delete packs[tokenId];
+        emit PackOpen(owner, tokenId);
+    }
+
 }
