@@ -46,7 +46,7 @@ contract NofGammaPacksV3 is Ownable {
         owners[_newOwner] = true;
     }
 
-    function removeOwner(address _ownerToRemove) external onlyOwners {
+    function removeOwner (address _ownerToRemove) external onlyOwners {
         require(_ownerToRemove != address(0), "Invalid address.");
         require(_ownerToRemove != msg.sender, "You cannot remove yourself as an owner.");
         require(owners[_ownerToRemove], "Address is not an owner.");

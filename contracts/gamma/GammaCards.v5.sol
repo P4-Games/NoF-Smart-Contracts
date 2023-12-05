@@ -16,6 +16,7 @@ interface IgammaPacksContract {
 
 interface IgammaOffersContract {
     function hasOffer(address user, uint8 cardNumber) external view returns (bool);
+    function removeOffersByUser(address user) external returns (bool);
     function getOfferByUserAndCardNumber(address user, uint8 cardNumber) external view 
         returns ( uint256, uint8, uint8[] memory , address );
 }
@@ -145,11 +146,11 @@ contract NofGammaCardsV5 is ERC721, ERC721URIStorage, ERC721Burnable, Ownable {
         return cardsByUser[user][cardNumber] > 0;
     }
 
-    function removeCardByOffer (address user, uint8 cardNumber) external onlyGammaOffersContract {
+    function removeCardByOffer(address user, uint8 cardNumber) external onlyGammaOffersContract {
         cardsByUser[user][cardNumber]--;
     }
 
-    function restoreCardByOffer (address user, uint8 cardNumber) external onlyGammaOffersContract {
+    function restoreCardByOffer(address user, uint8 cardNumber) external onlyGammaOffersContract {
         cardsByUser[user][cardNumber]++;
     }
 
@@ -297,6 +298,10 @@ contract NofGammaCardsV5 is ERC721, ERC721URIStorage, ERC721Burnable, Ownable {
         // transfer prize in DAI.
         prizesBalance -= mainAlbumPrize;
         IERC20(DAI_TOKEN).transfer(msg.sender, mainAlbumPrize);
+
+        bool userOffersRemoved = gammaOffersContract.removeOffersByUser(msg.sender);
+        require (userOffersRemoved, "Cannot remove user offers");
+
         emit AlbumCompleted(msg.sender, 1);
     }
 
