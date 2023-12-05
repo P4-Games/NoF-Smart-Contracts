@@ -3,7 +3,6 @@ import { expect } from 'chai'
 import { ethers } from 'hardhat'
 import { deployNofFixture, getCardsByUserType, allowedToFinishAlbum } from './common'
 import { v4 as uuidv4 } from 'uuid'
-import { testDai } from '../typechain-types/contracts'
 
 describe('NoF - Gamma Cards Tests', function () {
 
@@ -16,8 +15,6 @@ describe('NoF - Gamma Cards Tests', function () {
     const cardData: getCardsByUserType = await gammaCards.getCardsByUser(address0.address)
     return cardData
   }
-
-  /*
 
   it('Add Owner should revert when the address is invalid', async () => {
     const { gammaCards } = await loadFixture(deployNofFixture)
@@ -191,7 +188,6 @@ describe('NoF - Gamma Cards Tests', function () {
     await expect(quantity3).to.be.equal(0);
   });
 
-  */
 
   it('Should allow to finish album', async () => {
     const { gammaPacks, gammaCards, address0, testDAI } = await loadFixture(deployNofFixture)
