@@ -63,7 +63,7 @@ contract NofGammaOffersV4 is Ownable {
         require(_newOwner != address(0), "Invalid address.");
         require(!owners[_newOwner], "Address is already an owner.");
         owners[_newOwner] = true;
-        emit NewOwnerAdded (_newOwner);
+        emit NewOwnerAdded(_newOwner);
     }
 
     function removeOwner (address _ownerToRemove) external onlyOwners {
@@ -71,7 +71,7 @@ contract NofGammaOffersV4 is Ownable {
         require(_ownerToRemove != msg.sender, "You cannot remove yourself as an owner.");
         require(owners[_ownerToRemove], "Address is not an owner.");
         owners[_ownerToRemove] = false;
-        emit OwnerRemoved (_ownerToRemove);
+        emit OwnerRemoved(_ownerToRemove);
     }
 
     function setGammaCardsContract (address _gammaCardsContract) public onlyOwners {
@@ -97,14 +97,14 @@ contract NofGammaOffersV4 is Ownable {
     }
 
     function createOffer(string memory offerId, uint8 cardNumber, uint8[] memory wantedCardNumbers) public {
-        _createOfferWithoUser (offerId, msg.sender, cardNumber, wantedCardNumbers);
+        _createOfferWithUser (offerId, msg.sender, cardNumber, wantedCardNumbers);
     }
 
     function createOfferWithoUser(string memory offerId, address user, uint8 cardNumber, uint8[] memory wantedCardNumbers) public onlyOwners{
-        _createOfferWithoUser (offerId, user, cardNumber, wantedCardNumbers);
+        _createOfferWithUser (offerId, user, cardNumber, wantedCardNumbers);
     }
 
-    function _createOfferWithoUser(string memory offerId, address user, uint8 cardNumber, uint8[] memory wantedCardNumbers) private {
+    function _createOfferWithUser(string memory offerId, address user, uint8 cardNumber, uint8[] memory wantedCardNumbers) private {
         require(address(gammaCardsContract) != address(0), "GammaCardsContract not set."); 
         require(wantedCardNumbers.length > 0, "wantedCardNumbers cannot be empty.");
         require(offersByUserCounter[user] < maxOffersByUserAllowed, "User has reached the maximum allowed offers.");
@@ -132,7 +132,7 @@ contract NofGammaOffersV4 is Ownable {
             gammaCardsContract.removeCardByOffer(user, cardNumber);
         }
 
-        emit OfferCreated (user, cardNumber, wantedCardNumbers);
+        emit OfferCreated(user, cardNumber, wantedCardNumbers);
     }
 
     function getOffersByUserCounter(address user) external view returns (uint256) {

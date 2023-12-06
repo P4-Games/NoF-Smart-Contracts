@@ -57,14 +57,19 @@ contract NofGammaCardsV5 is ERC721, ERC721URIStorage, ERC721Burnable, Ownable {
     mapping(address user => uint256 amount) public burnedCards;
     mapping(address user => mapping(uint8 cardNumber => uint8 amount)) public cardsByUser;
     
+    event NewGammaOffersContract(address newGammaOffersContract);
+    event NewGammaPacksContract(address newGammaPacksContract);
+    event NewOwnerAdded(address owner);
+    event OwnerRemoved(address owner);
+    event NewSignerAdded(address signer);
+    event SignerRemoved(address signer);
     event PackOpened(address player, uint8[] packData, uint256 packNumber);
     event AlbumCompleted(address player, uint8 albumClass);
     event CardPasted(address player, uint256 cardTokenId, uint256 albumTokenId);
     event EmergencyWithdrawal(address receiver, uint256 amount);
     event NewSigner(address newSigner);
     event NewUris(string newMainUri, string newSecondaryUri);
-    event NewGammaOffersContract(address newGammaOffersContract);
-    event NewGammaPacksContract(address newGammaPacksContract);
+    event ExchangeCardOffer(address from, address to, uint8 cardNumberFrom, uint8 cardNumberTo);
 
     constructor(address _daiTokenAddress, address _gammaPacksContract, string memory _baseUri, address _signer) 
         ERC721("GammaCards", "NOF_GC") {
@@ -103,6 +108,7 @@ contract NofGammaCardsV5 is ERC721, ERC721URIStorage, ERC721Burnable, Ownable {
         require(_newOwner != address(0), "Invalid address.");
         require(!owners[_newOwner], "Address is already an owner.");
         owners[_newOwner] = true;
+        emit NewOwnerAdded(_newOwner);
     }
 
     function removeOwner(address _ownerToRemove) external onlyOwners {
@@ -110,12 +116,14 @@ contract NofGammaCardsV5 is ERC721, ERC721URIStorage, ERC721Burnable, Ownable {
         require(_ownerToRemove != msg.sender, "You cannot remove yourself as an owner.");
         require(owners[_ownerToRemove], "Address is not an owner.");
         owners[_ownerToRemove] = false;
+        emit OwnerRemoved(_ownerToRemove);
     }
 
     function addSigner(address _newSigner) external onlyOwners {
         require(_newSigner != address(0), "Invalid address.");
         require(!signers[_newSigner], "Address is already an owner.");
         signers[_newSigner] = true;
+        emit NewSignerAdded(_newSigner);
     }
 
     function removeSigner(address _signerToRemove) external onlyOwners {
@@ -123,12 +131,29 @@ contract NofGammaCardsV5 is ERC721, ERC721URIStorage, ERC721Burnable, Ownable {
         require(_signerToRemove != msg.sender, "You cannot remove yourself as a signer.");
         require(signers[_signerToRemove], "Address is not an signer.");
         signers[_signerToRemove] = false;
+        emit SignerRemoved(_signerToRemove);
     }
 
     function setGammaOffersContract(address _gammaOffersContract) public onlyOwners {
         require(_gammaOffersContract != address(0), "Invalid address.");
         gammaOffersContract = IgammaOffersContract(_gammaOffersContract);
         emit NewGammaOffersContract(_gammaOffersContract);
+    }
+
+    function setGammaPacksContract(address _gammaPacksContract) public onlyOwners {
+        require(_gammaPacksContract != address(0), "Invalid address.");
+        gammaPacksContract = IgammaPacksContract(_gammaPacksContract);
+        emit NewGammaPacksContract(_gammaPacksContract);
+    }
+
+    function setPrizesBalance(uint256 amount) external onlyGammaPacksContract {
+        prizesBalance += amount;
+    }
+
+    function setUris(string memory newMainUri, string memory newSecondaryUri) public onlyOwners {
+        mainUri = newMainUri;
+        secondaryUri = newSecondaryUri;
+        emit NewUris(newMainUri, newSecondaryUri);
     }
 
     function changeRequireOpenPackSignerValidation(bool required) external onlyOwners {
@@ -143,8 +168,8 @@ contract NofGammaCardsV5 is ERC721, ERC721URIStorage, ERC721Burnable, Ownable {
         requireOfferValidationInTransfer = required;
     }
 
-    function hasCardByOffer(address user, uint8 cardNumber) external view onlyGammaOffersContract returns (bool has) {
-        return cardsByUser[user][cardNumber] > 0;
+    function changePackPrice(uint256 newPackPrice) external onlyGammaPacksContract {
+        packPrice = newPackPrice;
     }
 
     function removeCardByOffer(address user, uint8 cardNumber) external onlyGammaOffersContract {
@@ -153,6 +178,47 @@ contract NofGammaCardsV5 is ERC721, ERC721URIStorage, ERC721Burnable, Ownable {
 
     function restoreCardByOffer(address user, uint8 cardNumber) external onlyGammaOffersContract {
         cardsByUser[user][cardNumber]++;
+    }
+
+    function hasCardByOffer(address user, uint8 cardNumber) external view onlyGammaOffersContract returns (bool has) {
+        return cardsByUser[user][cardNumber] > 0;
+    }
+
+    function hasCard(address user, uint8 cardNum) public view returns (bool has) {
+        require(user != address(0), "Invalid address.");
+        return cardsByUser[user][cardNum] > 0;
+    }
+
+    function getCardQuantityByUser(address user, uint8 cardNum) public view returns (uint8) {
+        return cardsByUser[user][cardNum];
+    }
+
+    function getCardsByUser(address user) public view returns (uint8[] memory, uint8[] memory, bool[] memory) {
+        uint8[] memory cardNumbers = new uint8[](121);
+        uint8[] memory quantities = new uint8[](121);
+        bool[] memory offers = new bool[](121);
+        uint8 index = 0;
+        
+        for (uint8 i = 0; i <= 119; i++) {
+            if (cardsByUser[user][i] > 0) {
+                cardNumbers[index] = i;
+                quantities[index] = cardsByUser[user][i];
+                offers[index] = gammaOffersContract.hasOffer(user, i);
+                index++;
+            }
+        }
+        
+        uint8[] memory userCardNumbers = new uint8[](index);
+        uint8[] memory userCardsQtty = new uint8[](index);
+        bool[] memory userCardsOffers = new bool[](index);
+        
+        for (uint8 j = 0; j < index; j++) {
+            userCardNumbers[j] = cardNumbers[j];
+            userCardsQtty[j] = quantities[j];
+            userCardsOffers[j] = offers[j];
+        }
+        
+        return (userCardNumbers, userCardsQtty, userCardsOffers);
     }
 
     function verifyPackSigner(uint256 packNumber, uint8[] memory packData, bytes calldata signature) public view 
@@ -226,6 +292,8 @@ contract NofGammaCardsV5 is ERC721, ERC721URIStorage, ERC721Burnable, Ownable {
         cardsByUser[to][cardNumberFrom]++;
         cardsByUser[to][cardNumberTo]--;
         cardsByUser[from][cardNumberTo]++;
+
+        emit ExchangeCardOffer(from, to, cardNumberFrom, cardNumberTo);
     }
 
     function transferCard(address to, uint8 cardNumber) external {
@@ -368,71 +436,6 @@ contract NofGammaCardsV5 is ERC721, ERC721URIStorage, ERC721Burnable, Ownable {
 	    _tokenIdCounter += 1;
     }
 
-    function setPrizesBalance(uint256 amount) external onlyGammaPacksContract {
-        prizesBalance += amount;
-    }
-
-    // do not call unless really necessary
-    function emergencyWithdraw(uint256 amount) public onlyOwners {
-        require(balanceOf(address(this)) >= amount);
-        prizesBalance -= amount;
-        IERC20(DAI_TOKEN).transfer(msg.sender, amount);
-        emit EmergencyWithdrawal(msg.sender, amount);
-    }
-
-    function changePackPrice(uint256 newPackPrice) external onlyGammaPacksContract {
-        packPrice = newPackPrice;
-    }
-
-    function setGammaPacksContract(address _gammaPacksContract) public onlyOwners {
-        require(_gammaPacksContract != address(0), "Invalid address.");
-        gammaPacksContract = IgammaPacksContract(_gammaPacksContract);
-        emit NewGammaPacksContract(_gammaPacksContract);
-    }
-
-    function setUris(string memory newMainUri, string memory newSecondaryUri) public onlyOwners {
-        mainUri = newMainUri;
-        secondaryUri = newSecondaryUri;
-        emit NewUris(newMainUri, newSecondaryUri);
-    }
-
-    function hasCard(address user, uint8 cardNum) public view returns (bool has) {
-        require(user != address(0), "Invalid address.");
-        return cardsByUser[user][cardNum] > 0;
-    }
-     
-    function getCardQuantityByUser(address user, uint8 cardNum) public view returns (uint8) {
-        return cardsByUser[user][cardNum];
-    }
-
-    function getCardsByUser(address user) public view returns (uint8[] memory, uint8[] memory, bool[] memory) {
-        uint8[] memory cardNumbers = new uint8[](121);
-        uint8[] memory quantities = new uint8[](121);
-        bool[] memory offers = new bool[](121);
-        uint8 index = 0;
-        
-        for (uint8 i = 0; i <= 119; i++) {
-            if (cardsByUser[user][i] > 0) {
-                cardNumbers[index] = i;
-                quantities[index] = cardsByUser[user][i];
-                offers[index] = gammaOffersContract.hasOffer(user, i);
-                index++;
-            }
-        }
-        
-        uint8[] memory userCardNumbers = new uint8[](index);
-        uint8[] memory userCardsQtty = new uint8[](index);
-        bool[] memory userCardsOffers = new bool[](index);
-        
-        for (uint8 j = 0; j < index; j++) {
-            userCardNumbers[j] = cardNumbers[j];
-            userCardsQtty[j] = quantities[j];
-            userCardsOffers[j] = offers[j];
-        }
-        
-        return (userCardNumbers, userCardsQtty, userCardsOffers);
-    }
-
     // The following functions are overrides required by Solidity.
     function _burn(uint256 tokenId) internal override(ERC721, ERC721URIStorage) {
         super._burn(tokenId);
@@ -454,6 +457,14 @@ contract NofGammaCardsV5 is ERC721, ERC721URIStorage, ERC721Burnable, Ownable {
         returns (bool)
     {
         return super.supportsInterface(interfaceId);
+    }
+
+    // do not call unless really necessary
+    function emergencyWithdraw(uint256 amount) public onlyOwners {
+        require(balanceOf(address(this)) >= amount);
+        prizesBalance -= amount;
+        IERC20(DAI_TOKEN).transfer(msg.sender, amount);
+        emit EmergencyWithdrawal(msg.sender, amount);
     }
 
     function toString(uint256 value) internal pure returns (string memory) {
