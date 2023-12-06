@@ -67,4 +67,34 @@ describe('NoF - Gamma Packs Tests', function () {
     await expect((await gammaPacks.getPacksByUser(address1.address)).length).to.be.equals(1)
   })
 
+  it('Transfer several packs at once', async () => {
+    const { gammaPacks, address0, address1 } = await loadFixture(deployNofFixture)
+    const tokenId = await gammaPacks.buyPacks(4) 
+    await expect(tokenId).to.not.be.equals(0)
+
+    let userPacks = await gammaPacks.getPacksByUser(address0.address)
+    await expect(userPacks.length).to.be.equals(4)
+      
+    await gammaPacks.transferPacks (address1.address, userPacks)
+    await expect((await gammaPacks.getPacksByUser(address0.address)).length).to.be.equals(0)
+    
+    const packsUser1 = await gammaPacks.getPacksByUser(address1.address)
+    await expect(packsUser1.length).to.be.equals(4)
+
+    await gammaPacks.testOpenPack(packsUser1[0], address1.address)
+    await expect((await gammaPacks.getPacksByUser(address1.address)).length).to.be.equals(3)
+  })
+
+  it('Open several packs at once', async () => {
+    const { gammaPacks, address0, address1 } = await loadFixture(deployNofFixture)
+    const tokenId = await gammaPacks.buyPacks(4) 
+    await expect(tokenId).to.not.be.equals(0)
+
+    let userPacks = await gammaPacks.getPacksByUser(address0.address)
+    await expect(userPacks.length).to.be.equals(4)
+
+    await gammaPacks.testOpenPacks(userPacks, address0.address)
+    await expect((await gammaPacks.getPacksByUser(address1.address)).length).to.be.equals(0)
+  })
+
 })

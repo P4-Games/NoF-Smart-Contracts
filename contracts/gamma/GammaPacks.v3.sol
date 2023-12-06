@@ -17,7 +17,7 @@ contract NofGammaPacksV3 is Ownable {
     uint256 public packPrice = 12e17; // 1.2 DAI
     address public balanceReceiver;
     uint256 private _tokenIdCounter;
-    bool transferDai = false;
+    bool transferDai = true;
 
     mapping(uint256 tokenId => address owner) public packs;
     mapping(address owner => uint256[] tokenIds) public packsByUser;
@@ -34,7 +34,7 @@ contract NofGammaPacksV3 is Ownable {
         DAI_TOKEN = _daiTokenAddress;
         balanceReceiver = _balanceReceiver;
         owners[msg.sender] = true;
-        transferDai = false;
+        transferDai = true;
     }
 
     modifier onlyGammaCardsContract {
@@ -192,6 +192,17 @@ contract NofGammaPacksV3 is Ownable {
     }
 
     function transferPack(address to, uint256 tokenId) public {
+        _transferPack(to, tokenId);
+    }
+
+    function transferPacks(address to, uint256[] memory tokenIds) public {
+        for (uint256 i = 0; i < tokenIds.length; i++) {
+            uint256 tokenId = tokenIds[i];
+            _transferPack(to, tokenId);
+        }
+    }
+
+    function _transferPack(address to, uint256 tokenId) private {
         require(to != address(0), "Invalid address.");
         require(packs[tokenId] == msg.sender, "THis pack is not yours.");
         packs[tokenId] = to;
@@ -201,12 +212,29 @@ contract NofGammaPacksV3 is Ownable {
     }
 
     function openPack(uint256 tokenId, address owner) public onlyGammaCardsContract {
-        deleteTokenId(tokenId, owner);
-        delete packs[tokenId];       
-        emit PackOpen(owner, tokenId);
+        _openPack(tokenId, owner);
+    }
+
+    function openPacks(uint256[] memory tokenIds, address owner) public onlyGammaCardsContract {
+        for (uint256 i = 0; i < tokenIds.length; i++) {
+            uint256 tokenId = tokenIds[i];
+            _openPack(tokenId, owner);
+        }
     }
 
     function testOpenPack(uint256 tokenId, address owner) public onlyOwners {
+        _openPack(tokenId, owner);
+    }
+
+
+    function testOpenPacks(uint256[] memory tokenIds, address owner) public onlyOwners {
+        for (uint256 i = 0; i < tokenIds.length; i++) {
+            uint256 tokenId = tokenIds[i];
+            _openPack(tokenId, owner);
+        }
+    }
+
+    function _openPack(uint256 tokenId, address owner) private {
         deleteTokenId(tokenId, owner);
         delete packs[tokenId];
         emit PackOpen(owner, tokenId);

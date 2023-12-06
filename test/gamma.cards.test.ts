@@ -223,7 +223,6 @@ describe('NoF - Gamma Cards Tests', function () {
     await finishResult.wait()
   })
 
-
   it('Should allow to finish album and delete user offers', async () => {
     const { gammaPacks, gammaCards, gammaOffers, address0, testDAI } = await loadFixture(deployNofFixture)
 
@@ -264,6 +263,5 @@ describe('NoF - Gamma Cards Tests', function () {
     const finishResult = await gammaCards.finishAlbum();
     await finishResult.wait()
   })
-
 
 })
