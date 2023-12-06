@@ -23,6 +23,9 @@ contract NofGammaPacksV3 is Ownable {
     mapping(address owner => uint256[] tokenIds) public packsByUser;
     mapping(address => bool) public owners;
     
+    event NewOwnerAdded(address owner);
+    event OwnerRemoved(address owner);
+    event NewBalanceReceiver(address balanceReceiver);
     event PackPurchase(address buyer, uint256 tokenId);
     event PacksPurchase(address buyer, uint256[] tokenIds);
     event PackTransfer(address from, address to, uint256 tokenId);
@@ -51,6 +54,7 @@ contract NofGammaPacksV3 is Ownable {
         require(_newOwner != address(0), "Invalid address.");
         require(!owners[_newOwner], "Address is already an owner.");
         owners[_newOwner] = true;
+        emit NewOwnerAdded(_newOwner);
     }
 
     function removeOwner(address _ownerToRemove) external onlyOwners {
@@ -58,11 +62,13 @@ contract NofGammaPacksV3 is Ownable {
         require(_ownerToRemove != msg.sender, "You cannot remove yourself as an owner.");
         require(owners[_ownerToRemove], "Address is not an owner.");
         owners[_ownerToRemove] = false;
+        emit OwnerRemoved(_ownerToRemove);
     }
 
     function changeBalanceReceiver(address _newBalanceReceiver) external onlyOwners {
         require(_newBalanceReceiver != address(0), "Invalid address.");
         balanceReceiver = _newBalanceReceiver;
+        emit NewBalanceReceiver(_newBalanceReceiver);
     }
 
     function changePrice(uint256 _newPrice) public onlyOwners {
