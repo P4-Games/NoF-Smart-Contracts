@@ -12,6 +12,7 @@ import "hardhat/console.sol";
 interface IgammaPacksContract {
     function getPackOwner(uint256 tokenId) external view returns (address);
     function openPack(uint256 tokenId, address owner) external;
+    function openPacks(uint256[] memory tokenIds, address owner) external;
 }
 
 interface IgammaOffersContract {
