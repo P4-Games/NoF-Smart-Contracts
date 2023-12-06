@@ -12,7 +12,7 @@ async function main() {
     const acc = await deployer.getAddress()
     console.log(`Working with the account ${acc}, current acc balance: ${ethers.utils.formatEther(balance)}\n`)
 
-    const nofDaiContractName = process.env.NOF_DAI_CONTRACT_NAME ||  'NofTestDAIV2'
+    const nofDaiContractName = process.env.NOF_DAI_CONTRACT_NAME ||  'NofTestDAIV3'
     const nofDaiContractCurrentAddress = process.env.NOF_DAI_CONTRACT_CURRENT_ADDRESS || ''
 
     if (nofDaiContractCurrentAddress === '') {
