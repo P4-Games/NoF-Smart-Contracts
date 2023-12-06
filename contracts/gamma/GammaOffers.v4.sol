@@ -249,10 +249,18 @@ contract NofGammaOffersV4 is Ownable {
         uint256 currentUserOffersCounter = offersByUserCounter[user];
 
         for (uint256 i = 0; i < currentUserOffersCounter; i++) {
-            string memory offerId = userOffers[i].offerId;
-            _removeOfferInData (user, userOffers[i].cardNumber, offerId);
-            emit UserOffersRemoved(user);
+             string memory offerId = userOffers[i].offerId;
+             uint8 cardNumber = userOffers[i].cardNumber;
+            _removeOfferFromCardNumberMapping(user, cardNumber, offerId);
+            _removeOfferByOfferId(offerId);
+            offersByCardNumberCounter[cardNumber] -= 1;
+            offersTotalCounter -= 1;
         }
+
+        delete offersByUser[user];
+        offersByUserCounter[user] = 0;
+        
+        emit UserOffersRemoved(user);
         return true;
     }
 
@@ -267,7 +275,13 @@ contract NofGammaOffersV4 is Ownable {
             if (userOffers[i].cardNumber == cardNumber) {
                 string memory offerId = userOffers[i].offerId;
 
-                _removeOfferInData (user, cardNumber, offerId);
+                _removeOfferFromUserMapping(user, cardNumber, offerId);
+                _removeOfferFromCardNumberMapping(user, cardNumber, offerId);
+                _removeOfferByOfferId(offerId);
+                offersByUserCounter[user] -= 1;
+                offersByCardNumberCounter[cardNumber] -= 1;
+                offersTotalCounter -= 1;
+                
                 deletedOffer = true;
 
                 if (removeCardInInventoryWhenOffer && !fromConfirmOfferExchange) {
@@ -281,24 +295,14 @@ contract NofGammaOffersV4 is Ownable {
         return deletedOffer;
     }
 
-    function _removeOfferInData(address user, uint8 cardNumber, string memory offerId) private {
-        _removeOfferFromUserMapping(user, cardNumber, offerId);
-        _removeOfferFromCardNumberMapping(user, cardNumber, offerId);
-        _removeOfferByOfferId(offerId);
-        offersByUserCounter[user] -= 1;
-        offersByCardNumberCounter[cardNumber] -= 1;
-        offersTotalCounter -= 1;
-    }
-
     function _removeOfferFromUserMapping(address user, uint8 cardNumber, string memory offerId) private {
         Offer[] storage userOffers = offersByUser[user];
         for (uint256 i = 0; i < userOffers.length; i++) {
             if (_sameOfferId(userOffers[i].offerId, offerId)) {
-                
                 require(userOffers[i].owner == user, "_removeOfferFromUserMapping: owner does not match.");
                 require(userOffers[i].cardNumber == cardNumber, "_removeOfferFromUserMapping: cardNumber does not match.");
 
-                if (i < userOffers.length - 1) {
+                if (i < (userOffers.length - 1)) {
                     userOffers[i] = userOffers[userOffers.length - 1];
                 }
                 userOffers.pop();

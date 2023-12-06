@@ -293,7 +293,7 @@ contract NofGammaCardsV5 is ERC721, ERC721URIStorage, ERC721Burnable, Ownable {
             cardsByUser[msg.sender][i]--;
         }
         require(!unfinished, "Must complete the album.");
-        
+
         // mint the completed album.
         safeMint(msg.sender, mainUri, 120, 2);
 

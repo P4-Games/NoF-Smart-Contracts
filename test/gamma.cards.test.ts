@@ -238,6 +238,9 @@ describe('NoF - Gamma Cards Tests', function () {
     // create offers
     const getCardsByUserResult: getCardsByUserType = await getOnePackData(gammaPacks, gammaCards, address0)
     await gammaOffers.createOffer(uuidv4(), getCardsByUserResult[0][0], [1,2,24,4,5,6,7,8])
+    await gammaOffers.createOffer(uuidv4(), getCardsByUserResult[0][1], [20,21])
+    await gammaOffers.createOffer(uuidv4(), getCardsByUserResult[0][2], [30])
+    await gammaOffers.createOffer(uuidv4(), getCardsByUserResult[0][3], [118,115])
     
     let offers = await gammaOffers.getOffers();
     await expect(offers.length).to.not.be.equal(0);
