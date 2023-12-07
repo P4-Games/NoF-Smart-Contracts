@@ -69,12 +69,12 @@ async function deployNofFixture() {
   }
 }
 
-async function getOnePackData (gammaPacks: any, gammaCards: any, address0: any): Promise<getCardsByUserType> {
+async function getOnePackData(gammaPacks: any, gammaCards: any, address0: any): Promise<getCardsByUserType> {
  
   const tokenId = await gammaPacks.buyPack({ from: address0.address })
   const pack0Data = [25,62,94,71,41,77,100,90,3,58,113,28] // valid only with pack 0
   await gammaCards.changeRequireOpenPackSignerValidation(false)
-  await gammaCards.openPackByUser(address0.address, tokenId.value, pack0Data, [])
+  await gammaCards.openPack(tokenId.value, pack0Data, [])
   const result: getCardsByUserType = await gammaCards.getCardsByUser(address0.address)
 
   return result

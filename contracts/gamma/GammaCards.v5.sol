@@ -28,6 +28,7 @@ contract NofGammaCardsV5 is ERC721, ERC721URIStorage, ERC721Burnable, Ownable {
     IgammaPacksContract public gammaPacksContract;
     IgammaOffersContract public gammaOffersContract;
 
+    uint8 public maxPacksToOpenAtOnce = 10;
     uint256 public _tokenIdCounter;
     address public DAI_TOKEN;
     uint256 public packPrice = 12e17;
@@ -82,6 +83,7 @@ contract NofGammaCardsV5 is ERC721, ERC721URIStorage, ERC721Burnable, Ownable {
         requireOpenPackSignerValidation = false;
         requireOfferValidationInMint = true;
         requireOfferValidationInTransfer = true;
+        maxPacksToOpenAtOnce = 10;
 
         for(uint256 i;i<122;i++){
             cardsInventory[i] = 1;
@@ -172,6 +174,10 @@ contract NofGammaCardsV5 is ERC721, ERC721URIStorage, ERC721Burnable, Ownable {
         packPrice = newPackPrice;
     }
 
+    function changeMaxPacksToOpenAtOnce(uint8 _maxPacksToOpenAtOnce) external onlyOwners {
+        maxPacksToOpenAtOnce = _maxPacksToOpenAtOnce;
+    }
+
     function removeCardByOffer(address user, uint8 cardNumber) external onlyGammaOffersContract {
         cardsByUser[user][cardNumber]--;
     }
@@ -231,12 +237,18 @@ contract NofGammaCardsV5 is ERC721, ERC721URIStorage, ERC721Burnable, Ownable {
     }
 
     function openPack(uint256 packNumber, uint8[] memory packData, bytes calldata signature) external {
-        _openPack (msg.sender, packNumber, packData, signature);
+        _openPack(msg.sender, packNumber, packData, signature);
     }
 
-    function openPackByUser(address user, uint256 packNumber, uint8[] memory packData, bytes calldata signature) 
-        external onlyOwners {
-        _openPack (user, packNumber, packData, signature);
+    function openPacks(uint8 packsQuantity, uint256[] memory packsNumber, 
+        uint8[][] memory packsData, bytes[] calldata signatures) external {
+        
+        require (packsQuantity > 0, "packs quantity must be greater than 0.");
+        require (packsQuantity <= maxPacksToOpenAtOnce, "packs quantity must be less than max quantity allowed.");
+
+        for (uint8 i = 0; i < packsQuantity; i++) {
+            _openPack(msg.sender, packsNumber[i], packsData[i], signatures[i]);
+        }
     }
 
     function _openPack(address user, uint256 packNumber, uint8[] memory packData, bytes calldata signature) private {
@@ -441,19 +453,13 @@ contract NofGammaCardsV5 is ERC721, ERC721URIStorage, ERC721Burnable, Ownable {
         super._burn(tokenId);
     }
 
-    function tokenURI(uint256 tokenId)
-        public
-        view
-        override(ERC721, ERC721URIStorage)
+    function tokenURI(uint256 tokenId) public view override(ERC721, ERC721URIStorage)
         returns (string memory)
     {
         return super.tokenURI(tokenId);
     }
 
-     function supportsInterface(bytes4 interfaceId)
-        public
-        view
-        override(ERC721, ERC721URIStorage)
+     function supportsInterface(bytes4 interfaceId) public view override(ERC721, ERC721URIStorage)
         returns (bool)
     {
         return super.supportsInterface(interfaceId);
