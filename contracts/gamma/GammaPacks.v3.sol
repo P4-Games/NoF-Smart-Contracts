@@ -159,6 +159,7 @@ contract NofGammaPacksV3 is Ownable {
         require(tranferPrizeResult, "The transfers related to the purchase of packs could not be completed.");
 
         emit PacksPurchase(user, tokenIds);
+        
         return tokenIds;
     }
 
@@ -232,7 +233,6 @@ contract NofGammaPacksV3 is Ownable {
         _openPack(tokenId, owner);
     }
 
-
     function testOpenPacks(uint256[] memory tokenIds, address owner) public onlyOwners {
         for (uint256 i = 0; i < tokenIds.length; i++) {
             uint256 tokenId = tokenIds[i];
@@ -245,5 +245,4 @@ contract NofGammaPacksV3 is Ownable {
         delete packs[tokenId];
         emit PackOpen(owner, tokenId);
     }
-
 }
