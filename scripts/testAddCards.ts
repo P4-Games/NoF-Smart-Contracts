@@ -12,8 +12,9 @@ async function main() {
     const acc = await deployer.getAddress()
     console.log(`Working with the account ${acc}, current acc balance: ${ethers.utils.formatEther(balance)}\n`)
 
-    const gammaOffers = await ethers.getContractAt('NofGammaCardsV5', '0xCD1c83a7d2EbAF06052c1d8A14397834303e8368')
-    await gammaOffers.testAddCards('0x117b706DEF40310eF5926aB57868dAcf46605b8d')
+    const wallet = '0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266'
+    const cardsContract = await ethers.getContractAt('NofGammaCardsV5', '0xCf7Ed3AccA5a467e9e704C703E8D87F634fB0Fc9')
+    await cardsContract.testAddCards(wallet)
 
     process.exit(0)
   } catch (error) {
