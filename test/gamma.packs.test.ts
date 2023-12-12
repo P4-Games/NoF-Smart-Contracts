@@ -18,18 +18,18 @@ describe('NoF - Gamma Packs Tests', function () {
 
   it('Remove owner should revert when the address is invalid', async () => {
     const { gammaCards } = await loadFixture(deployNofFixture)
-    await expect(gammaCards.removeOwner(ethers.constants.AddressZero)).to.be.revertedWith("Invalid address.")
+    await expect(gammaCards.removeOwner (ethers.constants.AddressZero)).to.be.revertedWith("Invalid address.")
   });
 
   it('Remove owner should revert when removing self as an owner', async () => {
     const { gammaCards, address0 } = await loadFixture(deployNofFixture)
-    await expect(gammaCards.removeOwner(address0.address)).to.be.revertedWith("You cannot remove yourself as an owner.")
+    await expect(gammaCards.removeOwner (address0.address)).to.be.revertedWith("You cannot remove yourself as an owner.")
   });
 
   it('Remove owner should revert when removing a non-existing owner', async () => {
     const { gammaCards } = await loadFixture(deployNofFixture)
     const nonExistingOwner = ethers.Wallet.createRandom().address
-    await expect(gammaCards.removeOwner(nonExistingOwner)).to.be.revertedWith("Address is not an owner.")
+    await expect(gammaCards.removeOwner (nonExistingOwner)).to.be.revertedWith("Address is not an owner.")
   });
 
   it('Pack owner must be equal to buyer', async function () {
@@ -65,6 +65,36 @@ describe('NoF - Gamma Packs Tests', function () {
     await gammaPacks.transferPack (address1.address, userPacks[2])
     await expect((await gammaPacks.getPacksByUser(address0.address)).length).to.be.equals(2)
     await expect((await gammaPacks.getPacksByUser(address1.address)).length).to.be.equals(1)
+  })
+
+  it('Transfer several packs at once', async () => {
+    const { gammaPacks, address0, address1 } = await loadFixture(deployNofFixture)
+    const tokenId = await gammaPacks.buyPacks(4) 
+    await expect(tokenId).to.not.be.equals(0)
+
+    let userPacks = await gammaPacks.getPacksByUser(address0.address)
+    await expect(userPacks.length).to.be.equals(4)
+      
+    await gammaPacks.transferPacks (address1.address, userPacks)
+    await expect((await gammaPacks.getPacksByUser(address0.address)).length).to.be.equals(0)
+    
+    const packsUser1 = await gammaPacks.getPacksByUser(address1.address)
+    await expect(packsUser1.length).to.be.equals(4)
+
+    await gammaPacks.testOpenPack(packsUser1[0], address1.address)
+    await expect((await gammaPacks.getPacksByUser(address1.address)).length).to.be.equals(3)
+  })
+
+  it('Open several packs at once', async () => {
+    const { gammaPacks, address0, address1 } = await loadFixture(deployNofFixture)
+    const tokenId = await gammaPacks.buyPacks(4) 
+    await expect(tokenId).to.not.be.equals(0)
+
+    let userPacks = await gammaPacks.getPacksByUser(address0.address)
+    await expect(userPacks.length).to.be.equals(4)
+
+    await gammaPacks.testOpenPacks(userPacks, address0.address)
+    await expect((await gammaPacks.getPacksByUser(address1.address)).length).to.be.equals(0)
   })
 
 })

@@ -2,6 +2,7 @@ import "@nomiclabs/hardhat-ethers";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { getInitData, deployContracts } from "./common";
 
+
 async function main() {
   try {
     const addresses: SignerWithAddress[] = await getInitData()

@@ -125,7 +125,7 @@ async function gammaOfferBuyPack(signer: SignerWithAddress, gammaPacks: Contract
 }
 
 describe('NoF - Gamma Offers Tests', function () {
-  
+    
   it('Add owner should revert when the address is invalid', async () => {
     const { gammaOffers } = await loadFixture(deployNofFixture)
     await expect(gammaOffers.addOwner(ethers.constants.AddressZero)).to.be.revertedWith("Invalid address.")
@@ -311,7 +311,7 @@ describe('NoF - Gamma Offers Tests', function () {
   it('Should delete multiple offers', async () => {
     const { 
       testDAI, gammaPacks, gammaCards, gammaOffers, 
-      address0, address1, address2, address3 } = await loadFixture(deployNofFixture)
+      address0, address1 } = await loadFixture(deployNofFixture)
 
       await gammaDaiBySigner(address0, testDAI, gammaPacks, gammaCards)
       await gammaDaiBySigner(address1, testDAI, gammaPacks, gammaCards)

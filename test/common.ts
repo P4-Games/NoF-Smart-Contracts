@@ -5,11 +5,11 @@ dotenv.config()
 
 type getCardsByUserType = any[][]
 
-const nofDaiContractName = process.env.NOF_DAI_CONTRACT_NAME || 'NofTestDAIV2'
-const nofAlphaContractName = process.env.NOF_ALPHA_CONTRACT_NAME || 'NofAlphaV2'
-const nofGammaPacksContractName = process.env.NOF_GAMMA_PACKS_CONTRACT_NAME || 'NofGammaPacksV2'
-const nofGammaCardsContractName = process.env.NOF_GAMMA_CARDS_CONTRACT_NAME || 'NofGammaCardsV4'
-const nofGammaOffersContractName = process.env.NOF_GAMMA_OFFERS_CONTRACT_NAME || 'NofGammaOffersV3'
+const nofDaiContractName = process.env.NOF_DAI_CONTRACT_NAME || 'NofTestDAIV3'
+const nofAlphaContractName = process.env.NOF_ALPHA_CONTRACT_NAME || 'NofAlphaV3'
+const nofGammaPacksContractName = process.env.NOF_GAMMA_PACKS_CONTRACT_NAME || 'NofGammaPacksV3'
+const nofGammaCardsContractName = process.env.NOF_GAMMA_CARDS_CONTRACT_NAME || 'NofGammaCardsV5'
+const nofGammaOffersContractName = process.env.NOF_GAMMA_OFFERS_CONTRACT_NAME || 'NofGammaOffersV4'
 const pringLogs = process.env.PRINT_LOGS_IN_TESTS || '0'
 
 async function deployNofFixture() {
@@ -69,12 +69,12 @@ async function deployNofFixture() {
   }
 }
 
-async function getOnePackData (gammaPacks: any, gammaCards: any, address0: any): Promise<getCardsByUserType> {
+async function getOnePackData(gammaPacks: any, gammaCards: any, address0: any): Promise<getCardsByUserType> {
  
   const tokenId = await gammaPacks.buyPack({ from: address0.address })
   const pack0Data = [25,62,94,71,41,77,100,90,3,58,113,28] // valid only with pack 0
   await gammaCards.changeRequireOpenPackSignerValidation(false)
-  await gammaCards.openPackByUser(address0.address, tokenId.value, pack0Data, [])
+  await gammaCards.openPack(tokenId.value, pack0Data, [])
   const result: getCardsByUserType = await gammaCards.getCardsByUser(address0.address)
 
   return result
@@ -103,9 +103,49 @@ function printOffers(offers: any[], called: string) {
   }
 }
 
+async function allowedToFinishAlbum (gammaCards: any, daiContract: any, address: any) {
+  // Hay 4 condicione sen el contrato para poder completarlo:
+  // 1. Que el usuario tengan un álbum: require(cardsByUser[msg.sender][120] > 0, "No tienes ningun album");
+  // 2. Que haya un balance mayor a lo que se paga de premio: require(prizesBalance >= mainAlbumPrize, "Fondos insuficientes");
+  // 3. Que el usuario tenga todas las cartas.
+  // 4. Que el contrato tenga un balance superior al precio del premio (mainAlbumPrize)
+  // Las 4 se validan en el contrato y aquí (para evitar la llamada al contrato)
+
+  // require(cardsByUser[msg.sender][120] > 0, "No tienes ningun album");
+  const userHasAlbum = await gammaCards.cardsByUser(address, 120)
+  const prizesBalance = await gammaCards.prizesBalance()
+  const mainAlbumPrize = await gammaCards.mainAlbumPrize()
+  const gammaContractBalance = await daiContract.balanceOf(gammaCards.address)
+  const prizeBalanceFormatted = ethers.utils.formatUnits(prizesBalance, 18)
+  const albumPrizeFormatted = ethers.utils.formatUnits(mainAlbumPrize, 18)
+  const gammaContractBalanceFormatted = ethers.utils.formatUnits(gammaContractBalance, 18)
+
+  // require(prizesBalance >= mainAlbumPrize, "Fondos insuficientes");
+  const prizesBalanzGTAlbumPrice = parseInt(prizeBalanceFormatted) >= parseInt(albumPrizeFormatted)
+
+  // require gammaCardContractBalance >= mainAlbumPrize
+  const contractBalanzGTAlbumPrice =
+    parseInt(gammaContractBalanceFormatted) >= parseInt(albumPrizeFormatted)
+
+  const result = userHasAlbum && prizesBalanzGTAlbumPrice && contractBalanzGTAlbumPrice
+
+  log('prizesBalanzGTAlbumPrice', {
+    userHasAlbum,
+    prizeBalanceFormatted,
+    albumPrizeFormatted,
+    gammaContractBalanceFormatted,
+    prizesBalanzGTAlbumPrice,
+    contractBalanzGTAlbumPrice,
+    result
+  })
+  
+  return result
+}
+
 export {
   nofDaiContractName, nofAlphaContractName, 
   nofGammaPacksContractName, nofGammaCardsContractName,
   nofGammaOffersContractName, deployNofFixture,
-  getOnePackData, getCardsByUserType, log, printOffers
+  getOnePackData, getCardsByUserType, log, printOffers,
+  allowedToFinishAlbum
 }

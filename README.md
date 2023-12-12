@@ -135,11 +135,11 @@ See detaills about gamma Smart Contracts in this [file](./.doc/contracts-info.md
 ## Deployed Contracts last Addresses
 
 ### Mumbai 
-* DAI: 0x291FaB5F25B87d1672452aE28dcEB1b8Cd2F82f7
-* Alpha: 0x643A6255Fe5aBdb26f43296284F535219E6dD13C
-* Gamma Packs: 0xFC24dFdb838b4544b91436F93da70d2B2476b634
-* Gamma Cards: 0xb2da44Bd77e922142F3Ef20504826e83D4e9fc0C
-* Gamma Offers: 0xc2E8cEE4dC93F24b9Bc70A100083C0A6075694cE
+* DAI: 0xEa4c35c858E15Cef77821278A88435dE57bc8707
+* Alpha: 0x37Ee2C0768c047A3b4892613007b3eaE217411f4
+* Gamma Packs: 0x1F69307e85463fd0Fe2Db048Be932BE5f263d485
+* Gamma Cards: 0xa58eF78A16b7c6300DdaE0e26e96AcaF2eC39b4f
+* Gamma Offers: 0xD46EC7D15B9cd30C86668200cC9f7307E2aB9331
 
 ### Mainet
 

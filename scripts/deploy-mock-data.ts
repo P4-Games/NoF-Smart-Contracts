@@ -3,7 +3,7 @@ import { ethers } from "hardhat";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { Contract } from "ethers";
 import { v4 as uuidv4 } from 'uuid';
-import { /*generateSignature,*/ gammaDaiBySigner, getInitData, deployContracts, isHardhat, isLocalhost } from "./common";
+import { gammaDaiBySigner, getInitData, deployContracts, isHardhat, isLocalhost } from "./common";
 
 async function createAlphaMockData( addresses: SignerWithAddress[], testDAI: Contract, alpha: Contract ) {
   // Alpha Data
@@ -230,7 +230,7 @@ async function main() {
     } = await deployContracts (addresses)
 
     if (isHardhat || isLocalhost) {
-      // await createAlphaMockData(addresses, contracts.testDAI, contracts.alpha);
+      await createAlphaMockData(addresses, contracts.testDAI, contracts.alpha);
       await createGammaMockData(addresses, contracts.testDAI, contracts.gammaPacks, contracts.gammaCards);
       await createOfferMockData (addresses, contracts.gammaPacks, contracts.gammaCards, contracts.gammaOffers);
     }
