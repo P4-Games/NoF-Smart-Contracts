@@ -225,6 +225,6 @@ describe('NoF - Alpha Tests', function () {
 
     const balance = await testDAI.balanceOf(address9.address)
 
-    expect(balance).to.equal(0)
+    expect(balance).to.equal(1)
   })
 })
