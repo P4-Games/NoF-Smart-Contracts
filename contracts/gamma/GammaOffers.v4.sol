@@ -106,7 +106,6 @@ contract NofGammaOffersV4 is Ownable {
 
     function _createOfferWithUser(string memory offerId, address user, uint8 cardNumber, uint8[] memory wantedCardNumbers) private {
         require(address(gammaCardsContract) != address(0), "GammaCardsContract not set."); 
-        require(wantedCardNumbers.length > 0, "wantedCardNumbers cannot be empty.");
         require(offersByUserCounter[user] < maxOffersByUserAllowed, "User has reached the maximum allowed offers.");
         require(offersTotalCounter < maxOffersAllowed, "Total offers have reached the maximum allowed.");
     
@@ -213,11 +212,11 @@ contract NofGammaOffersV4 is Ownable {
     }
 
     function confirmOfferExchange(address from, uint8 cardNumberWanted, address offerWallet, uint8 offerCardNumber) external {
+        bool offerDeleted = _removeOfferByUserAndCardNumber(offerWallet, offerCardNumber, true, cardNumberWanted);
+        require (offerDeleted, "Error deleting offer after transfer cards");
         gammaCardsContract.exchangeCardsOffer(from, cardNumberWanted, offerWallet, offerCardNumber);
         require(gammaCardsContract.hasCardByOffer(from, offerCardNumber), "Exchange error with wallet from");
         require(gammaCardsContract.hasCardByOffer(offerWallet, cardNumberWanted), "Exchange error with wallet to");
-        bool offerDeleted = _removeOfferByUserAndCardNumber(offerWallet, offerCardNumber, true);
-        require (offerDeleted, "Error deleting offer after transfer cards");
     }
 
     function deleteAllOffers() external onlyOwners {
@@ -235,11 +234,11 @@ contract NofGammaOffersV4 is Ownable {
     }
 
     function removeOfferByCardNumber(uint8 cardNumber) external returns (bool) {
-        return _removeOfferByUserAndCardNumber(msg.sender, cardNumber, false);
+        return _removeOfferByUserAndCardNumber(msg.sender, cardNumber, false, 0);
     }
 
     function removeOfferByUserAndCardNumber(address user, uint8 cardNumber) public onlyOwners returns (bool) {
-        return _removeOfferByUserAndCardNumber(user, cardNumber, false);
+        return _removeOfferByUserAndCardNumber(user, cardNumber, false, 0);
     }
 
     function removeOffersByUser(address user) external onlyCardsContract returns (bool) {
@@ -264,7 +263,7 @@ contract NofGammaOffersV4 is Ownable {
         return true;
     }
 
-    function _removeOfferByUserAndCardNumber(address user, uint8 cardNumber, bool fromConfirmOfferExchange) private returns (bool) {
+    function _removeOfferByUserAndCardNumber(address user, uint8 cardNumber, bool fromConfirmOfferExchange, uint8 cardNumberWanted) private returns (bool) {
         require(user != address(0), "Invalid address.");
 
         Offer[] storage userOffers = offersByUser[user];
@@ -273,6 +272,24 @@ contract NofGammaOffersV4 is Ownable {
         bool deletedOffer = false;
         for (uint256 i = 0; i < currentUserOffersCounter; i++) {
             if (userOffers[i].cardNumber == cardNumber) {
+                if(fromConfirmOfferExchange){
+                    uint8[] memory wantedCardNumbers = userOffers[i].wantedCardNumbers;
+                    if(wantedCardNumbers.length == 0){
+                        //buscamos que el usuario no tenga la carta
+                        require(!gammaCardsContract.hasCardByOffer(user, cardNumberWanted), "The user already has that card.");
+                    } else {
+                        //validamos contra las cartas que acepta el usuario
+                        bool foundCardWanted = false;
+                        for (uint8 j = 0; j < wantedCardNumbers.length; j++) {
+                            if(wantedCardNumbers[j] == cardNumberWanted){
+                                foundCardWanted = true;
+                                break;
+                            }
+                        }
+
+                        require(foundCardWanted, "The card is not in wantedCardNumbers.");
+                    }
+                }
                 string memory offerId = userOffers[i].offerId;
 
                 _removeOfferFromUserMapping(user, cardNumber, offerId);
