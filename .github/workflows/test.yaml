@@ -22,3 +22,11 @@ jobs:
         run:  npx hardhat node & npx hardhat run --network hardhat scripts/deploy.ts
       - name: Run tests
         run: npx hardhat test
+        
+  push-block-on-failure:
+    needs: build
+    runs-on: ubuntu-latest
+    if: ${{ failure() && github.event_name == 'push' }}
+    steps:
+      - name: Block push on failure
+        run: exit 1
