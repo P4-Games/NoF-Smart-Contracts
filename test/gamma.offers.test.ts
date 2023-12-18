@@ -418,6 +418,38 @@ describe('NoF - Gamma Offers Tests', function () {
       await expect (await gammaCards.hasCard(address1.address, 90)).to.be.equal(false, 'should not have card 90');
       await expect (await gammaCards.hasCard(address1.address, 3)).to.be.equal(true, 'should have card 3');
   });
+  
+  it('Should revert transfer offered cards between users with invalid specific wanted card', async () => {
+    const { 
+      testDAI, gammaPacks, gammaCards, gammaOffers, 
+      address0, address1, address2, address3 } = await loadFixture(deployNofFixture)
+
+      await gammaDaiBySigner(address0, testDAI, gammaPacks, gammaCards)
+      await gammaDaiBySigner(address1, testDAI, gammaPacks, gammaCards)
+      
+      await gammaCards.changeRequireOpenPackSignerValidation(false)
+
+      await gammaOfferBuyPack(address0, gammaPacks, gammaCards, [25,62,94,71,41,77,100,90,3,58,113,28])
+      await gammaOfferBuyPack(address0, gammaPacks, gammaCards, [0,1,2,4,5,6,7,8,9,10,11,12])
+
+      await gammaOffers.connect(address0).createOffer(uuidv4(), 3, [24,4,5,6,7,9])
+
+      await gammaOfferBuyPack(address1, gammaPacks, gammaCards, [90,91,92,93,94,95,96,97,98,99,100,101])
+      await gammaOfferBuyPack(address1, gammaPacks, gammaCards, [102,103,104,105,106,107,108,109,110,111,112])
+
+      let offers = await gammaOffers.getOffers()
+      let offersCount = offers.length
+      let offersCountContract = await gammaOffers.getOffersCounter()
+
+      await expect(offersCountContract).to.be.equal(offersCount)
+      await expect(offers.length).to.not.be.equal(0);
+  
+      await expect (await gammaCards.hasCard(address0.address, 3)).to.be.equal(true);
+      await expect (await gammaOffers.hasOffer(address0.address, 3)).to.be.equal(true);
+      await expect (await gammaCards.hasCard(address1.address, 90)).to.be.equal(true);
+
+      await expect(gammaOffers.confirmOfferExchange(address1.address, 90, address0.address, 3)).to.be.revertedWith("The card is not in wantedCardNumbers.");
+  });
 
   it('Should transfer offered cards between users accepting any card the user not have', async () => {
     const { 
@@ -467,7 +499,41 @@ describe('NoF - Gamma Offers Tests', function () {
       await expect (await gammaCards.hasCard(address1.address, 3)).to.be.equal(true, 'should have card 3');
   });
 
-   it('Should allow to create a second offer for the same cardNumber and User if first one was unpublished', async () => {
+  it('Should revert transfer offered cards between users accepting any card the user have', async () => {
+    const { 
+      testDAI, gammaPacks, gammaCards, gammaOffers, 
+      address0, address1, address2, address3 } = await loadFixture(deployNofFixture)
+
+      await gammaDaiBySigner(address0, testDAI, gammaPacks, gammaCards)
+      await gammaDaiBySigner(address1, testDAI, gammaPacks, gammaCards)
+      
+      await gammaCards.changeRequireOpenPackSignerValidation(false)
+
+      await gammaOfferBuyPack(address0, gammaPacks, gammaCards, [25,62,94,71,41,77,100,90,3,58,113,28, 101])
+      await gammaOfferBuyPack(address0, gammaPacks, gammaCards, [0,1,2,4,5,6,7,8,9,10,11,12])
+      await gammaOffers.connect(address0).createOffer(uuidv4(), 3, [])
+
+
+      await gammaOfferBuyPack(address1, gammaPacks, gammaCards, [90,91,92,93,94,95,96,97,98,99,100,101])
+      await gammaOfferBuyPack(address1, gammaPacks, gammaCards, [102,103,104,105,106,107,108,109,110,111,112])
+
+      let offers = await gammaOffers.getOffers()
+      let offersCount = offers.length
+      let offersCountContract = await gammaOffers.getOffersCounter()
+
+      await expect(offersCountContract).to.be.equal(offersCount)
+      await expect(offers.length).to.not.be.equal(0);
+  
+      await expect (await gammaCards.hasCard(address0.address, 3)).to.be.equal(true);
+      await expect (await gammaCards.hasCard(address1.address, 101)).to.be.equal(true);
+      await expect (await gammaOffers.hasOffer(address0.address, 3)).to.be.equal(true);
+      await expect (await gammaCards.hasCard(address0.address, 101)).to.be.equal(true);
+      await expect (await gammaCards.hasCard(address1.address, 3)).to.be.equal(false);
+
+      await expect(gammaOffers.confirmOfferExchange(address1.address, 101, address0.address, 3)).to.be.revertedWith("The user already has that card.");
+  });
+
+  it('Should allow to create a second offer for the same cardNumber and User if first one was unpublished', async () => {
     const { testDAI, gammaPacks, gammaCards, gammaOffers, address0} = await loadFixture(deployNofFixture)
 
     await gammaCards.changeRequireOpenPackSignerValidation(false)
