@@ -256,14 +256,20 @@ contract NofGammaOffersV4 is Ownable {
 
     function removeOfferByCardNumber(uint8 cardNumber) external returns (bool) {
         Offer memory offer = getOfferByUserAndCardNumber(msg.sender, cardNumber);
-        require(offer.owner == msg.sender, "An offer for this user and cardNumber don't exists.");
-        return _removeOfferByUserAndCardNumber(msg.sender, cardNumber, offer.offerId, false);
+        if(offer.owner != msg.sender){
+            return false;
+        }
+        _removeOfferByUserAndCardNumber(msg.sender, cardNumber, offer.offerId, false);
+        return true;
     }
 
     function removeOfferByUserAndCardNumber(address user, uint8 cardNumber) public onlyOwners returns (bool) {
         Offer memory offer = getOfferByUserAndCardNumber(user, cardNumber);
-        require(offer.owner == user, "An offer for this user and cardNumber don't exists.");
-        return _removeOfferByUserAndCardNumber(user, cardNumber, offer.offerId, false);
+        if(offer.owner != user){
+            return false;
+        }
+        _removeOfferByUserAndCardNumber(user, cardNumber, offer.offerId, false);
+        return true;
     }
 
     function removeOffersByUser(address user) external onlyCardsContract returns (bool) {
@@ -288,7 +294,7 @@ contract NofGammaOffersV4 is Ownable {
         return true;
     }
 
-    function _removeOfferByUserAndCardNumber(address user, uint8 cardNumber, string memory offerId, bool fromConfirmOfferExchange) private returns (bool) {
+    function _removeOfferByUserAndCardNumber(address user, uint8 cardNumber, string memory offerId, bool fromConfirmOfferExchange) private {
         require(user != address(0), "Invalid address.");
 
         _removeOfferFromUserMapping(user, cardNumber, offerId);
@@ -303,8 +309,6 @@ contract NofGammaOffersV4 is Ownable {
         }
 
         emit OfferRemoved(user, cardNumber);
-
-        return true;
     }
 
     function _removeOfferFromUserMapping(address user, uint8 cardNumber, string memory offerId) private {
