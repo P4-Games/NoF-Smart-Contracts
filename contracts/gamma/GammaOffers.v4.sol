@@ -106,7 +106,6 @@ contract NofGammaOffersV4 is Ownable {
 
     function _createOfferWithUser(string memory offerId, address user, uint8 cardNumber, uint8[] memory wantedCardNumbers) private {
         require(address(gammaCardsContract) != address(0), "GammaCardsContract not set."); 
-        require(wantedCardNumbers.length > 0, "wantedCardNumbers cannot be empty.");
         require(offersByUserCounter[user] < maxOffersByUserAllowed, "User has reached the maximum allowed offers.");
         require(offersTotalCounter < maxOffersAllowed, "Total offers have reached the maximum allowed.");
     
@@ -186,9 +185,11 @@ contract NofGammaOffersV4 is Ownable {
     function getOfferByUserAndCardNumber(address user, uint8 cardNumber) public view returns (Offer memory) {
         require(user != address(0), "Invalid address.");
 
-         for (uint256 i = 0; i < offersByUserCounter[user]; i++) {
-            if (offersByUser[user][i].cardNumber == cardNumber) {
-                return offersByUser[user][i];
+        Offer[] storage userOffers = offersByUser[user];
+        uint256 currentUserOffersCounter = offersByUserCounter[user];
+        for (uint256 i = 0; i < currentUserOffersCounter; i++) {
+            if (userOffers[i].cardNumber == cardNumber) {
+                return userOffers[i];
             }
         }
         return _emptyOffer();
@@ -213,11 +214,30 @@ contract NofGammaOffersV4 is Ownable {
     }
 
     function confirmOfferExchange(address from, uint8 cardNumberWanted, address offerWallet, uint8 offerCardNumber) external {
+        Offer memory offer = getOfferByUserAndCardNumber(offerWallet, offerCardNumber);
+        require(offer.owner == offerWallet, "An offer for this user and cardNumber don't exists.");
+        
+        uint8[] memory wantedCardNumbers = offer.wantedCardNumbers;
+        if(wantedCardNumbers.length == 0){
+            //buscamos que el usuario no tenga la carta
+            require(!gammaCardsContract.hasCardByOffer(offerWallet, cardNumberWanted), "The user already has that card.");
+        } else {
+            //validamos contra las cartas que acepta el usuario
+            bool foundCardWanted = false;
+            for (uint8 j = 0; j < wantedCardNumbers.length; j++) {
+                if(wantedCardNumbers[j] == cardNumberWanted){
+                    foundCardWanted = true;
+                    break;
+                }
+            }
+
+            require(foundCardWanted, "The card is not in wantedCardNumbers.");
+        }
+        
+        _removeOfferByUserAndCardNumber(offerWallet, offerCardNumber, offer.offerId, true);
         gammaCardsContract.exchangeCardsOffer(from, cardNumberWanted, offerWallet, offerCardNumber);
         require(gammaCardsContract.hasCardByOffer(from, offerCardNumber), "Exchange error with wallet from");
         require(gammaCardsContract.hasCardByOffer(offerWallet, cardNumberWanted), "Exchange error with wallet to");
-        bool offerDeleted = _removeOfferByUserAndCardNumber(offerWallet, offerCardNumber, true);
-        require (offerDeleted, "Error deleting offer after transfer cards");
     }
 
     function deleteAllOffers() external onlyOwners {
@@ -235,11 +255,21 @@ contract NofGammaOffersV4 is Ownable {
     }
 
     function removeOfferByCardNumber(uint8 cardNumber) external returns (bool) {
-        return _removeOfferByUserAndCardNumber(msg.sender, cardNumber, false);
+        Offer memory offer = getOfferByUserAndCardNumber(msg.sender, cardNumber);
+        if(offer.owner != msg.sender){
+            return false;
+        }
+        _removeOfferByUserAndCardNumber(msg.sender, cardNumber, offer.offerId, false);
+        return true;
     }
 
     function removeOfferByUserAndCardNumber(address user, uint8 cardNumber) public onlyOwners returns (bool) {
-        return _removeOfferByUserAndCardNumber(user, cardNumber, false);
+        Offer memory offer = getOfferByUserAndCardNumber(user, cardNumber);
+        if(offer.owner != user){
+            return false;
+        }
+        _removeOfferByUserAndCardNumber(user, cardNumber, offer.offerId, false);
+        return true;
     }
 
     function removeOffersByUser(address user) external onlyCardsContract returns (bool) {
@@ -264,35 +294,21 @@ contract NofGammaOffersV4 is Ownable {
         return true;
     }
 
-    function _removeOfferByUserAndCardNumber(address user, uint8 cardNumber, bool fromConfirmOfferExchange) private returns (bool) {
+    function _removeOfferByUserAndCardNumber(address user, uint8 cardNumber, string memory offerId, bool fromConfirmOfferExchange) private {
         require(user != address(0), "Invalid address.");
 
-        Offer[] storage userOffers = offersByUser[user];
-        uint256 currentUserOffersCounter = offersByUserCounter[user];
+        _removeOfferFromUserMapping(user, cardNumber, offerId);
+        _removeOfferFromCardNumberMapping(user, cardNumber, offerId);
+        _removeOfferByOfferId(offerId);
+        offersByUserCounter[user] -= 1;
+        offersByCardNumberCounter[cardNumber] -= 1;
+        offersTotalCounter -= 1;
 
-        bool deletedOffer = false;
-        for (uint256 i = 0; i < currentUserOffersCounter; i++) {
-            if (userOffers[i].cardNumber == cardNumber) {
-                string memory offerId = userOffers[i].offerId;
-
-                _removeOfferFromUserMapping(user, cardNumber, offerId);
-                _removeOfferFromCardNumberMapping(user, cardNumber, offerId);
-                _removeOfferByOfferId(offerId);
-                offersByUserCounter[user] -= 1;
-                offersByCardNumberCounter[cardNumber] -= 1;
-                offersTotalCounter -= 1;
-                
-                deletedOffer = true;
-
-                if (removeCardInInventoryWhenOffer && !fromConfirmOfferExchange) {
-                    gammaCardsContract.restoreCardByOffer(user, cardNumber);
-                }
-
-                emit OfferRemoved(user, cardNumber);
-                break;
-            }
+        if (removeCardInInventoryWhenOffer && !fromConfirmOfferExchange) {
+            gammaCardsContract.restoreCardByOffer(user, cardNumber);
         }
-        return deletedOffer;
+
+        emit OfferRemoved(user, cardNumber);
     }
 
     function _removeOfferFromUserMapping(address user, uint8 cardNumber, string memory offerId) private {
