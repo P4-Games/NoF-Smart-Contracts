@@ -54,7 +54,7 @@ contract NofGammaCardsV5 is ERC721, ERC721URIStorage, ERC721Burnable, Ownable {
     }
 
     mapping (uint256 tokenId => Card) public cards;
-    mapping (uint256 cardNumber => uint256 amount) public cardsInventory; // maximos: 119 => 4999
+    mapping (uint256 cardNumber => uint256 amount) public cardsInventory; // maximos: 120 => 5000
     mapping(address user => uint256 amount) public burnedCards;
     mapping(address user => mapping(uint8 cardNumber => uint8 amount)) public cardsByUser;
     
@@ -202,12 +202,12 @@ contract NofGammaCardsV5 is ERC721, ERC721URIStorage, ERC721Burnable, Ownable {
     }
 
     function getCardsByUser(address user) public view returns (uint8[] memory, uint8[] memory, bool[] memory) {
-        uint8[] memory cardNumbers = new uint8[](121);
-        uint8[] memory quantities = new uint8[](121);
-        bool[] memory offers = new bool[](121);
+        uint8[] memory cardNumbers = new uint8[](122);
+        uint8[] memory quantities = new uint8[](122);
+        bool[] memory offers = new bool[](122);
         uint8 index = 0;
         
-        for (uint8 i = 0; i <= 119; i++) {
+        for (uint8 i = 0; i <= 121; i++) {
             if (cardsByUser[user][i] > 0) {
                 cardNumbers[index] = i;
                 quantities[index] = cardsByUser[user][i];
@@ -368,7 +368,7 @@ contract NofGammaCardsV5 is ERC721, ERC721URIStorage, ERC721Burnable, Ownable {
         // TO-REVIEW: check if this part is necessary because the subtraction of cards 
         // would cause underflow if it is at 0
         bool unfinished;
-        for(uint8 i;i<121;i++){
+        for(uint8 i;i<=120;i++){
             if(cardsByUser[msg.sender][i] == 0) {
                 unfinished = true;
                 break;
@@ -392,7 +392,7 @@ contract NofGammaCardsV5 is ERC721, ERC721URIStorage, ERC721Burnable, Ownable {
     }
 
     function testAddCards(address user) public onlyOwners {
-        for(uint8 i;i<121;i++){
+        for(uint8 i;i<=121;i++){ // 0-119: cards, 120: album-120, 121: album-60
             cardsByUser[user][i]++;
         }
     }

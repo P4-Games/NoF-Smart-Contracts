@@ -25,7 +25,7 @@ contract NofGammaOffersV4 is Ownable {
         uint8 cardNumber;
         uint8[] wantedCardNumbers;
         address owner;
-         uint256 timestamp;
+        uint256 timestamp;
     }
 
     Offer[] public offers;

@@ -29,6 +29,7 @@ contract NofGammaPacksV3 is Ownable {
     event PackPurchase(address buyer, uint256 tokenId);
     event PacksPurchase(address buyer, uint256[] tokenIds);
     event PackTransfer(address from, address to, uint256 tokenId);
+    event PacksTransfer(address from, address to, uint256[] tokenId);
     event PackOpen(address user, uint256 tokenId);
     event NewPrice(uint256 newPrice);
     event NewGammaCardsContract(address newCardsContract);
@@ -159,7 +160,6 @@ contract NofGammaPacksV3 is Ownable {
         require(tranferPrizeResult, "The transfers related to the purchase of packs could not be completed.");
 
         emit PacksPurchase(user, tokenIds);
-        
         return tokenIds;
     }
 
@@ -207,6 +207,7 @@ contract NofGammaPacksV3 is Ownable {
             uint256 tokenId = tokenIds[i];
             _transferPack(to, tokenId);
         }
+        emit PacksTransfer(msg.sender, to, tokenIds);
     }
 
     function _transferPack(address to, uint256 tokenId) private {
