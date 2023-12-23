@@ -400,7 +400,7 @@ contract NofGammaCardsV5 is ERC721, ERC721URIStorage, ERC721Burnable, Ownable {
     // user should call this function if they want to 'paste' selected cards in 
     // the 60 cards album to 'burn' them.
     function burnCards(uint8[] calldata cardNumbers) public {
-        require(cardsByUser[msg.sender][121] > 0, "No tienes album de quema");
+        require(cardsByUser[msg.sender][121] > 0, "You does not have any burning album.");
         cardsByUser[msg.sender][121]--;
         burnedCards[msg.sender] += cardNumbers.length;
         for(uint8 i;i<cardNumbers.length;i++){
