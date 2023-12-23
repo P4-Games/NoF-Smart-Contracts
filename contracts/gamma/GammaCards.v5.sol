@@ -401,6 +401,10 @@ contract NofGammaCardsV5 is ERC721, ERC721URIStorage, ERC721Burnable, Ownable {
     // the 60 cards album to 'burn' them.
     function burnCards(uint8[] calldata cardNumbers) public {
         require(cardsByUser[msg.sender][121] > 0, "You does not have any burning album.");
+
+        uint256 contractBalance = IERC20(DAI_TOKEN).balanceOf(address(this));
+        require(contractBalance >= secondaryAlbumPrize, "Insufficient funds (contract).");
+
         cardsByUser[msg.sender][121]--;
         burnedCards[msg.sender] += cardNumbers.length;
         for(uint8 i;i<cardNumbers.length;i++){
