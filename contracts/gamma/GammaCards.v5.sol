@@ -71,6 +71,8 @@ contract NofGammaCardsV5 is ERC721, ERC721URIStorage, ERC721Burnable, Ownable {
     event NewSigner(address newSigner);
     event NewUris(string newMainUri, string newSecondaryUri);
     event ExchangeCardOffer(address from, address to, uint8 cardNumberFrom, uint8 cardNumberTo);
+    event CardTransfered(address from, address to, uint8 caradNumber);
+    event CardsTransfered(address from, address to, uint8[] caradNumber);
 
     constructor(address _daiTokenAddress, address _gammaPacksContract, string memory _baseUri, address _signer) 
         ERC721("GammaCards", "NOF_GC") {
@@ -326,6 +328,7 @@ contract NofGammaCardsV5 is ERC721, ERC721URIStorage, ERC721Burnable, Ownable {
         
         cardsByUser[msg.sender][cardNumber]--;
         cardsByUser[to][cardNumber]++;
+        emit CardTransfered(msg.sender, to, cardNumber);
     }
 
     function transferCards(address to, uint8[] calldata cardNumbers) public {
@@ -347,8 +350,8 @@ contract NofGammaCardsV5 is ERC721, ERC721URIStorage, ERC721Burnable, Ownable {
                 */
                 require (!hasOffer || hasMoreThanOne, "This card has an offer, it cannot be transfered.");
             }
-            
         }
+        emit CardsTransfered(msg.sender, to, cardNumbers);
     }
 
     // user must call this function when they have at least 1 
