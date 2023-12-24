@@ -70,7 +70,7 @@ contract NofGammaCardsV5 is ERC721, ERC721URIStorage, ERC721Burnable, Ownable {
     event EmergencyWithdrawal(address receiver, uint256 amount);
     event NewSigner(address newSigner);
     event NewUris(string newMainUri, string newSecondaryUri);
-    event ExchangeCardOffer(address from, address to, uint8 cardNumberFrom, uint8 cardNumberTo);
+    event OfferCardsExchanged(address from, address to, uint8 cardNumberFrom, uint8 cardNumberTo);
     event CardTransfered(address from, address to, uint8 caradNumber);
     event CardsTransfered(address from, address to, uint8[] caradNumber);
 
@@ -307,7 +307,7 @@ contract NofGammaCardsV5 is ERC721, ERC721URIStorage, ERC721Burnable, Ownable {
         cardsByUser[to][cardNumberTo]--;
         cardsByUser[from][cardNumberTo]++;
 
-        emit ExchangeCardOffer(from, to, cardNumberFrom, cardNumberTo);
+        emit OfferCardsExchanged(from, to, cardNumberFrom, cardNumberTo);
     }
 
     function transferCard(address to, uint8 cardNumber) external {

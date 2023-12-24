@@ -26,11 +26,11 @@ contract NofGammaPacksV3 is Ownable {
     event NewOwnerAdded(address owner);
     event OwnerRemoved(address owner);
     event NewBalanceReceiver(address balanceReceiver);
-    event PackPurchase(address buyer, uint256 tokenId);
-    event PacksPurchase(address buyer, uint256[] tokenIds);
-    event PackTransfer(address from, address to, uint256 tokenId);
-    event PacksTransfer(address from, address to, uint256[] tokenId);
-    event PackOpen(address user, uint256 tokenId);
+    event PackPurchased(address buyer, uint256 tokenId);
+    event PacksPurchased(address buyer, uint256[] tokenIds);
+    event PackTransfered(address from, address to, uint256 tokenId);
+    event PacksTransfered(address from, address to, uint256[] tokenId);
+    event PackOpened(address user, uint256 tokenId);
     event NewPrice(uint256 newPrice);
     event NewGammaCardsContract(address newCardsContract);
     
@@ -139,7 +139,7 @@ contract NofGammaPacksV3 is Ownable {
         bool tranferPrizeResult = _tranferPrizesAmounts(user, 1);
         require(tranferPrizeResult, "The transfers related to the purchase of packs could not be completed.");
 
-        emit PackPurchase(user, tokenId);
+        emit PackPurchased(user, tokenId);
         return tokenId;
     }
 
@@ -159,7 +159,7 @@ contract NofGammaPacksV3 is Ownable {
         bool tranferPrizeResult = _tranferPrizesAmounts(user, numberOfPacks);
         require(tranferPrizeResult, "The transfers related to the purchase of packs could not be completed.");
 
-        emit PacksPurchase(user, tokenIds);
+        emit PacksPurchased(user, tokenIds);
         return tokenIds;
     }
 
@@ -207,7 +207,7 @@ contract NofGammaPacksV3 is Ownable {
             uint256 tokenId = tokenIds[i];
             _transferPack(to, tokenId);
         }
-        emit PacksTransfer(msg.sender, to, tokenIds);
+        emit PacksTransfered(msg.sender, to, tokenIds);
     }
 
     function _transferPack(address to, uint256 tokenId) private {
@@ -216,7 +216,7 @@ contract NofGammaPacksV3 is Ownable {
         packs[tokenId] = to;
         deleteTokenId(tokenId, msg.sender);
         packsByUser[to].push(tokenId);
-        emit PackTransfer(msg.sender, to, tokenId);
+        emit PackTransfered(msg.sender, to, tokenId);
     }
 
     function openPack(uint256 tokenId, address owner) public onlyGammaCardsContract {
@@ -244,6 +244,6 @@ contract NofGammaPacksV3 is Ownable {
     function _openPack(uint256 tokenId, address owner) private {
         deleteTokenId(tokenId, owner);
         delete packs[tokenId];
-        emit PackOpen(owner, tokenId);
+        emit PackOpened(owner, tokenId);
     }
 }
