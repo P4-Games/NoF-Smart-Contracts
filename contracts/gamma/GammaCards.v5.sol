@@ -54,7 +54,7 @@ contract NofGammaCardsV5 is ERC721, ERC721URIStorage, ERC721Burnable, Ownable {
     }
 
     mapping (uint256 tokenId => Card) public cards;
-    mapping (uint256 cardNumber => uint256 amount) public cardsInventory; // maximos: 119 => 4999
+    mapping (uint256 cardNumber => uint256 amount) public cardsInventory; // maximos: 120 => 5000
     mapping(address user => uint256 amount) public burnedCards;
     mapping(address user => mapping(uint8 cardNumber => uint8 amount)) public cardsByUser;
     
@@ -70,7 +70,9 @@ contract NofGammaCardsV5 is ERC721, ERC721URIStorage, ERC721Burnable, Ownable {
     event EmergencyWithdrawal(address receiver, uint256 amount);
     event NewSigner(address newSigner);
     event NewUris(string newMainUri, string newSecondaryUri);
-    event ExchangeCardOffer(address from, address to, uint8 cardNumberFrom, uint8 cardNumberTo);
+    event OfferCardsExchanged(address from, address to, uint8 cardNumberFrom, uint8 cardNumberTo);
+    event CardTransfered(address from, address to, uint8 caradNumber);
+    event CardsTransfered(address from, address to, uint8[] caradNumber);
 
     constructor(address _daiTokenAddress, address _gammaPacksContract, string memory _baseUri, address _signer) 
         ERC721("GammaCards", "NOF_GC") {
@@ -200,12 +202,12 @@ contract NofGammaCardsV5 is ERC721, ERC721URIStorage, ERC721Burnable, Ownable {
     }
 
     function getCardsByUser(address user) public view returns (uint8[] memory, uint8[] memory, bool[] memory) {
-        uint8[] memory cardNumbers = new uint8[](121);
-        uint8[] memory quantities = new uint8[](121);
-        bool[] memory offers = new bool[](121);
+        uint8[] memory cardNumbers = new uint8[](122);
+        uint8[] memory quantities = new uint8[](122);
+        bool[] memory offers = new bool[](122);
         uint8 index = 0;
         
-        for (uint8 i = 0; i <= 119; i++) {
+        for (uint8 i = 0; i <= 121; i++) {
             if (cardsByUser[user][i] > 0) {
                 cardNumbers[index] = i;
                 quantities[index] = cardsByUser[user][i];
@@ -305,7 +307,7 @@ contract NofGammaCardsV5 is ERC721, ERC721URIStorage, ERC721Burnable, Ownable {
         cardsByUser[to][cardNumberTo]--;
         cardsByUser[from][cardNumberTo]++;
 
-        emit ExchangeCardOffer(from, to, cardNumberFrom, cardNumberTo);
+        emit OfferCardsExchanged(from, to, cardNumberFrom, cardNumberTo);
     }
 
     function transferCard(address to, uint8 cardNumber) external {
@@ -326,6 +328,7 @@ contract NofGammaCardsV5 is ERC721, ERC721URIStorage, ERC721Burnable, Ownable {
         
         cardsByUser[msg.sender][cardNumber]--;
         cardsByUser[to][cardNumber]++;
+        emit CardTransfered(msg.sender, to, cardNumber);
     }
 
     function transferCards(address to, uint8[] calldata cardNumbers) public {
@@ -347,8 +350,8 @@ contract NofGammaCardsV5 is ERC721, ERC721URIStorage, ERC721Burnable, Ownable {
                 */
                 require (!hasOffer || hasMoreThanOne, "This card has an offer, it cannot be transfered.");
             }
-            
         }
+        emit CardsTransfered(msg.sender, to, cardNumbers);
     }
 
     // user must call this function when they have at least 1 
@@ -365,7 +368,7 @@ contract NofGammaCardsV5 is ERC721, ERC721URIStorage, ERC721Burnable, Ownable {
         // TO-REVIEW: check if this part is necessary because the subtraction of cards 
         // would cause underflow if it is at 0
         bool unfinished;
-        for(uint8 i;i<121;i++){
+        for(uint8 i;i<=120;i++){
             if(cardsByUser[msg.sender][i] == 0) {
                 unfinished = true;
                 break;
@@ -389,7 +392,7 @@ contract NofGammaCardsV5 is ERC721, ERC721URIStorage, ERC721Burnable, Ownable {
     }
 
     function testAddCards(address user) public onlyOwners {
-        for(uint8 i;i<121;i++){
+        for(uint8 i;i<=121;i++){ // 0-119: cards, 120: album-120, 121: album-60
             cardsByUser[user][i]++;
         }
     }
@@ -397,7 +400,11 @@ contract NofGammaCardsV5 is ERC721, ERC721URIStorage, ERC721Burnable, Ownable {
     // user should call this function if they want to 'paste' selected cards in 
     // the 60 cards album to 'burn' them.
     function burnCards(uint8[] calldata cardNumbers) public {
-        require(cardsByUser[msg.sender][121] > 0, "No tienes album de quema");
+        require(cardsByUser[msg.sender][121] > 0, "You does not have any burning album.");
+
+        uint256 contractBalance = IERC20(DAI_TOKEN).balanceOf(address(this));
+        require(contractBalance >= secondaryAlbumPrize, "Insufficient funds (contract).");
+
         cardsByUser[msg.sender][121]--;
         burnedCards[msg.sender] += cardNumbers.length;
         for(uint8 i;i<cardNumbers.length;i++){
