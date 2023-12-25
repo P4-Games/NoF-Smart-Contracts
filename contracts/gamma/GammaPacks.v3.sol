@@ -16,7 +16,7 @@ contract NofGammaPacksV3 is Ownable {
     uint256 public constant totalSupply = 50000;
     uint256 public packPrice = 12e17; // 1.2 DAI
     address public balanceReceiver;
-    uint256 private _tokenIdCounter;
+    uint256 private packsCounter = 0;
     bool transferDai = true;
 
     mapping(uint256 tokenId => address owner) public packs;
@@ -34,14 +34,7 @@ contract NofGammaPacksV3 is Ownable {
     event NewPrice(uint256 newPrice);
     event NewGammaCardsContract(address newCardsContract);
     
-    constructor(address _daiTokenAddress, address _balanceReceiver) {
-        DAI_TOKEN = _daiTokenAddress;
-        balanceReceiver = _balanceReceiver;
-        owners[msg.sender] = true;
-        transferDai = true;
-    }
-
-    modifier onlyGammaCardsContract {
+    modifier onlyGammaCardsContract{
         require(msg.sender == address(gammaCardsContract), "Only gamma cards contract can call this function.");
         _;
     }
@@ -51,7 +44,21 @@ contract NofGammaPacksV3 is Ownable {
         _;
     }
 
-    function addOwner(address _newOwner) external onlyOwners {
+    function init (address _daiTokenAddress, address _balanceReceiver, 
+        address _gammaCardsContract, address _gammaTicketsContract) external onlyOwner {
+        require(_balanceReceiver != address(0), "Invalid address.");
+        require(_gammaCardsContract != address(0), "Invalid address.");
+        require(_gammaTicketsContract != address(0), "Invalid address.");
+
+        DAI_TOKEN = _daiTokenAddress;
+        balanceReceiver = _balanceReceiver;
+        gammaCardsContract = IGammaCardsContract(_gammaCardsContract);
+        gammaTicketsContract = IgammaTicketsContract(_gammaTicketsContract);
+
+        owners[msg.sender] = true;
+    }
+
+    function addOwner(address _newOwner) public onlyOwners {
         require(_newOwner != address(0), "Invalid address.");
         require(!owners[_newOwner], "Address is already an owner.");
         owners[_newOwner] = true;

@@ -8,6 +8,7 @@ import "@openzeppelin/contracts/token/ERC721/extensions/ERC721Burnable.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 import "hardhat/console.sol";
+import "./StringUtils.sol";
 
 interface IgammaPacksContract {
     function getPackOwner(uint256 tokenId) external view returns (address);
@@ -19,11 +20,12 @@ interface IgammaOffersContract {
     function hasOffer(address user, uint8 cardNumber) external view returns (bool);
     function removeOffersByUser(address user) external returns (bool);
     function getOfferByUserAndCardNumber(address user, uint8 cardNumber) external view 
-        returns ( uint256, uint8, uint8[] memory , address );
+        returns (uint256, uint8, uint8[] memory , address);
 }
 
 contract NofGammaCardsV5 is ERC721, ERC721URIStorage, ERC721Burnable, Ownable {
     using ECDSA for bytes32;
+    using StringUtils for uint8; 
 
     IgammaPacksContract public gammaPacksContract;
     IgammaOffersContract public gammaOffersContract;
@@ -32,15 +34,15 @@ contract NofGammaCardsV5 is ERC721, ERC721URIStorage, ERC721Burnable, Ownable {
     uint256 public _tokenIdCounter;
     address public DAI_TOKEN;
     uint256 public packPrice = 12e17;
-    uint256 public prizesBalance;
+    uint256 public prizesBalance = 0;
     string public baseUri;
     uint256 public mainAlbumPrize = 15e18; // 15 DAI por album principal completado
     uint256 public secondaryAlbumPrize = 1e18; // 1 DAI por album secundario completado
     string public mainUri;
     string public secondaryUri;
-    bool public requireOpenPackSignerValidation;
-    bool public requireOfferValidationInMint;
-    bool public requireOfferValidationInTransfer;
+    bool public requireOpenPackSignerValidation = false;
+    bool public requireOfferValidationInMint = true;
+    bool public requireOfferValidationInTransfer = true;
 
     mapping(address => bool) public owners;
     mapping(address => bool) public signers;
@@ -74,24 +76,7 @@ contract NofGammaCardsV5 is ERC721, ERC721URIStorage, ERC721Burnable, Ownable {
     event CardTransfered(address from, address to, uint8 caradNumber);
     event CardsTransfered(address from, address to, uint8[] caradNumber);
 
-    constructor(address _daiTokenAddress, address _gammaPacksContract, string memory _baseUri, address _signer) 
-        ERC721("GammaCards", "NOF_GC") {
-        gammaPacksContract = IgammaPacksContract(_gammaPacksContract);
-        DAI_TOKEN = _daiTokenAddress;
-        baseUri = _baseUri;
-        mainUri = string(abi.encodePacked(bytes(baseUri), bytes("/"), bytes("120"), bytes("F.json")));
-        secondaryUri = string(abi.encodePacked(bytes(baseUri), bytes("/"), bytes("121"), bytes("F.json")));
-        signers[_signer] = true;
-        requireOpenPackSignerValidation = false;
-        requireOfferValidationInMint = true;
-        requireOfferValidationInTransfer = true;
-        maxPacksToOpenAtOnce = 10;
-
-        for(uint256 i;i<122;i++){
-            cardsInventory[i] = 1;
-        }
-        owners[msg.sender] = true;
-    }
+    constructor() ERC721("GammaCards", "NOF_GC") {}
 
     modifier onlyGammaPacksContract {
         require(msg.sender == address(gammaPacksContract), "Only gamma packs contract can call this function.");
@@ -108,7 +93,34 @@ contract NofGammaCardsV5 is ERC721, ERC721URIStorage, ERC721Burnable, Ownable {
         _;
     }
 
-    function addOwner(address _newOwner) external onlyOwners {
+    function init (address _daiTokenAddress, address _gammaPacksContract, 
+        address _gammaOffersContract, address _gammaTicketsContract, 
+        string memory _baseUri, address _signer) external onlyOwner {
+        
+        require(_daiTokenAddress != address(0), "Invalid address.");
+        require(_gammaPacksContract != address(0), "Invalid address.");
+        require(_gammaOffersContract != address(0), "Invalid address.");
+        require(_gammaTicketsContract != address(0), "Invalid address.");
+        require(_signer != address(0), "Invalid address.");
+
+        owners[msg.sender] = true;
+
+        DAI_TOKEN = _daiTokenAddress;
+        gammaPacksContract = IgammaPacksContract(_gammaPacksContract);
+        gammaTicketsContract = IgammaTicketsContract(_gammaTicketsContract);
+        gammaOffersContract = IgammaOffersContract(_gammaOffersContract);
+
+        baseUri = _baseUri;
+        mainUri = string(abi.encodePacked(bytes(baseUri), bytes("/"), bytes("120"), bytes("F.json")));
+        secondaryUri = string(abi.encodePacked(bytes(baseUri), bytes("/"), bytes("121"), bytes("F.json")));
+        signers[_signer] = true;
+
+        for(uint256 i;i<122;i++){
+            cardsInventory[i] = 1;
+        }
+    }
+    
+    function addOwner(address _newOwner) public onlyOwners {
         require(_newOwner != address(0), "Invalid address.");
         require(!owners[_newOwner], "Address is already an owner.");
         owners[_newOwner] = true;

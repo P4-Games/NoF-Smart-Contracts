@@ -4,12 +4,11 @@ import { ethers } from 'hardhat'
 import { nofDaiContractName, nofAlphaContractName } from './common'
 
 describe('NoF - Alpha Tests', function () {
-  async function deployNofFixture() {
+  async function deployNofAlphaFixture() {
     console.log('\tRunning deployNofFixture (alpha)...')
 
-    const [
-      address0, address1, address2, address3, address4, address5, 
-      address6, address7, address8, address9] = await ethers.getSigners()
+    const [address0, address1, address2, address3, address4, address5, address6, address7, address8, address9] =
+      await ethers.getSigners()
 
     const addresses = [
       address0,
@@ -29,8 +28,9 @@ describe('NoF - Alpha Tests', function () {
     await testDAI.deployed()
 
     const NofAlpha = await ethers.getContractFactory(nofAlphaContractName)
-    const nofAlpha = await NofAlpha.deploy('https://www.example.com', testDAI.address, address0.address)
+    const nofAlpha = await NofAlpha.deploy()
     await nofAlpha.deployed()
+    await nofAlpha.init('https://www.example.com', testDAI.address, address0.address)
 
     // example season with 60 cards (50 cards & 10 albums) and 10 dai price per pack
     const packPrice = ethers.BigNumber.from('10000000000000000000')
@@ -137,13 +137,13 @@ describe('NoF - Alpha Tests', function () {
   }
 
   it('Winners should be seven', async function () {
-    const { nofAlpha } = await loadFixture(deployNofFixture)
+    const { nofAlpha } = await loadFixture(deployNofAlphaFixture)
     const winners = await nofAlpha.getWinners('T1')
     expect(winners).to.have.lengthOf(7)
   })
 
   it('First place should receive 2x pack price', async function () {
-    const { testDAI, address0 } = await loadFixture(deployNofFixture)
+    const { testDAI, address0 } = await loadFixture(deployNofAlphaFixture)
 
     const balance = await testDAI.balanceOf(address0.address)
 
@@ -151,7 +151,7 @@ describe('NoF - Alpha Tests', function () {
   })
 
   it('Second place should receive 1.4x pack price', async function () {
-    const { testDAI, address1 } = await loadFixture(deployNofFixture)
+    const { testDAI, address1 } = await loadFixture(deployNofAlphaFixture)
 
     const balance = await testDAI.balanceOf(address1.address)
 
@@ -160,7 +160,7 @@ describe('NoF - Alpha Tests', function () {
   })
 
   it('Third place should receive 1.2x pack price', async function () {
-    const { testDAI, address2 } = await loadFixture(deployNofFixture)
+    const { testDAI, address2 } = await loadFixture(deployNofAlphaFixture)
 
     const balance = await testDAI.balanceOf(address2.address)
 
@@ -169,7 +169,7 @@ describe('NoF - Alpha Tests', function () {
   })
 
   it('Fourth place should receive 1x pack price', async function () {
-    const { testDAI, address3 } = await loadFixture(deployNofFixture)
+    const { testDAI, address3 } = await loadFixture(deployNofAlphaFixture)
 
     const balance = await testDAI.balanceOf(address3.address)
 
@@ -178,7 +178,7 @@ describe('NoF - Alpha Tests', function () {
   })
 
   it('Fifth place should receive 0.8x pack price', async function () {
-    const { testDAI, address4 } = await loadFixture(deployNofFixture)
+    const { testDAI, address4 } = await loadFixture(deployNofAlphaFixture)
 
     const balance = await testDAI.balanceOf(address4.address)
 
@@ -187,7 +187,7 @@ describe('NoF - Alpha Tests', function () {
   })
 
   it('Sixth place should receive 0.6x pack price', async function () {
-    const { testDAI, address5 } = await loadFixture(deployNofFixture)
+    const { testDAI, address5 } = await loadFixture(deployNofAlphaFixture)
 
     const balance = await testDAI.balanceOf(address5.address)
 
@@ -196,7 +196,7 @@ describe('NoF - Alpha Tests', function () {
   })
 
   it('Seventh place should receive 0.5x pack price', async function () {
-    const { testDAI, address6 } = await loadFixture(deployNofFixture)
+    const { testDAI, address6 } = await loadFixture(deployNofAlphaFixture)
 
     const balance = await testDAI.balanceOf(address6.address)
 
@@ -205,7 +205,7 @@ describe('NoF - Alpha Tests', function () {
   })
 
   it('Eighth place should receive nothing', async function () {
-    const { testDAI, address7 } = await loadFixture(deployNofFixture)
+    const { testDAI, address7 } = await loadFixture(deployNofAlphaFixture)
 
     const balance = await testDAI.balanceOf(address7.address)
 
@@ -213,7 +213,7 @@ describe('NoF - Alpha Tests', function () {
   })
 
   it('Ninth place should receive nothing', async function () {
-    const { testDAI, address8 } = await loadFixture(deployNofFixture)
+    const { testDAI, address8 } = await loadFixture(deployNofAlphaFixture)
 
     const balance = await testDAI.balanceOf(address8.address)
 
@@ -221,7 +221,7 @@ describe('NoF - Alpha Tests', function () {
   })
 
   it('Tenth place should receive nothing', async function () {
-    const { testDAI, address9 } = await loadFixture(deployNofFixture)
+    const { testDAI, address9 } = await loadFixture(deployNofAlphaFixture)
 
     const balance = await testDAI.balanceOf(address9.address)
 

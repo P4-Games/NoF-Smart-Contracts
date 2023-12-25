@@ -221,18 +221,19 @@ async function main() {
   try {
     const addresses: SignerWithAddress[] = await getInitData()
     const contracts: { 
-      testDAI: Contract;
-      alpha: Contract;
-      gammaPacks: Contract;
-      gammaCards: Contract;
-      gammaOffers: Contract;
+      testDAIContract: Contract;
+      alphaContract: Contract;
+      packsContract: Contract;
+      cardsContract: Contract;
+      offersContract: Contract;
+      ticketsContract: Contract;
       signatureMethod: string;
     } = await deployContracts (addresses)
 
     if (isHardhat || isLocalhost) {
-      await createAlphaMockData(addresses, contracts.testDAI, contracts.alpha);
-      await createGammaMockData(addresses, contracts.testDAI, contracts.gammaPacks, contracts.gammaCards);
-      await createOfferMockData (addresses, contracts.gammaPacks, contracts.gammaCards, contracts.gammaOffers);
+      await createAlphaMockData(addresses, contracts.testDAIContract, contracts.alphaContract);
+      await createGammaMockData(addresses, contracts.testDAIContract, contracts.packsContract, contracts.cardsContract);
+      await createOfferMockData (addresses, contracts.packsContract, contracts.cardsContract, contracts.offersContract);
     }
     process.exit(0);
   } catch (error) {

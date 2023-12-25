@@ -43,12 +43,6 @@ contract NofGammaOffersV4 is Ownable {
     event UserOffersRemoved(address user);
     event AllOffersRemoved();
 
-    constructor(address _cardsContract) {
-        gammaCardsContract = IGammaCardsContract(_cardsContract);
-        owners[msg.sender] = true;
-        removeCardInInventoryWhenOffer = false;
-    }
-
     modifier onlyCardsContract {
         require(msg.sender == address(gammaCardsContract), "Only gamma cards contract can call this function.");
         _;
@@ -59,7 +53,13 @@ contract NofGammaOffersV4 is Ownable {
         _;
     }
 
-    function addOwner(address _newOwner) external onlyOwners {
+    function init (address _cardsContract) external onlyOwner {
+        require(_cardsContract != address(0), "Invalid address.");
+        gammaCardsContract = IGammaCardsContract(_cardsContract);
+        owners[msg.sender] = true;
+    }
+
+    function addOwner(address _newOwner) public onlyOwners {
         require(_newOwner != address(0), "Invalid address.");
         require(!owners[_newOwner], "Address is already an owner.");
         owners[_newOwner] = true;
