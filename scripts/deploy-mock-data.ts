@@ -193,11 +193,6 @@ async function createOfferMockData(
   await gammaOffers.connect(addresses[1]).createOffer(uuidv4(), 90, [0,1,2])
   await gammaOffers.connect(addresses[1]).createOffer(uuidv4(), 102, [32,2,4,5,6,7])
 
-  /*
-  printOffers(await gammaOffers.getOffers())
-  printCardsByUser(addresses[0].address, await gammaCards.getCardsByUser(addresses[0].address))
-  printCardsByUser(addresses[1].address, await gammaCards.getCardsByUser(addresses[1].address))
-  */
   // printOffers(await gammaOffers.getOffers())
   console.log('Doing one offer exchange...')
   await gammaOffers.confirmOfferExchange(addresses[1].address, 110, addresses[0].address, 28);
