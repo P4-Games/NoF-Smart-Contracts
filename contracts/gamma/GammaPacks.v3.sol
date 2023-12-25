@@ -10,19 +10,29 @@ interface IGammaCardsContract {
     function changePackPrice(uint256 amount) external;
 }
 
+interface IgammaTicketsContract {
+    function getLotteryWinner() external 
+        returns (uint256 timestamp, bytes32 ticketId, uint256 ticketCounter, address user);
+    function deleteAllTickets() external;
+}
+
 contract NofGammaPacksV3 is Ownable {
     IGammaCardsContract public gammaCardsContract;
+    IgammaTicketsContract public gammaTicketsContract;
+
     address public DAI_TOKEN;
     uint256 public constant totalSupply = 50000;
     uint256 public packPrice = 12e17; // 1.2 DAI
     address public balanceReceiver;
-    uint256 private _tokenIdCounter;
+    uint256 private packsCounter = 0;
     bool transferDai = true;
 
     mapping(uint256 tokenId => address owner) public packs;
     mapping(address owner => uint256[] tokenIds) public packsByUser;
     mapping(address => bool) public owners;
     
+    event NewGammaCardsContract(address newCardsContract);
+    event NewGammaTicketsContract(address newGammaTicketContract);
     event NewOwnerAdded(address owner);
     event OwnerRemoved(address owner);
     event NewBalanceReceiver(address balanceReceiver);
@@ -32,16 +42,8 @@ contract NofGammaPacksV3 is Ownable {
     event PacksTransfered(address from, address to, uint256[] tokenId);
     event PackOpened(address user, uint256 tokenId);
     event NewPrice(uint256 newPrice);
-    event NewGammaCardsContract(address newCardsContract);
     
-    constructor(address _daiTokenAddress, address _balanceReceiver) {
-        DAI_TOKEN = _daiTokenAddress;
-        balanceReceiver = _balanceReceiver;
-        owners[msg.sender] = true;
-        transferDai = true;
-    }
-
-    modifier onlyGammaCardsContract {
+    modifier onlyGammaCardsContract{
         require(msg.sender == address(gammaCardsContract), "Only gamma cards contract can call this function.");
         _;
     }
@@ -51,7 +53,21 @@ contract NofGammaPacksV3 is Ownable {
         _;
     }
 
-    function addOwner(address _newOwner) external onlyOwners {
+    function init (address _daiTokenAddress, address _balanceReceiver, 
+        address _gammaCardsContract, address _gammaTicketsContract) external onlyOwner {
+        require(_balanceReceiver != address(0), "Invalid address.");
+        require(_gammaCardsContract != address(0), "Invalid address.");
+        require(_gammaTicketsContract != address(0), "Invalid address.");
+
+        DAI_TOKEN = _daiTokenAddress;
+        balanceReceiver = _balanceReceiver;
+        gammaCardsContract = IGammaCardsContract(_gammaCardsContract);
+        gammaTicketsContract = IgammaTicketsContract(_gammaTicketsContract);
+
+        owners[msg.sender] = true;
+    }
+
+    function addOwner(address _newOwner) public onlyOwners {
         require(_newOwner != address(0), "Invalid address.");
         require(!owners[_newOwner], "Address is already an owner.");
         owners[_newOwner] = true;
@@ -86,6 +102,12 @@ contract NofGammaPacksV3 is Ownable {
         require(_gammaCardsContract != address(0), "Invalid address.");
         gammaCardsContract = IGammaCardsContract(_gammaCardsContract);
         emit NewGammaCardsContract(_gammaCardsContract);
+    }
+
+    function setGammaTicketsContract(address _gammaTicketsContract) public onlyOwners {
+        require(_gammaTicketsContract != address(0), "Invalid address.");
+        gammaTicketsContract = IgammaTicketsContract(_gammaTicketsContract);
+        emit NewGammaTicketsContract(_gammaTicketsContract);
     }
 
     function getPrizeAmountToBuyPacks(uint256 numberOfPacks) public view returns(uint256) {
@@ -248,5 +270,21 @@ contract NofGammaPacksV3 is Ownable {
         deleteTokenId(tokenId, owner);
         delete packs[tokenId];
         emit PackOpened(owner, tokenId);
+    }
+
+    function _lottery () private {
+        require(address(gammaTicketsContract) != address(0), "GammaTicketsContract not set.");
+        // (uint256 timestamp, bytes32 ticketId, uint256 ticketCounter, address user) = gammaTicketsContract.getLotteryWinner();
+
+        // TODO: get %price from gamma cards contract
+
+        // TODO: transfer price
+       if (transferDai) {
+            // IERC20 erc20Token = IERC20(DAI_TOKEN);
+  
+        }
+
+        // TODO: burn tickets en gamma tickets contract
+        gammaTicketsContract.deleteAllTickets();
     }
 }

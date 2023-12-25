@@ -8,6 +8,7 @@ import "@openzeppelin/contracts/token/ERC721/extensions/ERC721Burnable.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 import "hardhat/console.sol";
+import "./StringUtils.sol";
 
 interface IgammaPacksContract {
     function getPackOwner(uint256 tokenId) external view returns (address);
@@ -19,28 +20,35 @@ interface IgammaOffersContract {
     function hasOffer(address user, uint8 cardNumber) external view returns (bool);
     function removeOffersByUser(address user) external returns (bool);
     function getOfferByUserAndCardNumber(address user, uint8 cardNumber) external view 
-        returns ( uint256, uint8, uint8[] memory , address );
+        returns (uint256, uint8, uint8[] memory , address);
+}
+
+interface IgammaTicketsContract {
+    function generateTicket(address user) external;
 }
 
 contract NofGammaCardsV5 is ERC721, ERC721URIStorage, ERC721Burnable, Ownable {
     using ECDSA for bytes32;
+    using StringUtils for uint8; 
 
     IgammaPacksContract public gammaPacksContract;
     IgammaOffersContract public gammaOffersContract;
+    IgammaTicketsContract public gammaTicketsContract;
 
     uint8 public maxPacksToOpenAtOnce = 10;
     uint256 public _tokenIdCounter;
     address public DAI_TOKEN;
     uint256 public packPrice = 12e17;
-    uint256 public prizesBalance;
+    uint256 public prizesBalance = 0;
     string public baseUri;
     uint256 public mainAlbumPrize = 15e18; // 15 DAI por album principal completado
     uint256 public secondaryAlbumPrize = 1e18; // 1 DAI por album secundario completado
+    uint8 public lotteryPrizePercentage = 50;
     string public mainUri;
     string public secondaryUri;
-    bool public requireOpenPackSignerValidation;
-    bool public requireOfferValidationInMint;
-    bool public requireOfferValidationInTransfer;
+    bool public requireOpenPackSignerValidation = false;
+    bool public requireOfferValidationInMint = true;
+    bool public requireOfferValidationInTransfer = true;
 
     mapping(address => bool) public owners;
     mapping(address => bool) public signers;
@@ -53,13 +61,14 @@ contract NofGammaCardsV5 is ERC721, ERC721URIStorage, ERC721Burnable, Ownable {
         uint256 completion; // solo se modifica en el caso de los albums
     }
 
-    mapping (uint256 tokenId => Card) public cards;
-    mapping (uint256 cardNumber => uint256 amount) public cardsInventory; // maximos: 120 => 5000
+    mapping(uint256 tokenId => Card) public cards;
+    mapping(uint256 cardNumber => uint256 amount) public cardsInventory; // maximos: 120 => 5000
     mapping(address user => uint256 amount) public burnedCards;
     mapping(address user => mapping(uint8 cardNumber => uint8 amount)) public cardsByUser;
-    
+
     event NewGammaOffersContract(address newGammaOffersContract);
     event NewGammaPacksContract(address newGammaPacksContract);
+    event NewGammaTicketsContract(address newGammaTicketContract);
     event NewOwnerAdded(address owner);
     event OwnerRemoved(address owner);
     event NewSignerAdded(address signer);
@@ -71,27 +80,11 @@ contract NofGammaCardsV5 is ERC721, ERC721URIStorage, ERC721Burnable, Ownable {
     event NewSigner(address newSigner);
     event NewUris(string newMainUri, string newSecondaryUri);
     event OfferCardsExchanged(address from, address to, uint8 cardNumberFrom, uint8 cardNumberTo);
-    event CardTransfered(address from, address to, uint8 caradNumber);
-    event CardsTransfered(address from, address to, uint8[] caradNumber);
+    event CardTransfered(address from, address to, uint8 cardNumber);
+    event CardsTransfered(address from, address to, uint8[] cardNumber);
+    event CardsBurned(address user, uint8[] cardsNumber);
 
-    constructor(address _daiTokenAddress, address _gammaPacksContract, string memory _baseUri, address _signer) 
-        ERC721("GammaCards", "NOF_GC") {
-        gammaPacksContract = IgammaPacksContract(_gammaPacksContract);
-        DAI_TOKEN = _daiTokenAddress;
-        baseUri = _baseUri;
-        mainUri = string(abi.encodePacked(bytes(baseUri), bytes("/"), bytes("120"), bytes("F.json")));
-        secondaryUri = string(abi.encodePacked(bytes(baseUri), bytes("/"), bytes("121"), bytes("F.json")));
-        signers[_signer] = true;
-        requireOpenPackSignerValidation = false;
-        requireOfferValidationInMint = true;
-        requireOfferValidationInTransfer = true;
-        maxPacksToOpenAtOnce = 10;
-
-        for(uint256 i;i<122;i++){
-            cardsInventory[i] = 1;
-        }
-        owners[msg.sender] = true;
-    }
+    constructor() ERC721("GammaCards", "NOF_GC") {}
 
     modifier onlyGammaPacksContract {
         require(msg.sender == address(gammaPacksContract), "Only gamma packs contract can call this function.");
@@ -108,7 +101,34 @@ contract NofGammaCardsV5 is ERC721, ERC721URIStorage, ERC721Burnable, Ownable {
         _;
     }
 
-    function addOwner(address _newOwner) external onlyOwners {
+    function init (address _daiTokenAddress, address _gammaPacksContract, 
+        address _gammaOffersContract, address _gammaTicketsContract, 
+        string memory _baseUri, address _signer) external onlyOwner {
+        
+        require(_daiTokenAddress != address(0), "Invalid address.");
+        require(_gammaPacksContract != address(0), "Invalid address.");
+        require(_gammaOffersContract != address(0), "Invalid address.");
+        require(_gammaTicketsContract != address(0), "Invalid address.");
+        require(_signer != address(0), "Invalid address.");
+
+        owners[msg.sender] = true;
+
+        DAI_TOKEN = _daiTokenAddress;
+        gammaPacksContract = IgammaPacksContract(_gammaPacksContract);
+        gammaTicketsContract = IgammaTicketsContract(_gammaTicketsContract);
+        gammaOffersContract = IgammaOffersContract(_gammaOffersContract);
+
+        baseUri = _baseUri;
+        mainUri = string(abi.encodePacked(bytes(baseUri), bytes("/"), bytes("120"), bytes("F.json")));
+        secondaryUri = string(abi.encodePacked(bytes(baseUri), bytes("/"), bytes("121"), bytes("F.json")));
+        signers[_signer] = true;
+
+        for(uint256 i;i<122;i++){
+            cardsInventory[i] = 1;
+        }
+    }
+    
+    function addOwner(address _newOwner) public onlyOwners {
         require(_newOwner != address(0), "Invalid address.");
         require(!owners[_newOwner], "Address is already an owner.");
         owners[_newOwner] = true;
@@ -150,8 +170,33 @@ contract NofGammaCardsV5 is ERC721, ERC721URIStorage, ERC721Burnable, Ownable {
         emit NewGammaPacksContract(_gammaPacksContract);
     }
 
+    function setGammaTicketsContract(address _gammaTicketsContract) public onlyOwners {
+        require(_gammaTicketsContract != address(0), "Invalid address.");
+        gammaTicketsContract = IgammaTicketsContract(_gammaTicketsContract);
+        emit NewGammaTicketsContract(_gammaTicketsContract);
+    }
+
     function setPrizesBalance(uint256 amount) external onlyGammaPacksContract {
         prizesBalance += amount;
+    }
+
+    function setMainAlbumPrize(uint256 amount) external onlyOwners {
+        require(amount > 0, "The prize for completing the album must be greater than 0.");
+        mainAlbumPrize = amount;
+    }
+
+    function setSecondaryAlbumPrize(uint256 amount) external onlyOwners {
+        require(amount > 0, "The prize for completing the burning album must be greater than 0.");
+        secondaryAlbumPrize = amount;
+    }
+
+    function setLotteryPrizePercentage(uint8 amount) external onlyOwners {
+        require(amount <= 100, "The percentage must be between 0 and 100.");
+        lotteryPrizePercentage = amount;
+    }
+
+    function getLotteryPrize() public view returns (uint256) {
+        return (lotteryPrizePercentage * prizesBalance) / 100;
     }
 
     function setUris(string memory newMainUri, string memory newSecondaryUri) public onlyOwners {
@@ -198,7 +243,13 @@ contract NofGammaCardsV5 is ERC721, ERC721URIStorage, ERC721Burnable, Ownable {
     }
 
     function getCardQuantityByUser(address user, uint8 cardNum) public view returns (uint8) {
+        require(user != address(0), "Invalid address.");
         return cardsByUser[user][cardNum];
+    }
+    
+    function getBurnedCardQttyByUser(address user) public view returns (uint256) {
+        require(user != address(0), "Invalid address.");
+        return burnedCards[user];
     }
 
     function getCardsByUser(address user) public view returns (uint8[] memory, uint8[] memory, bool[] memory) {
@@ -280,20 +331,7 @@ contract NofGammaCardsV5 is ERC721, ERC721URIStorage, ERC721Burnable, Ownable {
 
         emit PackOpened(user, packData, packNumber);
     }
-
-    function testOpenPack(address user, uint256 packNumber, uint8[] memory packData) external onlyOwners {
-        gammaPacksContract.openPack(packNumber, user);
-        prizesBalance += packPrice - packPrice / 6;
-        uint256 length = packData.length;
-
-        for(uint8 i;i<length;i++){
-            require(packData[i] == 120 ? cardsInventory[120] < 3001 : cardsInventory[packData[i]] < 5001, 
-                'invalid cardInventory position');
-            cardsInventory[packData[i]]++; // 280k gas aprox.
-            cardsByUser[user][packData[i]]++; // 310k gas aprox.
-        }
-    }
-    
+   
     function exchangeCardsOffer(
         address from, uint8 cardNumberFrom,
         address to, uint8 cardNumberTo) external onlyGammaOffersContract {
@@ -391,34 +429,43 @@ contract NofGammaCardsV5 is ERC721, ERC721URIStorage, ERC721Burnable, Ownable {
         return true;
     }
 
-    function testAddCards(address user) public onlyOwners {
-        for(uint8 i;i<=121;i++){ // 0-119: cards, 120: album-120, 121: album-60
-            cardsByUser[user][i]++;
-        }
-    }
-
     // user should call this function if they want to 'paste' selected cards in 
     // the 60 cards album to 'burn' them.
     function burnCards(uint8[] calldata cardNumbers) public {
         require(cardsByUser[msg.sender][121] > 0, "You does not have any burning album.");
 
-        uint256 contractBalance = IERC20(DAI_TOKEN).balanceOf(address(this));
-        require(contractBalance >= secondaryAlbumPrize, "Insufficient funds (contract).");
+        IERC20 erc20Token = IERC20(DAI_TOKEN);
+        uint256 totalUserBurnedCards = burnedCards[msg.sender] + cardNumbers.length;
+        bool mustPayPrize = false;
 
-        cardsByUser[msg.sender][121]--;
-        burnedCards[msg.sender] += cardNumbers.length;
+        if (totalUserBurnedCards % 60 == 0) {
+            require(prizesBalance >= secondaryAlbumPrize, "Insufficient funds (burnCards balance).");
+
+            uint256 contractBalance = erc20Token.balanceOf(address(this));
+            require(contractBalance >= secondaryAlbumPrize, "Insufficient funds (contract).");
+
+            uint256 userAllowance = erc20Token.allowance(msg.sender, address(this));
+            require(userAllowance >= secondaryAlbumPrize, 
+                "Insufficient allowance to transfer prize for burning cards.");
+
+            mustPayPrize = true;
+        }
+
         for(uint8 i;i<cardNumbers.length;i++){
+            require(cardsByUser[msg.sender][cardNumbers[i]] > 0, "You does not have this card.");
             cardsByUser[msg.sender][cardNumbers[i]]--;
         }
-        if(burnedCards[msg.sender] % 60 == 0){
-            // string memory uri = string(abi.encodePacked(bytes(baseUri), 
-            // bytes("/"), bytes("121"), bytes("F.json"))); // global variable
-            // mintea album de 60
-            safeMint(msg.sender, secondaryUri, 121, 2);
-            
-            prizesBalance -= mainAlbumPrize;
-            // Transfer prize in DAI.
+        burnedCards[msg.sender] += cardNumbers.length;        
+        emit CardsBurned(msg.sender, cardNumbers);
+
+        if(mustPayPrize){
+            cardsByUser[msg.sender][121]--;
+            safeMint(msg.sender, secondaryUri, 121, 2); // mint album of 60 cards.
+
+            prizesBalance -= secondaryAlbumPrize;
             IERC20(DAI_TOKEN).transfer(msg.sender, secondaryAlbumPrize);
+
+            gammaTicketsContract.generateTicket(msg.sender);
             emit AlbumCompleted(msg.sender, 2);
         }
     }
@@ -441,7 +488,8 @@ contract NofGammaCardsV5 is ERC721, ERC721URIStorage, ERC721Burnable, Ownable {
         
         string memory uri = 
             string(abi.encodePacked(bytes(baseUri), bytes("/"), 
-            bytes(toString(cardNum)), bytes(".json"))); 
+            bytes(cardNum.toString()), bytes(".json"))); 
+
         safeMint(msg.sender, uri, cardNum, 1);
     }
      
@@ -453,6 +501,25 @@ contract NofGammaCardsV5 is ERC721, ERC721URIStorage, ERC721Burnable, Ownable {
         _safeMint(_to, tokenId);
         _setTokenURI(tokenId, _uri);
 	    _tokenIdCounter += 1;
+    }
+
+    function testAddCards(address user) public onlyOwners {
+        for(uint8 i;i<=121;i++){ // 0-119: cards, 120: album-120, 121: album-60
+            cardsByUser[user][i]++;
+        }
+    }
+
+    function testOpenPack(address user, uint256 packNumber, uint8[] memory packData) external onlyOwners {
+        gammaPacksContract.openPack(packNumber, user);
+        prizesBalance += packPrice - packPrice / 6;
+        uint256 length = packData.length;
+
+        for(uint8 i;i<length;i++){
+            require(packData[i] == 120 ? cardsInventory[120] < 3001 : cardsInventory[packData[i]] < 5001, 
+                'invalid cardInventory position');
+            cardsInventory[packData[i]]++; // 280k gas aprox.
+            cardsByUser[user][packData[i]]++; // 310k gas aprox.
+        }
     }
 
     // The following functions are overrides required by Solidity.
@@ -478,27 +545,5 @@ contract NofGammaCardsV5 is ERC721, ERC721URIStorage, ERC721Burnable, Ownable {
         prizesBalance -= amount;
         IERC20(DAI_TOKEN).transfer(msg.sender, amount);
         emit EmergencyWithdrawal(msg.sender, amount);
-    }
-
-    function toString(uint256 value) internal pure returns (string memory) {
-        // Inspired by OraclizeAPI's implementation - MIT licence
-        // https://github.com/OpenZeppelin/openzeppelin-contracts/blob/master/contracts/utils/Strings.sol#L15-L35
-
-        if (value == 0) {
-            return "0";
-        }
-        uint256 temp = value;
-        uint256 digits;
-        while (temp != 0) {
-            digits++;
-            temp /= 10;
-        }
-        bytes memory buffer = new bytes(digits);
-        while (value != 0) {
-            digits -= 1;
-            buffer[digits] = bytes1(uint8(48 + uint256(value % 10)));
-            value /= 10;
-        }
-        return string(buffer);
     }
 }
