@@ -434,23 +434,38 @@ contract NofGammaCardsV5 is ERC721, ERC721URIStorage, ERC721Burnable, Ownable {
     function burnCards(uint8[] calldata cardNumbers) public {
         require(cardsByUser[msg.sender][121] > 0, "You does not have any burning album.");
 
-        uint256 contractBalance = IERC20(DAI_TOKEN).balanceOf(address(this));
-        require(contractBalance >= secondaryAlbumPrize, "Insufficient funds (contract).");
+        IERC20 erc20Token = IERC20(DAI_TOKEN);
+        uint256 totalUserBurnedCards = burnedCards[msg.sender] + cardNumbers.length;
+        bool mustPayPrize = false;
 
-        cardsByUser[msg.sender][121]--;
-        burnedCards[msg.sender] += cardNumbers.length;
+        if (totalUserBurnedCards % 60 == 0) {
+            require(prizesBalance >= secondaryAlbumPrize, "Insufficient funds (burnCards balance).");
+
+            uint256 contractBalance = erc20Token.balanceOf(address(this));
+            require(contractBalance >= secondaryAlbumPrize, "Insufficient funds (contract).");
+
+            uint256 userAllowance = erc20Token.allowance(msg.sender, address(this));
+            require(userAllowance >= secondaryAlbumPrize, 
+                "Insufficient allowance to transfer prize for burning cards.");
+
+            mustPayPrize = true;
+        }
+
         for(uint8 i;i<cardNumbers.length;i++){
+            require(cardsByUser[msg.sender][cardNumbers[i]] > 0, "You does not have this card.");
             cardsByUser[msg.sender][cardNumbers[i]]--;
         }
-        if(burnedCards[msg.sender] % 60 == 0){
-            // string memory uri = string(abi.encodePacked(bytes(baseUri), 
-            // bytes("/"), bytes("121"), bytes("F.json"))); // global variable
-            // mintea album de 60
-            safeMint(msg.sender, secondaryUri, 121, 2);
-            
-            prizesBalance -= mainAlbumPrize;
-            // Transfer prize in DAI.
+        burnedCards[msg.sender] += cardNumbers.length;        
+        emit CardsBurned(msg.sender, cardNumbers);
+
+        if(mustPayPrize){
+            cardsByUser[msg.sender][121]--;
+            safeMint(msg.sender, secondaryUri, 121, 2); // mint album of 60 cards.
+
+            prizesBalance -= secondaryAlbumPrize;
             IERC20(DAI_TOKEN).transfer(msg.sender, secondaryAlbumPrize);
+
+            gammaTicketsContract.generateTicket(msg.sender);
             emit AlbumCompleted(msg.sender, 2);
         }
     }
