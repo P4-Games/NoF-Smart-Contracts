@@ -23,12 +23,17 @@ interface IgammaOffersContract {
         returns (uint256, uint8, uint8[] memory , address);
 }
 
+interface IgammaTicketsContract {
+    function generateTicket(address user) external;
+}
+
 contract NofGammaCardsV5 is ERC721, ERC721URIStorage, ERC721Burnable, Ownable {
     using ECDSA for bytes32;
     using StringUtils for uint8; 
 
     IgammaPacksContract public gammaPacksContract;
     IgammaOffersContract public gammaOffersContract;
+    IgammaTicketsContract public gammaTicketsContract;
 
     uint8 public maxPacksToOpenAtOnce = 10;
     uint256 public _tokenIdCounter;
@@ -38,6 +43,7 @@ contract NofGammaCardsV5 is ERC721, ERC721URIStorage, ERC721Burnable, Ownable {
     string public baseUri;
     uint256 public mainAlbumPrize = 15e18; // 15 DAI por album principal completado
     uint256 public secondaryAlbumPrize = 1e18; // 1 DAI por album secundario completado
+    uint8 public lotteryPrizePercentage = 50;
     string public mainUri;
     string public secondaryUri;
     bool public requireOpenPackSignerValidation = false;
@@ -55,13 +61,14 @@ contract NofGammaCardsV5 is ERC721, ERC721URIStorage, ERC721Burnable, Ownable {
         uint256 completion; // solo se modifica en el caso de los albums
     }
 
-    mapping (uint256 tokenId => Card) public cards;
-    mapping (uint256 cardNumber => uint256 amount) public cardsInventory; // maximos: 120 => 5000
+    mapping(uint256 tokenId => Card) public cards;
+    mapping(uint256 cardNumber => uint256 amount) public cardsInventory; // maximos: 120 => 5000
     mapping(address user => uint256 amount) public burnedCards;
     mapping(address user => mapping(uint8 cardNumber => uint8 amount)) public cardsByUser;
-    
+
     event NewGammaOffersContract(address newGammaOffersContract);
     event NewGammaPacksContract(address newGammaPacksContract);
+    event NewGammaTicketsContract(address newGammaTicketContract);
     event NewOwnerAdded(address owner);
     event OwnerRemoved(address owner);
     event NewSignerAdded(address signer);
@@ -73,8 +80,9 @@ contract NofGammaCardsV5 is ERC721, ERC721URIStorage, ERC721Burnable, Ownable {
     event NewSigner(address newSigner);
     event NewUris(string newMainUri, string newSecondaryUri);
     event OfferCardsExchanged(address from, address to, uint8 cardNumberFrom, uint8 cardNumberTo);
-    event CardTransfered(address from, address to, uint8 caradNumber);
-    event CardsTransfered(address from, address to, uint8[] caradNumber);
+    event CardTransfered(address from, address to, uint8 cardNumber);
+    event CardsTransfered(address from, address to, uint8[] cardNumber);
+    event CardsBurned(address user, uint8[] cardsNumber);
 
     constructor() ERC721("GammaCards", "NOF_GC") {}
 
@@ -162,8 +170,33 @@ contract NofGammaCardsV5 is ERC721, ERC721URIStorage, ERC721Burnable, Ownable {
         emit NewGammaPacksContract(_gammaPacksContract);
     }
 
+    function setGammaTicketsContract(address _gammaTicketsContract) public onlyOwners {
+        require(_gammaTicketsContract != address(0), "Invalid address.");
+        gammaTicketsContract = IgammaTicketsContract(_gammaTicketsContract);
+        emit NewGammaTicketsContract(_gammaTicketsContract);
+    }
+
     function setPrizesBalance(uint256 amount) external onlyGammaPacksContract {
         prizesBalance += amount;
+    }
+
+    function setMainAlbumPrize(uint256 amount) external onlyOwners {
+        require(amount > 0, "The prize for completing the album must be greater than 0.");
+        mainAlbumPrize = amount;
+    }
+
+    function setSecondaryAlbumPrize(uint256 amount) external onlyOwners {
+        require(amount > 0, "The prize for completing the burning album must be greater than 0.");
+        secondaryAlbumPrize = amount;
+    }
+
+    function setLotteryPrizePercentage(uint8 amount) external onlyOwners {
+        require(amount <= 100, "The percentage must be between 0 and 100.");
+        lotteryPrizePercentage = amount;
+    }
+
+    function getLotteryPrize() public view returns (uint256) {
+        return (lotteryPrizePercentage * prizesBalance) / 100;
     }
 
     function setUris(string memory newMainUri, string memory newSecondaryUri) public onlyOwners {
@@ -210,7 +243,13 @@ contract NofGammaCardsV5 is ERC721, ERC721URIStorage, ERC721Burnable, Ownable {
     }
 
     function getCardQuantityByUser(address user, uint8 cardNum) public view returns (uint8) {
+        require(user != address(0), "Invalid address.");
         return cardsByUser[user][cardNum];
+    }
+    
+    function getBurnedCardQttyByUser(address user) public view returns (uint256) {
+        require(user != address(0), "Invalid address.");
+        return burnedCards[user];
     }
 
     function getCardsByUser(address user) public view returns (uint8[] memory, uint8[] memory, bool[] memory) {
@@ -292,20 +331,7 @@ contract NofGammaCardsV5 is ERC721, ERC721URIStorage, ERC721Burnable, Ownable {
 
         emit PackOpened(user, packData, packNumber);
     }
-
-    function testOpenPack(address user, uint256 packNumber, uint8[] memory packData) external onlyOwners {
-        gammaPacksContract.openPack(packNumber, user);
-        prizesBalance += packPrice - packPrice / 6;
-        uint256 length = packData.length;
-
-        for(uint8 i;i<length;i++){
-            require(packData[i] == 120 ? cardsInventory[120] < 3001 : cardsInventory[packData[i]] < 5001, 
-                'invalid cardInventory position');
-            cardsInventory[packData[i]]++; // 280k gas aprox.
-            cardsByUser[user][packData[i]]++; // 310k gas aprox.
-        }
-    }
-    
+   
     function exchangeCardsOffer(
         address from, uint8 cardNumberFrom,
         address to, uint8 cardNumberTo) external onlyGammaOffersContract {
@@ -403,12 +429,6 @@ contract NofGammaCardsV5 is ERC721, ERC721URIStorage, ERC721Burnable, Ownable {
         return true;
     }
 
-    function testAddCards(address user) public onlyOwners {
-        for(uint8 i;i<=121;i++){ // 0-119: cards, 120: album-120, 121: album-60
-            cardsByUser[user][i]++;
-        }
-    }
-
     // user should call this function if they want to 'paste' selected cards in 
     // the 60 cards album to 'burn' them.
     function burnCards(uint8[] calldata cardNumbers) public {
@@ -453,7 +473,8 @@ contract NofGammaCardsV5 is ERC721, ERC721URIStorage, ERC721Burnable, Ownable {
         
         string memory uri = 
             string(abi.encodePacked(bytes(baseUri), bytes("/"), 
-            bytes(toString(cardNum)), bytes(".json"))); 
+            bytes(cardNum.toString()), bytes(".json"))); 
+
         safeMint(msg.sender, uri, cardNum, 1);
     }
      
@@ -465,6 +486,25 @@ contract NofGammaCardsV5 is ERC721, ERC721URIStorage, ERC721Burnable, Ownable {
         _safeMint(_to, tokenId);
         _setTokenURI(tokenId, _uri);
 	    _tokenIdCounter += 1;
+    }
+
+    function testAddCards(address user) public onlyOwners {
+        for(uint8 i;i<=121;i++){ // 0-119: cards, 120: album-120, 121: album-60
+            cardsByUser[user][i]++;
+        }
+    }
+
+    function testOpenPack(address user, uint256 packNumber, uint8[] memory packData) external onlyOwners {
+        gammaPacksContract.openPack(packNumber, user);
+        prizesBalance += packPrice - packPrice / 6;
+        uint256 length = packData.length;
+
+        for(uint8 i;i<length;i++){
+            require(packData[i] == 120 ? cardsInventory[120] < 3001 : cardsInventory[packData[i]] < 5001, 
+                'invalid cardInventory position');
+            cardsInventory[packData[i]]++; // 280k gas aprox.
+            cardsByUser[user][packData[i]]++; // 310k gas aprox.
+        }
     }
 
     // The following functions are overrides required by Solidity.
@@ -490,27 +530,5 @@ contract NofGammaCardsV5 is ERC721, ERC721URIStorage, ERC721Burnable, Ownable {
         prizesBalance -= amount;
         IERC20(DAI_TOKEN).transfer(msg.sender, amount);
         emit EmergencyWithdrawal(msg.sender, amount);
-    }
-
-    function toString(uint256 value) internal pure returns (string memory) {
-        // Inspired by OraclizeAPI's implementation - MIT licence
-        // https://github.com/OpenZeppelin/openzeppelin-contracts/blob/master/contracts/utils/Strings.sol#L15-L35
-
-        if (value == 0) {
-            return "0";
-        }
-        uint256 temp = value;
-        uint256 digits;
-        while (temp != 0) {
-            digits++;
-            temp /= 10;
-        }
-        bytes memory buffer = new bytes(digits);
-        while (value != 0) {
-            digits -= 1;
-            buffer[digits] = bytes1(uint8(48 + uint256(value % 10)));
-            value /= 10;
-        }
-        return string(buffer);
     }
 }
