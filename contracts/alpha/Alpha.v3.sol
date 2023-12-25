@@ -43,8 +43,10 @@ contract NofAlphaV3 is ERC721, ERC721URIStorage, Ownable, ContextMixinV2 {
     event BuyPack(address buyer, string seasonName);
     event Winner(address winner, string season, uint256 position);
 
-    constructor(string memory __baseUri, address _daiTokenAddress, address _balanceReceiver) 
-        ERC721("NOF Alpha", "NOFA") {
+    constructor() 
+        ERC721("NOF Alpha", "NOFA") {}
+
+    function init (string memory __baseUri, address _daiTokenAddress, address _balanceReceiver) external onlyOwner {
         baseUri = __baseUri;
         DAI_TOKEN = _daiTokenAddress;
         balanceReceiver = _balanceReceiver;
