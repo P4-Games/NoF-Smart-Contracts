@@ -55,7 +55,7 @@ describe('NoF - Gamma Cards Tests', function () {
 
   it('Add signer should revert when adding an existing signer', async () => {
     const { gammaCards, address0 } = await loadFixture(deployNofGammaFixture)
-    await expect(gammaCards.addSigner(address0.address)).to.be.revertedWith('Address is already an owner.')
+    await expect(gammaCards.addSigner(address0.address)).to.be.revertedWith('Address is already a signer.')
   })
 
   it('Remove signer should revert when the address is invalid', async () => {
@@ -73,7 +73,7 @@ describe('NoF - Gamma Cards Tests', function () {
   it('Remove signer should revert when removing a non-existing signer', async () => {
     const { gammaCards } = await loadFixture(deployNofGammaFixture)
     const nonExistingSigner = ethers.Wallet.createRandom().address
-    await expect(gammaCards.removeSigner(nonExistingSigner)).to.be.revertedWith('Address is not an signer.')
+    await expect(gammaCards.removeSigner(nonExistingSigner)).to.be.revertedWith('Address is not a signer.')
   })
 
   it('Should not allow to mint a card when has an offer and flag requireOfferValidationInMint is true', async () => {

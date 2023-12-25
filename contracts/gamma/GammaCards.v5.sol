@@ -6,9 +6,9 @@ import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
 import "@openzeppelin/contracts/token/ERC721/extensions/ERC721URIStorage.sol";
 import "@openzeppelin/contracts/token/ERC721/extensions/ERC721Burnable.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
-import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
-import "hardhat/console.sol";
-import "./StringUtils.sol";
+import "./libs/LibStringUtils.sol";
+import "./libs/LibPackVerifier.sol";
+import "./libs/LibControlMgmt.sol";
 
 interface IgammaPacksContract {
     function getPackOwner(uint256 tokenId) external view returns (address);
@@ -28,12 +28,15 @@ interface IgammaTicketsContract {
 }
 
 contract NofGammaCardsV5 is ERC721, ERC721URIStorage, ERC721Burnable, Ownable {
-    using ECDSA for bytes32;
-    using StringUtils for uint8; 
+    using LibStringUtils for uint8; 
+    using LibControlMgmt for LibControlMgmt.Data;
 
     IgammaPacksContract public gammaPacksContract;
     IgammaOffersContract public gammaOffersContract;
     IgammaTicketsContract public gammaTicketsContract;
+ 
+    LibControlMgmt.Data private ownersData;
+    LibControlMgmt.Data private signersData;
 
     uint8 public maxPacksToOpenAtOnce = 10;
     uint256 public _tokenIdCounter;
@@ -49,9 +52,6 @@ contract NofGammaCardsV5 is ERC721, ERC721URIStorage, ERC721Burnable, Ownable {
     bool public requireOpenPackSignerValidation = false;
     bool public requireOfferValidationInMint = true;
     bool public requireOfferValidationInTransfer = true;
-
-    mapping(address => bool) public owners;
-    mapping(address => bool) public signers;
 
     struct Card {
         uint256 tokenId;
@@ -69,10 +69,6 @@ contract NofGammaCardsV5 is ERC721, ERC721URIStorage, ERC721Burnable, Ownable {
     event NewGammaOffersContract(address newGammaOffersContract);
     event NewGammaPacksContract(address newGammaPacksContract);
     event NewGammaTicketsContract(address newGammaTicketContract);
-    event NewOwnerAdded(address owner);
-    event OwnerRemoved(address owner);
-    event NewSignerAdded(address signer);
-    event SignerRemoved(address signer);
     event PackOpened(address player, uint8[] packData, uint256 packNumber);
     event AlbumCompleted(address player, uint8 albumClass);
     event CardPasted(address player, uint256 cardTokenId, uint256 albumTokenId);
@@ -87,31 +83,24 @@ contract NofGammaCardsV5 is ERC721, ERC721URIStorage, ERC721Burnable, Ownable {
     constructor() ERC721("GammaCards", "NOF_GC") {}
 
     modifier onlyGammaPacksContract {
-        require(msg.sender == address(gammaPacksContract), "Only gamma packs contract can call this function.");
+        require(msg.sender == address(gammaPacksContract), "Only packs contract.");
         _;
     }
 
     modifier onlyGammaOffersContract {
-        require(msg.sender == address(gammaOffersContract), "Only gamma offers contract can call this function.");
+        require(msg.sender == address(gammaOffersContract), "Only offers contract.");
         _;
     }
 
     modifier onlyOwners() {
-        require(owners[msg.sender], "Only owners can call this function.");
+        require(ownersData.owners[msg.sender], "Only owners.");
         _;
     }
 
     function init (address _daiTokenAddress, address _gammaPacksContract, 
         address _gammaOffersContract, address _gammaTicketsContract, 
         string memory _baseUri, address _signer) external onlyOwner {
-        
-        require(_daiTokenAddress != address(0), "Invalid address.");
-        require(_gammaPacksContract != address(0), "Invalid address.");
-        require(_gammaOffersContract != address(0), "Invalid address.");
-        require(_gammaTicketsContract != address(0), "Invalid address.");
-        require(_signer != address(0), "Invalid address.");
-
-        owners[msg.sender] = true;
+        ownersData.owners[msg.sender] = true;
 
         DAI_TOKEN = _daiTokenAddress;
         gammaPacksContract = IgammaPacksContract(_gammaPacksContract);
@@ -121,41 +110,27 @@ contract NofGammaCardsV5 is ERC721, ERC721URIStorage, ERC721Burnable, Ownable {
         baseUri = _baseUri;
         mainUri = string(abi.encodePacked(bytes(baseUri), bytes("/"), bytes("120"), bytes("F.json")));
         secondaryUri = string(abi.encodePacked(bytes(baseUri), bytes("/"), bytes("121"), bytes("F.json")));
-        signers[_signer] = true;
+        signersData.signers[_signer] = true;
 
         for(uint256 i;i<122;i++){
             cardsInventory[i] = 1;
         }
     }
-    
-    function addOwner(address _newOwner) public onlyOwners {
-        require(_newOwner != address(0), "Invalid address.");
-        require(!owners[_newOwner], "Address is already an owner.");
-        owners[_newOwner] = true;
-        emit NewOwnerAdded(_newOwner);
+
+    function addOwner(address _newOwner) external onlyOwners {
+        ownersData.addOwner(_newOwner);
     }
 
     function removeOwner(address _ownerToRemove) external onlyOwners {
-        require(_ownerToRemove != address(0), "Invalid address.");
-        require(_ownerToRemove != msg.sender, "You cannot remove yourself as an owner.");
-        require(owners[_ownerToRemove], "Address is not an owner.");
-        owners[_ownerToRemove] = false;
-        emit OwnerRemoved(_ownerToRemove);
+        ownersData.removeOwner(_ownerToRemove);
     }
 
     function addSigner(address _newSigner) external onlyOwners {
-        require(_newSigner != address(0), "Invalid address.");
-        require(!signers[_newSigner], "Address is already an owner.");
-        signers[_newSigner] = true;
-        emit NewSignerAdded(_newSigner);
+        signersData.addSigner(_newSigner);
     }
 
     function removeSigner(address _signerToRemove) external onlyOwners {
-        require(_signerToRemove != address(0), "Invalid address.");
-        require(_signerToRemove != msg.sender, "You cannot remove yourself as a signer.");
-        require(signers[_signerToRemove], "Address is not an signer.");
-        signers[_signerToRemove] = false;
-        emit SignerRemoved(_signerToRemove);
+        signersData.removeSigner(_signerToRemove);
     }
 
     function setGammaOffersContract(address _gammaOffersContract) public onlyOwners {
@@ -242,6 +217,14 @@ contract NofGammaCardsV5 is ERC721, ERC721URIStorage, ERC721Burnable, Ownable {
         return cardsByUser[user][cardNum] > 0;
     }
 
+    function isOwner(address user) external view returns (bool) {
+        return ownersData.owners[user];
+    }
+
+    function isSigner(address user) external view returns (bool) {
+        return signersData.signers[user];
+    }
+
     function getCardQuantityByUser(address user, uint8 cardNum) public view returns (uint8) {
         require(user != address(0), "Invalid address.");
         return cardsByUser[user][cardNum];
@@ -282,11 +265,7 @@ contract NofGammaCardsV5 is ERC721, ERC721URIStorage, ERC721Burnable, Ownable {
 
     function verifyPackSigner(uint256 packNumber, uint8[] memory packData, bytes calldata signature) public view 
         returns (address signer) {
-        bytes32 messageHash = keccak256(abi.encodePacked(msg.sender, packNumber, 
-            packData, '0xf1dD71895e49b1563693969de50898197cDF3481')).toEthSignedMessageHash();
-        address recoveredSigner = messageHash.recover(signature);
-        console.log('open pack signer recovered', recoveredSigner);
-        return recoveredSigner;
+            return LibPackVerifier.verifyPackSigner(msg.sender, packNumber, packData, signature);
     }
 
     function openPack(uint256 packNumber, uint8[] memory packData, bytes calldata signature) external {
@@ -311,18 +290,14 @@ contract NofGammaCardsV5 is ERC721, ERC721URIStorage, ERC721Burnable, Ownable {
         
         if (requireOpenPackSignerValidation) {
             // Recreates the message present in the `signature`
-            bytes32 messageHash = keccak256(abi.encodePacked(user, packNumber, 
-                packData, '0xf1dD71895e49b1563693969de50898197cDF3481')).toEthSignedMessageHash();
-
-            address recoveredSigner = messageHash.recover(signature);
-            console.log('open pack signer recovered', recoveredSigner);
-            require(signers[recoveredSigner], "Invalid signature.");
+            address signer = LibPackVerifier.verifyPackSigner(msg.sender, packNumber, packData, signature);
+            require(signersData.signers[signer], "Invalid signature.");
         }
 
         gammaPacksContract.openPack(packNumber, user);
         prizesBalance += packPrice - packPrice / 6;
-        uint256 length = packData.length;
-        for(uint8 i;i<length;i++){
+
+        for(uint8 i;i<packData.length;i++){
             require(packData[i] == 120 ? cardsInventory[120] < 3001 : cardsInventory[packData[i]] < 5001, 
                 'invalid cardInventory position');
             cardsInventory[packData[i]]++; // 280k gas aprox.
@@ -434,17 +409,16 @@ contract NofGammaCardsV5 is ERC721, ERC721URIStorage, ERC721Burnable, Ownable {
     function burnCards(uint8[] calldata cardNumbers) public {
         require(cardsByUser[msg.sender][121] > 0, "You does not have any burning album.");
 
-        IERC20 erc20Token = IERC20(DAI_TOKEN);
         uint256 totalUserBurnedCards = burnedCards[msg.sender] + cardNumbers.length;
         bool mustPayPrize = false;
 
         if (totalUserBurnedCards % 60 == 0) {
             require(prizesBalance >= secondaryAlbumPrize, "Insufficient funds (burnCards balance).");
 
-            uint256 contractBalance = erc20Token.balanceOf(address(this));
+            uint256 contractBalance = IERC20(DAI_TOKEN).balanceOf(address(this));
             require(contractBalance >= secondaryAlbumPrize, "Insufficient funds (contract).");
 
-            uint256 userAllowance = erc20Token.allowance(msg.sender, address(this));
+            uint256 userAllowance = IERC20(DAI_TOKEN).allowance(msg.sender, address(this));
             require(userAllowance >= secondaryAlbumPrize, 
                 "Insufficient allowance to transfer prize for burning cards.");
 
@@ -512,9 +486,8 @@ contract NofGammaCardsV5 is ERC721, ERC721URIStorage, ERC721Burnable, Ownable {
     function testOpenPack(address user, uint256 packNumber, uint8[] memory packData) external onlyOwners {
         gammaPacksContract.openPack(packNumber, user);
         prizesBalance += packPrice - packPrice / 6;
-        uint256 length = packData.length;
 
-        for(uint8 i;i<length;i++){
+        for(uint8 i;i<packData.length;i++){
             require(packData[i] == 120 ? cardsInventory[120] < 3001 : cardsInventory[packData[i]] < 5001, 
                 'invalid cardInventory position');
             cardsInventory[packData[i]]++; // 280k gas aprox.
@@ -533,7 +506,7 @@ contract NofGammaCardsV5 is ERC721, ERC721URIStorage, ERC721Burnable, Ownable {
         return super.tokenURI(tokenId);
     }
 
-     function supportsInterface(bytes4 interfaceId) public view override(ERC721, ERC721URIStorage)
+    function supportsInterface(bytes4 interfaceId) public view override(ERC721, ERC721URIStorage)
         returns (bool)
     {
         return super.supportsInterface(interfaceId);

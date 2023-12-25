@@ -4,6 +4,7 @@ pragma solidity ^0.8.20;
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "hardhat/console.sol";
+import "./libs/LibControlMgmt.sol";
 
 interface IGammaCardsContract {
     function setPrizesBalance(uint256 amount) external;
@@ -17,8 +18,12 @@ interface IgammaTicketsContract {
 }
 
 contract NofGammaPacksV3 is Ownable {
+    using LibControlMgmt for LibControlMgmt.Data;
+
     IGammaCardsContract public gammaCardsContract;
     IgammaTicketsContract public gammaTicketsContract;
+
+    LibControlMgmt.Data private ownersData;
 
     address public DAI_TOKEN;
     uint256 public constant totalSupply = 50000;
@@ -29,12 +34,9 @@ contract NofGammaPacksV3 is Ownable {
 
     mapping(uint256 tokenId => address owner) public packs;
     mapping(address owner => uint256[] tokenIds) public packsByUser;
-    mapping(address => bool) public owners;
     
     event NewGammaCardsContract(address newCardsContract);
     event NewGammaTicketsContract(address newGammaTicketContract);
-    event NewOwnerAdded(address owner);
-    event OwnerRemoved(address owner);
     event NewBalanceReceiver(address balanceReceiver);
     event PackPurchased(address buyer, uint256 tokenId);
     event PacksPurchased(address buyer, uint256[] tokenIds);
@@ -49,7 +51,7 @@ contract NofGammaPacksV3 is Ownable {
     }
 
     modifier onlyOwners() {
-        require(owners[msg.sender], "Only owners can call this function.");
+        require(ownersData.owners[msg.sender], "Only owners.");
         _;
     }
 
@@ -64,22 +66,15 @@ contract NofGammaPacksV3 is Ownable {
         gammaCardsContract = IGammaCardsContract(_gammaCardsContract);
         gammaTicketsContract = IgammaTicketsContract(_gammaTicketsContract);
 
-        owners[msg.sender] = true;
+        ownersData.owners[msg.sender] = true;
     }
 
-    function addOwner(address _newOwner) public onlyOwners {
-        require(_newOwner != address(0), "Invalid address.");
-        require(!owners[_newOwner], "Address is already an owner.");
-        owners[_newOwner] = true;
-        emit NewOwnerAdded(_newOwner);
+    function addOwner(address _newOwner) external onlyOwners {
+        ownersData.addOwner(_newOwner);
     }
 
     function removeOwner(address _ownerToRemove) external onlyOwners {
-        require(_ownerToRemove != address(0), "Invalid address.");
-        require(_ownerToRemove != msg.sender, "You cannot remove yourself as an owner.");
-        require(owners[_ownerToRemove], "Address is not an owner.");
-        owners[_ownerToRemove] = false;
-        emit OwnerRemoved(_ownerToRemove);
+        ownersData.removeOwner(_ownerToRemove);
     }
 
     function changeBalanceReceiver(address _newBalanceReceiver) external onlyOwners {
@@ -110,6 +105,10 @@ contract NofGammaPacksV3 is Ownable {
         emit NewGammaTicketsContract(_gammaTicketsContract);
     }
 
+    function isOwner(address user) external view returns (bool) {
+        return ownersData.owners[user];
+    }
+    
     function getPrizeAmountToBuyPacks(uint256 numberOfPacks) public view returns(uint256) {
         return (packPrice - (packPrice / 6)) * numberOfPacks;
     }

@@ -1,11 +1,11 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.20;
 
-library StringUtils {
+library LibStringUtils {
 
   // Inspired by OraclizeAPI's implementation - MIT licence
   // https://github.com/OpenZeppelin/openzeppelin-contracts/blob/master/contracts/utils/Strings.sol#L15-L35
-  function toString(uint256 value) internal pure returns (string memory) {
+  function toString(uint256 value) public pure returns (string memory) {
 
     if (value == 0) {
         return "0";
