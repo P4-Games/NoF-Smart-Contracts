@@ -6,7 +6,6 @@ import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
 import "@openzeppelin/contracts/token/ERC721/extensions/ERC721URIStorage.sol";
 import "@openzeppelin/contracts/token/ERC721/extensions/ERC721Burnable.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
-import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 import "./libs/LibStringUtils.sol";
 import "./libs/LibPackVerifier.sol";
 import "./libs/LibControlMgmt.sol";
@@ -134,19 +133,19 @@ contract NofGammaCardsV5 is ERC721, ERC721URIStorage, ERC721Burnable, Ownable {
         signersData.removeSigner(_signerToRemove);
     }
 
-    function setGammaOffersContract(address _gammaOffersContract) external onlyOwners {
+    function setGammaOffersContract(address _gammaOffersContract) public onlyOwners {
         require(_gammaOffersContract != address(0), "Invalid address.");
         gammaOffersContract = IgammaOffersContract(_gammaOffersContract);
         emit NewGammaOffersContract(_gammaOffersContract);
     }
 
-    function setGammaPacksContract(address _gammaPacksContract) external onlyOwners {
+    function setGammaPacksContract(address _gammaPacksContract) public onlyOwners {
         require(_gammaPacksContract != address(0), "Invalid address.");
         gammaPacksContract = IgammaPacksContract(_gammaPacksContract);
         emit NewGammaPacksContract(_gammaPacksContract);
     }
 
-    function setGammaTicketsContract(address _gammaTicketsContract) external onlyOwners {
+    function setGammaTicketsContract(address _gammaTicketsContract) public onlyOwners {
         require(_gammaTicketsContract != address(0), "Invalid address.");
         gammaTicketsContract = IgammaTicketsContract(_gammaTicketsContract);
         emit NewGammaTicketsContract(_gammaTicketsContract);
@@ -171,11 +170,11 @@ contract NofGammaCardsV5 is ERC721, ERC721URIStorage, ERC721Burnable, Ownable {
         lotteryPrizePercentage = amount;
     }
 
-    function getLotteryPrize() external view returns (uint256) {
+    function getLotteryPrize() public view returns (uint256) {
         return (lotteryPrizePercentage * prizesBalance) / 100;
     }
 
-    function setUris(string memory newMainUri, string memory newSecondaryUri) external onlyOwners {
+    function setUris(string memory newMainUri, string memory newSecondaryUri) public onlyOwners {
         mainUri = newMainUri;
         secondaryUri = newSecondaryUri;
         emit NewUris(newMainUri, newSecondaryUri);
@@ -213,7 +212,7 @@ contract NofGammaCardsV5 is ERC721, ERC721URIStorage, ERC721Burnable, Ownable {
         return cardsByUser[user][cardNumber] > 0;
     }
 
-    function hasCard(address user, uint8 cardNum) external view returns (bool has) {
+    function hasCard(address user, uint8 cardNum) public view returns (bool has) {
         require(user != address(0), "Invalid address.");
         return cardsByUser[user][cardNum] > 0;
     }
@@ -226,17 +225,17 @@ contract NofGammaCardsV5 is ERC721, ERC721URIStorage, ERC721Burnable, Ownable {
         return signersData.signers[user];
     }
 
-    function getCardQuantityByUser(address user, uint8 cardNum) external view returns (uint8) {
+    function getCardQuantityByUser(address user, uint8 cardNum) public view returns (uint8) {
         require(user != address(0), "Invalid address.");
         return cardsByUser[user][cardNum];
     }
     
-    function getBurnedCardQttyByUser(address user) external view returns (uint256) {
+    function getBurnedCardQttyByUser(address user) public view returns (uint256) {
         require(user != address(0), "Invalid address.");
         return burnedCards[user];
     }
 
-    function getCardsByUser(address user) external view returns (uint8[] memory, uint8[] memory, bool[] memory) {
+    function getCardsByUser(address user) public view returns (uint8[] memory, uint8[] memory, bool[] memory) {
         uint8[] memory cardNumbers = new uint8[](122);
         uint8[] memory quantities = new uint8[](122);
         bool[] memory offers = new bool[](122);
@@ -264,7 +263,7 @@ contract NofGammaCardsV5 is ERC721, ERC721URIStorage, ERC721Burnable, Ownable {
         return (userCardNumbers, userCardsQtty, userCardsOffers);
     }
 
-    function verifyPackSigner(uint256 packNumber, uint8[] memory packData, bytes calldata signature) external view 
+    function verifyPackSigner(uint256 packNumber, uint8[] memory packData, bytes calldata signature) public view 
         returns (address signer) {
             return LibPackVerifier.verifyPackSigner(msg.sender, packNumber, packData, signature);
     }
@@ -345,7 +344,7 @@ contract NofGammaCardsV5 is ERC721, ERC721URIStorage, ERC721Burnable, Ownable {
         emit CardTransfered(msg.sender, to, cardNumber);
     }
 
-    function transferCards(address to, uint8[] calldata cardNumbers) external {
+    function transferCards(address to, uint8[] calldata cardNumbers) public {
         require(to != msg.sender, "You cannot send cards to yourself.");
         require(to != address(0), "Invalid address.");
 
@@ -370,7 +369,7 @@ contract NofGammaCardsV5 is ERC721, ERC721URIStorage, ERC721Burnable, Ownable {
 
     // user must call this function when they have at least 1 
     // card of each number (120 total) + a 120 album card
-    function finishAlbum() external returns (bool) {
+    function finishAlbum() public returns (bool) {
         // requires the user to have at least one 120 album
         require(cardsByUser[msg.sender][120] > 0, "You does not have any album.");
         require(prizesBalance >= mainAlbumPrize, "Insufficient funds (open-packs balance).");
@@ -407,7 +406,7 @@ contract NofGammaCardsV5 is ERC721, ERC721URIStorage, ERC721Burnable, Ownable {
 
     // user should call this function if they want to 'paste' selected cards in 
     // the 60 cards album to 'burn' them.
-    function burnCards(uint8[] calldata cardNumbers) external {
+    function burnCards(uint8[] calldata cardNumbers) public {
         require(cardsByUser[msg.sender][121] > 0, "You does not have any burning album.");
 
         uint256 totalUserBurnedCards = burnedCards[msg.sender] + cardNumbers.length;
@@ -445,7 +444,7 @@ contract NofGammaCardsV5 is ERC721, ERC721URIStorage, ERC721Burnable, Ownable {
         }
     }
 
-    function mintCard(uint8 cardNum) external {
+    function mintCard(uint8 cardNum) public {
         require(cardsByUser[msg.sender][cardNum] > 0, "You does not have this card.");
         
         if (requireOfferValidationInMint) {
@@ -478,7 +477,7 @@ contract NofGammaCardsV5 is ERC721, ERC721URIStorage, ERC721Burnable, Ownable {
 	    _tokenIdCounter += 1;
     }
 
-    function testAddCards(address user) external onlyOwners {
+    function testAddCards(address user) public onlyOwners {
         for(uint8 i;i<=121;i++){ // 0-119: cards, 120: album-120, 121: album-60
             cardsByUser[user][i]++;
         }
@@ -507,14 +506,14 @@ contract NofGammaCardsV5 is ERC721, ERC721URIStorage, ERC721Burnable, Ownable {
         return super.tokenURI(tokenId);
     }
 
-     function supportsInterface(bytes4 interfaceId) public view override(ERC721, ERC721URIStorage)
+    function supportsInterface(bytes4 interfaceId) public view override(ERC721, ERC721URIStorage)
         returns (bool)
     {
         return super.supportsInterface(interfaceId);
     }
 
     // do not call unless really necessary
-    function emergencyWithdraw(uint256 amount) external onlyOwners {
+    function emergencyWithdraw(uint256 amount) public onlyOwners {
         require(balanceOf(address(this)) >= amount);
         prizesBalance -= amount;
         IERC20(DAI_TOKEN).transfer(msg.sender, amount);
