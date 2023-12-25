@@ -111,16 +111,21 @@ contract NofGammaPacksV3 is Ownable {
         return packs[tokenId];
     }
 
+    function meetQuantityConditionsToBuy(uint256 numberOfPacks) public view returns(bool) {
+        require(numberOfPacks > 0, "Number of packs should be greater than zero.");
+        return (packsCounter + numberOfPacks) < totalSupply;
+    }
+
     function buyPack() public returns (uint256){
         return _buyPack(msg.sender);
     }
 
-    function buyPackByUser(address user) public onlyOwners returns (uint256) {
-        return _buyPack(user);
-    }
-
     function buyPacks(uint256 numberOfPacks) public returns(uint256[] memory){
         return _buyPacks(msg.sender, numberOfPacks);
+    }
+
+    function buyPackByUser(address user) public onlyOwners returns (uint256) {
+        return _buyPack(user);
     }
 
     function buyPacksByUser(address user, uint256 numberOfPacks) public onlyOwners returns(uint256[] memory){
@@ -128,29 +133,21 @@ contract NofGammaPacksV3 is Ownable {
     }
 
     function _buyPack(address user) private returns (uint256) {
-        require(address(gammaCardsContract) != address(0), "GammaCardsContract not set."); 
-    
-        uint256 tokenId = _tokenIdCounter;
-        require(tokenId < totalSupply, "There are no more packs.");
-        _tokenIdCounter += 1;
-        packs[tokenId] = user;
-        packsByUser[user].push(tokenId);
-        
-        bool tranferPrizeResult = _tranferPrizesAmounts(user, 1);
-        require(tranferPrizeResult, "The transfers related to the purchase of packs could not be completed.");
-
-        emit PackPurchased(user, tokenId);
-        return tokenId;
+        uint256[] memory tokenIds = _buyPacks(user, 1);
+        return tokenIds[0];
     }
 
     function _buyPacks(address user, uint256 numberOfPacks) private returns(uint256[] memory){
         require(address(gammaCardsContract) != address(0), "GammaCardsContract not set."); 
+        require(numberOfPacks > 0, "Number of packs should be greater than zero.");
+        require((packsCounter + numberOfPacks) < totalSupply, "The number of packs you want to buy exceeds those available.");
+
         uint256[] memory tokenIds = new uint256[](numberOfPacks);
 
         for(uint256 i; i < numberOfPacks; i++){
-            uint256 tokenId = _tokenIdCounter;
+            uint256 tokenId = packsCounter;
             require(tokenId < totalSupply, "There are no more packs.");
-            _tokenIdCounter += 1;
+            packsCounter += 1;
             packs[tokenId] = user;
             packsByUser[user].push(tokenId);
             tokenIds[i] = tokenId;
@@ -159,7 +156,12 @@ contract NofGammaPacksV3 is Ownable {
         bool tranferPrizeResult = _tranferPrizesAmounts(user, numberOfPacks);
         require(tranferPrizeResult, "The transfers related to the purchase of packs could not be completed.");
 
-        emit PacksPurchased(user, tokenIds);
+        if (numberOfPacks == 1) {
+            emit PackPurchased(msg.sender, tokenIds[0]);
+        } else {
+            emit PacksPurchased(msg.sender, tokenIds);
+        }
+
         return tokenIds;
     }
 
@@ -171,6 +173,7 @@ contract NofGammaPacksV3 is Ownable {
         if (transferDai) {
             IERC20 erc20Token = IERC20(DAI_TOKEN);
             uint256 userAllowance = erc20Token.allowance(user, address(this));
+
             require(userAllowance >= (prizesAmount + prizeNoFAccount), 
                 "Insufficient allowance to transfer prizes amount and NOF Account amount.");
             require(erc20Token.balanceOf(user) >= prizesAmount, "Insufficient balance to transfer prizes amount.");
