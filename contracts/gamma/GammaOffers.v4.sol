@@ -3,6 +3,7 @@ pragma solidity ^0.8.20;
 
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "hardhat/console.sol";
+import "./libs/LibControlMgmt.sol";
 
 interface IGammaCardsContract {
   function hasCardByOffer(address user, uint8 cardNumber) external returns (bool has);
@@ -12,8 +13,11 @@ interface IGammaCardsContract {
 }
 
 contract NofGammaOffersV4 is Ownable {
+    using LibControlMgmt for LibControlMgmt.Data;
+
     IGammaCardsContract public gammaCardsContract;
-    mapping(address => bool) public owners;
+
+    LibControlMgmt.Data private ownersData;
 
     uint256 maxOffersAllowed = uint256(5000);
     uint256 maxOffersByUserAllowed = uint256(5);
@@ -36,8 +40,6 @@ contract NofGammaOffersV4 is Ownable {
     uint256 public offersTotalCounter;
 
     event NewGammaCardsContract(address newGammaCardsContract);
-    event NewOwnerAdded(address owner);
-    event OwnerRemoved(address owner);
     event OfferCreated(address user, uint8 cardNumber, uint8[] wantedCardNumbers);
     event OfferRemoved(address user, uint8 cardNumber);
     event UserOffersRemoved(address user);
@@ -49,29 +51,22 @@ contract NofGammaOffersV4 is Ownable {
     }
 
     modifier onlyOwners() {
-        require(owners[msg.sender], "Only owners can call this function.");
+        require(ownersData.owners[msg.sender], "Only owners.");
         _;
     }
 
     function init (address _cardsContract) external onlyOwner {
         require(_cardsContract != address(0), "Invalid address.");
         gammaCardsContract = IGammaCardsContract(_cardsContract);
-        owners[msg.sender] = true;
+        ownersData.owners[msg.sender] = true;
     }
 
-    function addOwner(address _newOwner) public onlyOwners {
-        require(_newOwner != address(0), "Invalid address.");
-        require(!owners[_newOwner], "Address is already an owner.");
-        owners[_newOwner] = true;
-        emit NewOwnerAdded(_newOwner);
+    function addOwner(address _newOwner) external onlyOwners {
+        ownersData.addOwner(_newOwner);
     }
 
-    function removeOwner (address _ownerToRemove) external onlyOwners {
-        require(_ownerToRemove != address(0), "Invalid address.");
-        require(_ownerToRemove != msg.sender, "You cannot remove yourself as an owner.");
-        require(owners[_ownerToRemove], "Address is not an owner.");
-        owners[_ownerToRemove] = false;
-        emit OwnerRemoved(_ownerToRemove);
+    function removeOwner(address _ownerToRemove) external onlyOwners {
+        ownersData.removeOwner(_ownerToRemove);
     }
 
     function setGammaCardsContract (address _gammaCardsContract) public onlyOwners {
@@ -132,6 +127,10 @@ contract NofGammaOffersV4 is Ownable {
         }
 
         emit OfferCreated(user, cardNumber, wantedCardNumbers);
+    }
+
+    function isOwner(address user) external view returns (bool) {
+        return ownersData.owners[user];
     }
 
     function getOffersByUserCounter(address user) external view returns (uint256) {

@@ -73,6 +73,7 @@ export async function deployContracts(wallets: SignerWithAddress[]) {
   const nofGammaTicketsContractName = process.env.NOF_GAMMA_TICKETS_CONTRACT_NAME || 'NofGammaTicketsV1'
   const nofGammaLibPackVerifierName = process.env.NOF_GAMMA_LIB_PACK_VERIFIER_CONTRACT_NAME || 'LibPackVerifier'
   const nofGammaLibStringUtilsName = process.env.NOF_GAMMA_LIB_STRING_UTILS_CONTRACT_NAME || 'LibStringUtils'
+  const nofGammaLibControlMgmtName = process.env.NOF_GAMMA_LIB_OWNERS_MGMT_CONTRACT_NAME || 'LibControlMgmt'
 
   const nofDaiContractCurrentAddress = process.env.NOF_DAI_CONTRACT_CURRENT_ADDRESS || ''
   const nofAlphaContractCurrentAddress = process.env.NOF_ALPHA_CONTRACT_CURRENT_ADDRESS || ''
@@ -82,21 +83,36 @@ export async function deployContracts(wallets: SignerWithAddress[]) {
   const nofGammaTicketsContractCurrentAddress = process.env.NOF_GAMMA_TICKETS_CONTRACT_CURRENT_ADDRESS || ''
   const nofGammaLibPackVerifierCurrentAddress = process.env.NOF_GAMMA_LIB_PACK_VERIFIER_CONTRACT_CURRENT_ADDRESS || ''
   const nofGammaLibStringutilsCurrentAddress = process.env.NOF_GAMMA_LIB_STRING_UTILS_CONTRACT_CURRENT_ADDRESS || ''
+  const nofGammaLibControlMgmtCurrentAddress = process.env.NOF_GAMMA_LIB_OWNERS_MGMT_CONTRACT_CURRENT_ADDRESS || ''
 
   const libPackVerifier = await deployContract(nofGammaLibPackVerifierCurrentAddress, nofGammaLibPackVerifierName)
   const libStringUtils = await deployContract(nofGammaLibStringutilsCurrentAddress, nofGammaLibStringUtilsName)
+  const libControlMgmt = await deployContract(nofGammaLibControlMgmtCurrentAddress, nofGammaLibControlMgmtName)
+  
   const testDAIContract = await deployContract(nofDaiContractCurrentAddress, nofDaiContractName)
   const alphaContract = await deployContract(nofAlphaContractCurrentAddress, nofAlphaContractName)
   
   const cardsContract = await deployContract(nofGammaCardsContractCurrentAddress, nofGammaCardsContractName, 
   [
     {libraryName: 'LibPackVerifier', libraryAddress: libPackVerifier.address},
-    {libraryName: 'LibStringUtils', libraryAddress: libStringUtils.address}
+    {libraryName: 'LibStringUtils', libraryAddress: libStringUtils.address},
+    {libraryName: 'LibControlMgmt', libraryAddress: libControlMgmt.address}
   ])
 
-  const packsContract = await deployContract(nofGammaPacksContractCurrentAddress, nofGammaPacksContractName)
-  const offersContract = await deployContract(nofGammaOffersContractCurrentAddress, nofGammaOffersContractName)
-  const ticketsContract = await deployContract(nofGammaTicketsContractCurrentAddress, nofGammaTicketsContractName)
+  const packsContract = await deployContract(nofGammaPacksContractCurrentAddress, nofGammaPacksContractName,
+  [
+    {libraryName: 'LibControlMgmt', libraryAddress: libControlMgmt.address}
+  ])
+
+  const offersContract = await deployContract(nofGammaOffersContractCurrentAddress, nofGammaOffersContractName, 
+  [
+    {libraryName: 'LibControlMgmt', libraryAddress: libControlMgmt.address}
+  ])
+
+  const ticketsContract = await deployContract(nofGammaTicketsContractCurrentAddress, nofGammaTicketsContractName,
+  [
+    {libraryName: 'LibControlMgmt', libraryAddress: libControlMgmt.address}
+  ])
 
   const signatureMethod = process.env.SIGNATURE_METHOD || '1'
   
@@ -160,7 +176,7 @@ export async function deployContracts(wallets: SignerWithAddress[]) {
     const additionalSignatureWallets = microServiceSignatureWalletsAddresses.slice(1)
     console.log(`\nAdded these additional signature wallets addresses in Gamma Cards Contract:\n`, additionalSignatureWallets.join(','))
     for (const walletAddress of additionalSignatureWallets) {
-      const alreadySigner = await cardsContract.signers(walletAddress)
+      const alreadySigner = await cardsContract.isSigner(walletAddress)
       if (!alreadySigner) {
         await cardsContract.addSigner(walletAddress)
       }
@@ -170,7 +186,7 @@ export async function deployContracts(wallets: SignerWithAddress[]) {
   if (additionalOwners.length > 0) {
     console.log(`\nAdded these additional owners wallets addresses in Gamma Cards Contract:\m`, additionalOwners.join(','))
     for (const walletAddress of additionalOwners) {
-      const alreadyOwner = await cardsContract.owners(walletAddress)
+      const alreadyOwner = await cardsContract.isOwner(walletAddress)
       if (!alreadyOwner) {
         await cardsContract.addOwner(walletAddress)
       }
@@ -178,7 +194,7 @@ export async function deployContracts(wallets: SignerWithAddress[]) {
 
     console.log(`\nAdded these additional owners wallets addresses in Gamma Packs Contract:\n`, additionalOwners.join(','))
     for (const walletAddress of additionalOwners) {
-      const alreadyOwner = await packsContract.owners(walletAddress)
+      const alreadyOwner = await packsContract.isOwner(walletAddress)
       if (!alreadyOwner) {
         await packsContract.addOwner(walletAddress)
       }

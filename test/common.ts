@@ -13,6 +13,7 @@ const nofGammaOffersContractName = process.env.NOF_GAMMA_OFFERS_CONTRACT_NAME ||
 const nofGammaTicketsContractName = process.env.NOF_GAMMA_TICKETS_CONTRACT_NAME || 'NofGammaTicketsV1'
 const nofGammaLibPackVerifierName = process.env.NOF_GAMMA_LIB_PACK_VERIFIER_CONTRACT_NAME || 'LibPackVerifier'
 const nofGammaLibStringUtilsName = process.env.NOF_GAMMA_LIB_STRING_UTILS_CONTRACT_NAME || 'LibStringUtils'
+const nofGammaLibControlMgmtName = process.env.NOF_GAMMA_LIB_OWNERS_MGMT_CONTRACT_NAME || 'LibControlMgmt'
 
 const pringLogs = process.env.PRINT_LOGS_IN_TESTS || '0'
 
@@ -32,26 +33,49 @@ async function deployNofGammaFixture() {
   const libraryStringUtils = await LibraryStringUtils.deploy()
   await libraryStringUtils.deployed()
 
+  const LibControlMgmt = await ethers.getContractFactory(nofGammaLibControlMgmtName)
+  const libOwnersMgmt = await LibControlMgmt.deploy()
+  await libOwnersMgmt.deployed()
+
   const GammaCards = await ethers.getContractFactory(nofGammaCardsContractName, 
     {
       libraries: {
         LibPackVerifier: libraryPackVerifier.address,
-        LibStringUtils: libraryStringUtils.address
+        LibStringUtils: libraryStringUtils.address,
+        LibControlMgmt: libOwnersMgmt.address
       }
     }
   )
   const gammaCards = await GammaCards.deploy()
   await gammaCards.deployed()
 
-  const GammaPacks = await ethers.getContractFactory(nofGammaPacksContractName)
+  const GammaPacks = await ethers.getContractFactory(nofGammaPacksContractName, 
+    {
+      libraries: {
+        LibControlMgmt: libOwnersMgmt.address,
+      }
+    }
+  )
   const gammaPacks = await GammaPacks.deploy()
   await gammaPacks.deployed()
 
-  const GammaOffers = await ethers.getContractFactory(nofGammaOffersContractName)
+  const GammaOffers = await ethers.getContractFactory(nofGammaOffersContractName, 
+    {
+      libraries: {
+        LibControlMgmt: libOwnersMgmt.address,
+      }
+    }
+  )
   const gammaOffers = await GammaOffers.deploy()
   await gammaOffers.deployed()
 
-  const GammaTickets = await ethers.getContractFactory(nofGammaTicketsContractName)
+  const GammaTickets = await ethers.getContractFactory(nofGammaTicketsContractName, 
+    {
+      libraries: {
+        LibControlMgmt: libOwnersMgmt.address,
+      }
+    }
+  )
   const gammaTickets = await GammaTickets.deploy()
   await gammaTickets.deployed()
 
