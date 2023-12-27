@@ -285,7 +285,6 @@ contract NofGammaCardsV5 is ERC721, ERC721URIStorage, ERC721Burnable, Ownable {
 
     function _openPack(address user, uint256 packNumber, uint8[] memory packData, bytes calldata signature) private {
         require(gammaPacksContract.getPackOwner(packNumber) == user, "This pack is not yours.");
-        // TO_REVIEW: chech this length
         require(packData.length < 15, "Card limit exceeded"); 
         
         if (requireOpenPackSignerValidation) {
@@ -412,7 +411,7 @@ contract NofGammaCardsV5 is ERC721, ERC721URIStorage, ERC721Burnable, Ownable {
         uint256 totalUserBurnedCards = burnedCards[msg.sender] + cardNumbers.length;
         bool mustPayPrize = false;
 
-        if (totalUserBurnedCards % 60 == 0) {
+        if (totalUserBurnedCards >= 60) {
             require(prizesBalance >= secondaryAlbumPrize, "Insufficient funds (burnCards balance).");
 
             uint256 contractBalance = IERC20(DAI_TOKEN).balanceOf(address(this));
