@@ -417,10 +417,6 @@ contract NofGammaCardsV5 is ERC721, ERC721URIStorage, ERC721Burnable, Ownable {
             uint256 contractBalance = IERC20(DAI_TOKEN).balanceOf(address(this));
             require(contractBalance >= secondaryAlbumPrize, "Insufficient funds (contract).");
 
-            uint256 userAllowance = IERC20(DAI_TOKEN).allowance(msg.sender, address(this));
-            require(userAllowance >= secondaryAlbumPrize, 
-                "Insufficient allowance to transfer prize for burning cards.");
-
             mustPayPrize = true;
         }
 
