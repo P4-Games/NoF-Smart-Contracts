@@ -2,10 +2,10 @@
 pragma solidity ^0.8.20;
 
 import "@openzeppelin/contracts/access/Ownable.sol";
-import "./GammaCardsNFT.v1.sol";
 import "./libs/LibStringUtils.sol";
 import "./libs/LibPackVerifier.sol";
 import "./libs/LibControlMgmt.sol";
+import "./GammaCardsNFT.v1.sol";
 import "hardhat/console.sol";
 
 interface IgammaPacksContract {
@@ -94,7 +94,7 @@ contract NofGammaCardsV5 is NofGammaCardsNFTV1, Ownable {
         _;
     }
 
-    function init (address _daiTokenAddress, address _gammaPacksContract, 
+    function init(address _daiTokenAddress, address _gammaPacksContract, 
         address _gammaOffersContract, address _gammaTicketsContract, 
         string memory _baseUri, address _signer) external onlyOwner {
         ownersData.owners[msg.sender] = true;
@@ -131,19 +131,19 @@ contract NofGammaCardsV5 is NofGammaCardsNFTV1, Ownable {
     }
 
     function setGammaOffersContract(address _gammaOffersContract) external onlyOwners {
-        require(_gammaOffersContract != address(0), "Invalid address.");
+        require(_gammaOffersContract != address(0), "bad address.");
         gammaOffersContract = IgammaOffersContract(_gammaOffersContract);
         emit NewGammaOffersContract(_gammaOffersContract);
     }
 
     function setGammaPacksContract(address _gammaPacksContract) external onlyOwners {
-        require(_gammaPacksContract != address(0), "Invalid address.");
+        require(_gammaPacksContract != address(0), "bad address.");
         gammaPacksContract = IgammaPacksContract(_gammaPacksContract);
         emit NewGammaPacksContract(_gammaPacksContract);
     }
 
     function setGammaTicketsContract(address _gammaTicketsContract) external onlyOwners {
-        require(_gammaTicketsContract != address(0), "Invalid address.");
+        require(_gammaTicketsContract != address(0), "bad address.");
         gammaTicketsContract = IgammaTicketsContract(_gammaTicketsContract);
         emit NewGammaTicketsContract(_gammaTicketsContract);
     }
@@ -153,17 +153,17 @@ contract NofGammaCardsV5 is NofGammaCardsNFTV1, Ownable {
     }
 
     function setMainAlbumPrize(uint256 amount) external onlyOwners {
-        require(amount > 0, "The prize for completing the album must be greater than 0.");
+        require(amount > 0, "The prize for completing the album must be > 0.");
         mainAlbumPrize = amount;
     }
 
     function setSecondaryAlbumPrize(uint256 amount) external onlyOwners {
-        require(amount > 0, "The prize for completing the burning album must be greater than 0.");
+        require(amount > 0, "The prize for completing the burning album must be > 0.");
         secondaryAlbumPrize = amount;
     }
 
     function setLotteryPrizePercentage(uint8 amount) external onlyOwners {
-        require(amount <= 100, "The percentage must be between 0 and 100.");
+        require(amount <= 100, "The % must be between 0 & 100.");
         lotteryPrizePercentage = amount;
     }
 
@@ -206,7 +206,7 @@ contract NofGammaCardsV5 is NofGammaCardsNFTV1, Ownable {
     }
 
     function hasCard(address user, uint8 cardNum) public view returns (bool has) {
-        require(user != address(0), "Invalid address.");
+        require(user != address(0), "bad address.");
         return cardsByUser[user][cardNum] > 0;
     }
 
@@ -223,12 +223,12 @@ contract NofGammaCardsV5 is NofGammaCardsNFTV1, Ownable {
     }
 
     function getCardQuantityByUser(address user, uint8 cardNum) public view returns (uint8) {
-        require(user != address(0), "Invalid address.");
+        require(user != address(0), "bad address.");
         return cardsByUser[user][cardNum];
     }
     
     function getBurnedCardQttyByUser(address user) public view returns (uint256) {
-        require(user != address(0), "Invalid address.");
+        require(user != address(0), "bad address.");
         return burnedCards[user];
     }
 
@@ -272,8 +272,8 @@ contract NofGammaCardsV5 is NofGammaCardsNFTV1, Ownable {
     function openPacks(uint8 packsQuantity, uint256[] memory packsNumber, 
         uint8[][] memory packsData, bytes[] calldata signatures) external {
         
-        require (packsQuantity > 0, "packs quantity must be greater than 0.");
-        require (packsQuantity <= maxPacksToOpenAtOnce, "packs quantity must be less than max quantity allowed.");
+        require (packsQuantity > 0, "packs qtty must be > 0.");
+        require (packsQuantity <= maxPacksToOpenAtOnce, "packs qtty must be < max qtty allowed.");
 
         for (uint8 i = 0; i < packsQuantity; i++) {
             _openPack(msg.sender, packsNumber[i], packsData[i], signatures[i]);
@@ -306,8 +306,8 @@ contract NofGammaCardsV5 is NofGammaCardsNFTV1, Ownable {
     function exchangeCardsOffer(
         address from, uint8 cardNumberFrom,
         address to, uint8 cardNumberTo) external onlyGammaOffersContract {
-        require(from != address(0), "Invalid address.");
-        require(to != address(0), "Invalid address.");
+        require(from != address(0), "bad address.");
+        require(to != address(0), "bad address.");
         require(cardsByUser[from][cardNumberFrom] > 0, "User (from) does not have card (from).");
         require(cardsByUser[to][cardNumberTo] > 0, "User (to) does not have card (to).");
 
@@ -322,7 +322,7 @@ contract NofGammaCardsV5 is NofGammaCardsNFTV1, Ownable {
     function transferCard(address to, uint8 cardNumber) external {
         require(cardsByUser[msg.sender][cardNumber] > 0, "You does not have this card.");
         require(to != msg.sender, "Own transfer not allowed.");
-        require(to != address(0), "Invalid address.");
+        require(to != address(0), "bad address.");
                 
         if (requireOfferValidationInTransfer) {
             bool hasOffer = gammaOffersContract.hasOffer(msg.sender, cardNumber);
@@ -332,7 +332,7 @@ contract NofGammaCardsV5 is NofGammaCardsNFTV1, Ownable {
             If you have more than one copy (quantity > 1) of that card, you must be able to mint 
             or transfer the rest.
             */
-            require (!hasOffer || hasMoreThanOne, "This card has an offer, it cannot be transfered.");
+            require (!hasOffer || hasMoreThanOne, "This card has an offer.");
         }
         
         cardsByUser[msg.sender][cardNumber]--;
@@ -342,7 +342,7 @@ contract NofGammaCardsV5 is NofGammaCardsNFTV1, Ownable {
 
     function transferCards(address to, uint8[] calldata cardNumbers) public {
         require(to != msg.sender, "You cannot send cards to yourself.");
-        require(to != address(0), "Invalid address.");
+        require(to != address(0), "bad address.");
 
         for(uint8 i; i<cardNumbers.length;i++){
             require(cardsByUser[msg.sender][cardNumbers[i]] > 0, "You does not have this card.");
@@ -357,7 +357,7 @@ contract NofGammaCardsV5 is NofGammaCardsNFTV1, Ownable {
                 If you have more than one copy (quantity > 1) of that card, you must be able to mint 
                 or transfer the rest.
                 */
-                require (!hasOffer || hasMoreThanOne, "This card has an offer, it cannot be transfered.");
+                require (!hasOffer || hasMoreThanOne, "This card has an offer.");
             }
         }
         emit CardsTransfered(msg.sender, to, cardNumbers);
@@ -451,7 +451,7 @@ contract NofGammaCardsV5 is NofGammaCardsNFTV1, Ownable {
             If you have more than one copy (quantity > 1) of that card, you must be able to mint 
             or transfer the rest.
             */
-            require (!hasOffer || hasMoreThanOne, "This card has an offer, it cannot be minted.");
+            require (!hasOffer || hasMoreThanOne, "This card has an offer.");
         }
         
         cardsByUser[msg.sender][cardNum]--;

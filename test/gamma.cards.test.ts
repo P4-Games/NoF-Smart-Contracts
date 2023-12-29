@@ -86,9 +86,7 @@ describe('NoF - Gamma Cards Tests', function () {
     await expect(offers.length).to.not.be.equal(0)
 
     await gammaCards.changeRequireOfferValidationInMint(true)
-    await expect(gammaCards.mintCard(getCardsByUserResult[0][0])).to.be.revertedWith(
-      'This card has an offer, it cannot be minted.'
-    )
+    await expect(gammaCards.mintCard(getCardsByUserResult[0][0])).to.be.revertedWith('This card has an offer.')
   })
 
   it('Should allow minting a card when has an offer and flag requireOfferValidationInMint is false', async () => {
@@ -135,7 +133,7 @@ describe('NoF - Gamma Cards Tests', function () {
 
     await gammaCards.changeRequireOfferValidationInTransfer(true)
     await expect(gammaCards.transferCard(address1.address, getCardsByUserResult[0][0])).to.be.revertedWith(
-      'This card has an offer, it cannot be transfered.'
+      'This card has an offer.'
     )
   })
 
@@ -322,7 +320,7 @@ describe('NoF - Gamma Cards Tests', function () {
   })
 
   it('Should allow to burn card with offer and more than 2 copies', async () => {
-    const { testDAI, gammaPacks, gammaCards, gammaOffers, gammaTickets, address0 } = 
+    const { testDAI, gammaPacks, gammaCards, gammaOffers, gammaTickets, address0 } =
       await loadFixture(deployNofGammaFixture)
 
     const amount = ethers.BigNumber.from('120000000000000000000') // 120 DAIs
@@ -335,14 +333,14 @@ describe('NoF - Gamma Cards Tests', function () {
     await gammaCards.testAddCards(address0.address) // 2 copies of each card
     await gammaCards.testAddCards(address0.address) // 3 copies of each card
 
-    const userCopiesCard1 = await gammaCards.getCardQuantityByUser(address0.address, 1);
+    const userCopiesCard1 = await gammaCards.getCardQuantityByUser(address0.address, 1)
     expect(userCopiesCard1).to.be.equal(3)
 
     const userInitialTokenBalance = await testDAI.balanceOf(address0.address)
 
-    const cardsToBurn = [] 
+    const cardsToBurn = []
     for (let i = 1; i <= 60; i++) {
-      cardsToBurn.push(i);
+      cardsToBurn.push(i)
     }
 
     await gammaOffers.createOffer(uuidv4(), 1, [2, 24])
@@ -353,14 +351,13 @@ describe('NoF - Gamma Cards Tests', function () {
     const userFinalTokenBalance = await testDAI.balanceOf(address0.address)
     const userTickets = await gammaTickets.getTicketsByUser(address0.address)
 
-    expect(await gammaCards.hasCard(address0.address, 1)).to.be.true 
+    expect(await gammaCards.hasCard(address0.address, 1)).to.be.true
     expect(userFinalTokenBalance > userInitialTokenBalance).to.be.true
     expect(userTickets.length).greaterThan(0)
   })
 
   it('Should revert when try to burn 2 copies of one card with offer and only 3 copies', async () => {
-    const { testDAI, gammaPacks, gammaCards, gammaOffers, address0 } = 
-      await loadFixture(deployNofGammaFixture)
+    const { testDAI, gammaPacks, gammaCards, gammaOffers, address0 } = await loadFixture(deployNofGammaFixture)
 
     const amount = ethers.BigNumber.from('120000000000000000000') // 120 DAIs
     await testDAI.approve(gammaPacks.address, amount)
@@ -372,12 +369,12 @@ describe('NoF - Gamma Cards Tests', function () {
     await gammaCards.testAddCards(address0.address) // 2 copies of each card
     await gammaCards.testAddCards(address0.address) // 3 copies of each card
 
-    const userCopiesCard1 = await gammaCards.getCardQuantityByUser(address0.address, 1);
+    const userCopiesCard1 = await gammaCards.getCardQuantityByUser(address0.address, 1)
     expect(userCopiesCard1).to.be.equal(3)
 
     const cardsToBurn = [1, 1] // 2 copies of card 1
     for (let i = 3; i <= 60; i++) {
-      cardsToBurn.push(i);
+      cardsToBurn.push(i)
     }
 
     await gammaOffers.createOffer(uuidv4(), 1, [2, 24])
@@ -386,6 +383,4 @@ describe('NoF - Gamma Cards Tests', function () {
 
     expect(await gammaCards.burnCards(cardsToBurn)).to.be.revertedWith('You cannot burn any more copies of this card.')
   })
-
-
 })
