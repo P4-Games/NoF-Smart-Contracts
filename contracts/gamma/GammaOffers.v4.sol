@@ -16,7 +16,6 @@ contract NofGammaOffersV4 is Ownable {
     using LibControlMgmt for LibControlMgmt.Data;
 
     IGammaCardsContract public gammaCardsContract;
-
     LibControlMgmt.Data private ownersData;
 
     uint256 maxOffersAllowed = uint256(5000);
