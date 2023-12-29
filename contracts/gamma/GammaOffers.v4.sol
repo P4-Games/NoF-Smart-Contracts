@@ -2,8 +2,8 @@
 pragma solidity ^0.8.20;
 
 import "@openzeppelin/contracts/access/Ownable.sol";
-import "hardhat/console.sol";
 import "./libs/LibControlMgmt.sol";
+import "hardhat/console.sol";
 
 interface IGammaCardsContract {
   function hasCardByOffer(address user, uint8 cardNumber) external returns (bool has);
@@ -228,7 +228,6 @@ contract NofGammaOffersV4 is Ownable {
                     break;
                 }
             }
-
             require(foundCardWanted, "The card is not in wantedCardNumbers.");
         }
         
