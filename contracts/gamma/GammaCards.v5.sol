@@ -45,7 +45,7 @@ contract NofGammaCardsV5 is ERC721, ERC721URIStorage, ERC721Burnable, Ownable {
     uint256 public prizesBalance = 0;
     string public baseUri;
     uint256 public mainAlbumPrize = 15e18; // 15 DAI por album principal completado
-    uint256 public secondaryAlbumPrize = 12e17; // 1.2 DAI (valor de pack) por album secundario completado
+    uint256 public secondaryAlbumPrize = 1e18; // 1 DAI por album secundario completado
     uint8 public lotteryPrizePercentage = 50;
     string public mainUri;
     string public secondaryUri;
