@@ -19,6 +19,7 @@ interface IgammaPacksContract {
 interface IgammaOffersContract {
     function hasOffer(address user, uint8 cardNumber) external view returns (bool);
     function removeOffersByUser(address user) external returns (bool);
+    function getOffersByUserCounter(address user) external view returns (uint256);
     function getOfferByUserAndCardNumber(address user, uint8 cardNumber) external view 
         returns (uint256, uint8, uint8[] memory , address);
 }
@@ -112,7 +113,7 @@ contract NofGammaCardsV5 is ERC721, ERC721URIStorage, ERC721Burnable, Ownable {
         secondaryUri = string(abi.encodePacked(bytes(baseUri), bytes("/"), bytes("121"), bytes("F.json")));
         signersData.signers[_signer] = true;
 
-        for(uint256 i;i<122;i++){
+        for(uint256 i; i<122; i++){
             cardsInventory[i] = 1;
         }
     }
@@ -170,11 +171,7 @@ contract NofGammaCardsV5 is ERC721, ERC721URIStorage, ERC721Burnable, Ownable {
         lotteryPrizePercentage = amount;
     }
 
-    function getLotteryPrize() public view returns (uint256) {
-        return (lotteryPrizePercentage * prizesBalance) / 100;
-    }
-
-    function setUris(string memory newMainUri, string memory newSecondaryUri) public onlyOwners {
+    function setUris(string memory newMainUri, string memory newSecondaryUri) external onlyOwners {
         mainUri = newMainUri;
         secondaryUri = newSecondaryUri;
         emit NewUris(newMainUri, newSecondaryUri);
@@ -223,6 +220,10 @@ contract NofGammaCardsV5 is ERC721, ERC721URIStorage, ERC721Burnable, Ownable {
 
     function isSigner(address user) external view returns (bool) {
         return signersData.signers[user];
+    }
+
+    function getLotteryPrize() public view returns (uint256) {
+        return (lotteryPrizePercentage * prizesBalance) / 100;
     }
 
     function getCardQuantityByUser(address user, uint8 cardNum) public view returns (uint8) {
@@ -296,7 +297,7 @@ contract NofGammaCardsV5 is ERC721, ERC721URIStorage, ERC721Burnable, Ownable {
         gammaPacksContract.openPack(packNumber, user);
         prizesBalance += packPrice - packPrice / 6;
 
-        for(uint8 i;i<packData.length;i++){
+        for(uint8 i; i<packData.length; i++){
             require(packData[i] == 120 ? cardsInventory[120] < 3001 : cardsInventory[packData[i]] < 5001, 
                 'invalid cardInventory position');
             cardsInventory[packData[i]]++; // 280k gas aprox.
@@ -377,10 +378,8 @@ contract NofGammaCardsV5 is ERC721, ERC721URIStorage, ERC721Burnable, Ownable {
         require(contractBalance >= mainAlbumPrize, "Insufficient funds (contract).");
 
         // check that you have at least one card of each number
-        // TO-REVIEW: check if this part is necessary because the subtraction of cards 
-        // would cause underflow if it is at 0
         bool unfinished;
-        for(uint8 i;i<=120;i++){
+        for(uint8 i; i<=120; i++){
             if(cardsByUser[msg.sender][i] == 0) {
                 unfinished = true;
                 break;
@@ -407,23 +406,29 @@ contract NofGammaCardsV5 is ERC721, ERC721URIStorage, ERC721Burnable, Ownable {
     // the 60 cards album to 'burn' them.
     function burnCards(uint8[] calldata cardNumbers) public {
         require(cardsByUser[msg.sender][121] > 0, "You does not have any burning album.");
-
         uint256 totalUserBurnedCards = burnedCards[msg.sender] + cardNumbers.length;
         bool mustPayPrize = false;
 
         if (totalUserBurnedCards >= 60) {
             require(prizesBalance >= secondaryAlbumPrize, "Insufficient funds (burnCards balance).");
-
             uint256 contractBalance = IERC20(DAI_TOKEN).balanceOf(address(this));
             require(contractBalance >= secondaryAlbumPrize, "Insufficient funds (contract).");
-
             mustPayPrize = true;
         }
 
-        for(uint8 i;i<cardNumbers.length;i++){
+        bool userHasOffers = (gammaOffersContract.getOffersByUserCounter(msg.sender) > 0);
+        for(uint8 i; i<cardNumbers.length; i++){
             require(cardsByUser[msg.sender][cardNumbers[i]] > 0, "You does not have this card.");
+            if (userHasOffers) {
+
+                if (gammaOffersContract.hasOffer(msg.sender, cardNumbers[i])) {
+                    require(cardsByUser[msg.sender][cardNumbers[i]] >= 2, 
+                        "You cannot burn any more copies of this card.");
+                }
+            }
             cardsByUser[msg.sender][cardNumbers[i]]--;
         }
+
         burnedCards[msg.sender] += cardNumbers.length;        
         emit CardsBurned(msg.sender, cardNumbers);
 
@@ -473,7 +478,7 @@ contract NofGammaCardsV5 is ERC721, ERC721URIStorage, ERC721Burnable, Ownable {
     }
 
     function testAddCards(address user) public onlyOwners {
-        for(uint8 i;i<=121;i++){ // 0-119: cards, 120: album-120, 121: album-60
+        for(uint8 i; i<=121; i++){ // 0-119: cards, 120: album-120, 121: album-60
             cardsByUser[user][i]++;
         }
     }
@@ -482,7 +487,7 @@ contract NofGammaCardsV5 is ERC721, ERC721URIStorage, ERC721Burnable, Ownable {
         gammaPacksContract.openPack(packNumber, user);
         prizesBalance += packPrice - packPrice / 6;
 
-        for(uint8 i;i<packData.length;i++){
+        for(uint8 i; i<packData.length; i++){
             require(packData[i] == 120 ? cardsInventory[120] < 3001 : cardsInventory[packData[i]] < 5001, 
                 'invalid cardInventory position');
             cardsInventory[packData[i]]++; // 280k gas aprox.
