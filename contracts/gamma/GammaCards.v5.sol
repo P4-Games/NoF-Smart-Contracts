@@ -1,14 +1,12 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.20;
 
-import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
-import "@openzeppelin/contracts/token/ERC721/extensions/ERC721URIStorage.sol";
-import "@openzeppelin/contracts/token/ERC721/extensions/ERC721Burnable.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
+import "./GammaCardsNFT.v1.sol";
 import "./libs/LibStringUtils.sol";
 import "./libs/LibPackVerifier.sol";
 import "./libs/LibControlMgmt.sol";
+import "hardhat/console.sol";
 
 interface IgammaPacksContract {
     function getPackOwner(uint256 tokenId) external view returns (address);
@@ -28,7 +26,7 @@ interface IgammaTicketsContract {
     function generateTicket(address user) external;
 }
 
-contract NofGammaCardsV5 is ERC721, ERC721URIStorage, ERC721Burnable, Ownable {
+contract NofGammaCardsV5 is NofGammaCardsNFTV1, Ownable {
     using LibStringUtils for uint8; 
     using LibControlMgmt for LibControlMgmt.Data;
 
@@ -81,8 +79,6 @@ contract NofGammaCardsV5 is ERC721, ERC721URIStorage, ERC721Burnable, Ownable {
     event CardsTransfered(address from, address to, uint8[] cardNumber);
     event CardsBurned(address user, uint8[] cardsNumber);
 
-    constructor() ERC721("GammaCards", "NOF_GC") {}
-
     modifier onlyGammaPacksContract {
         require(msg.sender == address(gammaPacksContract), "Only packs contract.");
         _;
@@ -134,19 +130,19 @@ contract NofGammaCardsV5 is ERC721, ERC721URIStorage, ERC721Burnable, Ownable {
         signersData.removeSigner(_signerToRemove);
     }
 
-    function setGammaOffersContract(address _gammaOffersContract) public onlyOwners {
+    function setGammaOffersContract(address _gammaOffersContract) external onlyOwners {
         require(_gammaOffersContract != address(0), "Invalid address.");
         gammaOffersContract = IgammaOffersContract(_gammaOffersContract);
         emit NewGammaOffersContract(_gammaOffersContract);
     }
 
-    function setGammaPacksContract(address _gammaPacksContract) public onlyOwners {
+    function setGammaPacksContract(address _gammaPacksContract) external onlyOwners {
         require(_gammaPacksContract != address(0), "Invalid address.");
         gammaPacksContract = IgammaPacksContract(_gammaPacksContract);
         emit NewGammaPacksContract(_gammaPacksContract);
     }
 
-    function setGammaTicketsContract(address _gammaTicketsContract) public onlyOwners {
+    function setGammaTicketsContract(address _gammaTicketsContract) external onlyOwners {
         require(_gammaTicketsContract != address(0), "Invalid address.");
         gammaTicketsContract = IgammaTicketsContract(_gammaTicketsContract);
         emit NewGammaTicketsContract(_gammaTicketsContract);
@@ -493,23 +489,6 @@ contract NofGammaCardsV5 is ERC721, ERC721URIStorage, ERC721Burnable, Ownable {
             cardsInventory[packData[i]]++; // 280k gas aprox.
             cardsByUser[user][packData[i]]++; // 310k gas aprox.
         }
-    }
-
-    // The following functions are overrides required by Solidity.
-    function _burn(uint256 tokenId) internal override(ERC721, ERC721URIStorage) {
-        super._burn(tokenId);
-    }
-
-    function tokenURI(uint256 tokenId) public view override(ERC721, ERC721URIStorage)
-        returns (string memory)
-    {
-        return super.tokenURI(tokenId);
-    }
-
-    function supportsInterface(bytes4 interfaceId) public view override(ERC721, ERC721URIStorage)
-        returns (bool)
-    {
-        return super.supportsInterface(interfaceId);
     }
 
     // do not call unless really necessary

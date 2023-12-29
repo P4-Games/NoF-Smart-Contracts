@@ -3,8 +3,8 @@ pragma solidity ^0.8.20;
 
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
-import "hardhat/console.sol";
 import "./libs/LibControlMgmt.sol";
+import "hardhat/console.sol";
 
 interface IGammaCardsContract {
     function setPrizesBalance(uint256 amount) external;
@@ -55,7 +55,7 @@ contract NofGammaPacksV3 is Ownable {
         _;
     }
 
-    function init (address _daiTokenAddress, address _balanceReceiver, 
+    function init(address _daiTokenAddress, address _balanceReceiver, 
         address _gammaCardsContract, address _gammaTicketsContract) external onlyOwner {
         require(_balanceReceiver != address(0), "Invalid address.");
         require(_gammaCardsContract != address(0), "Invalid address.");
@@ -157,9 +157,8 @@ contract NofGammaPacksV3 is Ownable {
         uint256[] memory tokenIds = _buyPacks(user, 1);
         return tokenIds[0];
     }
-
     function _buyPacks(address user, uint256 numberOfPacks) private returns(uint256[] memory){
-        require(address(gammaCardsContract) != address(0), "GammaCardsContract not set."); 
+        require(user != address(0), "Invalid address.");
         require(numberOfPacks > 0, "Number of packs should be greater than zero.");
         require((packsCounter + numberOfPacks) < totalSupply, "The number of packs you want to buy exceeds those available.");
 
@@ -178,9 +177,9 @@ contract NofGammaPacksV3 is Ownable {
         require(tranferPrizeResult, "The transfers related to the purchase of packs could not be completed.");
 
         if (numberOfPacks == 1) {
-            emit PackPurchased(msg.sender, tokenIds[0]);
+            emit PackPurchased(user, tokenIds[0]);
         } else {
-            emit PacksPurchased(msg.sender, tokenIds);
+            emit PacksPurchased(user, tokenIds);
         }
 
         return tokenIds;
