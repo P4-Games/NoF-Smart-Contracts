@@ -93,7 +93,7 @@ NOF_GAMMA_LIB_PACK_VERIFIER_CONTRACT_NAME=''
 NOF_GAMMA_LIB_STRING_UTILS_CONTRACT_NAME=''
 NOF_GAMMA_LIB_OWNERS_MGMT_CONTRACT_NAME=''
 
-# Addresses to mint DAIs using a script (scripts/mint-dais.ts)
+# Addresses to mint DAIs using a script (scripts/support-mint-dais.ts)
 NOF_DAI_MINT_EXTRA_WALLET_ADDRESSES=''
 
 # Just a flag to enable ('1') print to console or not ('0' - default -)
@@ -116,10 +116,14 @@ npx hardhat compile
 npx hardhat test
 
 # Deploy to local
-npx hardhat run scripts/deploy.ts --network localhost
+npx hardhat run scripts/deploy.ts
 
 # Deploy to Mumnbai 
 npx hardhat run scripts/deploy.ts --network mumbai
+
+# Deploy Mock Data (local)
+npx hardhat run scripts/deploy-mock-data.ts
+
 
 # Solidity Security and Style guides validations with solhint [https://protofire.github.io/solhint/]
 npm install -g solhint
@@ -139,11 +143,12 @@ See detaills about gamma Smart Contracts in this [file](./.doc/contracts-info.md
 
 ### Mumbai 
 * DAI: 0xEa4c35c858E15Cef77821278A88435dE57bc8707
-* Alpha: 0xB6dBE3132e741ad32A827A2E71487E44ECAdE60a
-* Gamma Cards: 0x0471166ED718e915D4339149Dc4Dc7a6353c5BF3
-* Gamma Packs: 0x55f3854B7e8317997C2c31cBD7297235D0564F7d
-* Gamma Offers: 0x7EcF352BC5b49d6e593C78369210d7D7a59B985d
-* Gamma Tickets: 0x7Be1E17c69635b41aa22b8A680593d71B40A2551
+* Alpha: 0x7C201e88e43b5FBEEfB77F966c2a5D2E09178B49
+* Gamma Cards: 0x34658c07F05638E12793d0961595cBc72fA69452
+* Gamma Cards NFT: 0x1b3aeb1652bf9a9ab269fa987feec34a65ef7b69
+* Gamma Packs: 0xDc06FbD70b2159863d079aE282d69AEe8a88A18E
+* Gamma Offers: 0x3Da346C40A0D90cf5642944613586439A3456d45
+* Gamma Tickets: 0x7593aad3e13fBd27F113aad8688E8817Ac4f9A33
 
 ### Mainet
 

@@ -68,6 +68,7 @@ export async function deployContracts(wallets: SignerWithAddress[]) {
   const nofDaiContractName = process.env.NOF_DAI_CONTRACT_NAME ||  'NofTestDAIV3'
   const nofAlphaContractName = process.env.NOF_ALPHA_CONTRACT_NAME || 'NofAlphaV3'
   const nofGammaCardsContractName = process.env.NOF_GAMMA_CARDS_CONTRACT_NAME || 'NofGammaCardsV5'
+  const nofGammaCardsNftContractName = process.env.NOF_GAMMA_CARDS_NFT_CONTRACT_NAME || 'NofGammaCardsNFTV1'
   const nofGammaPacksContractName = process.env.NOF_GAMMA_PACKS_CONTRACT_NAME || 'NofGammaPacksV3'
   const nofGammaOffersContractName = process.env.NOF_GAMMA_OFFERS_CONTRACT_NAME || 'NofGammaOffersV4'
   const nofGammaTicketsContractName = process.env.NOF_GAMMA_TICKETS_CONTRACT_NAME || 'NofGammaTicketsV1'
@@ -78,6 +79,7 @@ export async function deployContracts(wallets: SignerWithAddress[]) {
   const nofDaiContractCurrentAddress = process.env.NOF_DAI_CONTRACT_CURRENT_ADDRESS || ''
   const nofAlphaContractCurrentAddress = process.env.NOF_ALPHA_CONTRACT_CURRENT_ADDRESS || ''
   const nofGammaCardsContractCurrentAddress = process.env.NOF_GAMMA_CARDS_CONTRACT_CURRENT_ADDRESS || ''
+  const nofGammaCardsNftContractCurrentAddress = process.env.NOF_GAMMA_CARDS_NFT_CONTRACT_CURRENT_ADDRESS || ''
   const nofGammaPacksContractCurrentAddress = process.env.NOF_GAMMA_PACKS_CONTRACT_CURRENT_ADDRESS || ''
   const nofGammaOffersContractCurrentAddress = process.env.NOF_GAMMA_OFFERS_CONTRACT_CURRENT_ADDRESS || ''
   const nofGammaTicketsContractCurrentAddress = process.env.NOF_GAMMA_TICKETS_CONTRACT_CURRENT_ADDRESS || ''
@@ -91,7 +93,8 @@ export async function deployContracts(wallets: SignerWithAddress[]) {
   
   const testDAIContract = await deployContract(nofDaiContractCurrentAddress, nofDaiContractName)
   const alphaContract = await deployContract(nofAlphaContractCurrentAddress, nofAlphaContractName)
-  
+  const cardsNftContract = await deployContract(nofGammaCardsNftContractCurrentAddress, nofGammaCardsNftContractName)
+
   const cardsContract = await deployContract(nofGammaCardsContractCurrentAddress, nofGammaCardsContractName, 
   [
     {libraryName: 'LibPackVerifier', libraryAddress: libPackVerifier.address},
@@ -152,12 +155,16 @@ export async function deployContracts(wallets: SignerWithAddress[]) {
   await offersContract.init(cardsContract.address)
   await ticketsContract.init(packsContract.address, cardsContract.address)
 
-  console.log('\nTestDAI deployed address:', testDAIContract.address)
+  console.log('\nTestDAI deployed address:', testDAIContract.address)  
+  console.log('libPackVerifier deployed address:', libPackVerifier.address)
+  console.log('libStringUtils deployed address:', libStringUtils.address)
+  console.log('libControlMgmt deployed address:', libControlMgmt.address)  
   console.log('Alpha deployed address:', alphaContract.address)
   console.log('Gamma deployed Cards address:', cardsContract.address)
+  console.log('Gamma deployed Cards Nft address:', cardsNftContract.address)
   console.log('Gamma deployed Packs address:', packsContract.address)
   console.log('Gamma deployed Offers address:', offersContract.address)
-  console.log('Gamma deployed Tickets address:', ticketsContract.address)
+  console.log('Gamma deployed Tickets address:', ticketsContract.address, '\n')
   console.log('Alpha balance receiver setted:', balanceReceiverAddress)
   console.log('Gamma Packs balance receiver setted:', balanceReceiverAddress)
   console.log('Gamma Cards micro-services Signature Wallets Addresses setted:', microServiceSignatureWalletsAddresses[0])
