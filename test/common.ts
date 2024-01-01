@@ -9,6 +9,7 @@ const nofDaiContractName = process.env.NOF_DAI_CONTRACT_NAME || 'NofTestDAIV3'
 const nofAlphaContractName = process.env.NOF_ALPHA_CONTRACT_NAME || 'NofAlphaV3'
 const nofGammaPacksContractName = process.env.NOF_GAMMA_PACKS_CONTRACT_NAME || 'NofGammaPacksV3'
 const nofGammaCardsContractName = process.env.NOF_GAMMA_CARDS_CONTRACT_NAME || 'NofGammaCardsV5'
+const nofGammaCardsNftContractName = process.env.NOF_GAMMA_CARDS_NFT_CONTRACT_NAME || 'NofGammaCardsNFTV1'
 const nofGammaOffersContractName = process.env.NOF_GAMMA_OFFERS_CONTRACT_NAME || 'NofGammaOffersV4'
 const nofGammaTicketsContractName = process.env.NOF_GAMMA_TICKETS_CONTRACT_NAME || 'NofGammaTicketsV1'
 const nofGammaLibPackVerifierName = process.env.NOF_GAMMA_LIB_PACK_VERIFIER_CONTRACT_NAME || 'LibPackVerifier'
@@ -36,6 +37,10 @@ async function deployNofGammaFixture() {
   const LibControlMgmt = await ethers.getContractFactory(nofGammaLibControlMgmtName)
   const libOwnersMgmt = await LibControlMgmt.deploy()
   await libOwnersMgmt.deployed()
+
+  const GammaCardsNft = await ethers.getContractFactory(nofGammaCardsNftContractName)
+  const gammaCardsNft = await GammaCardsNft.deploy()
+  await gammaCardsNft.deployed()
 
   const GammaCards = await ethers.getContractFactory(nofGammaCardsContractName, {
     libraries: {

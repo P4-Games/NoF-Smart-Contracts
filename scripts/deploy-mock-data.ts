@@ -139,6 +139,10 @@ async function createGammaMockData(
   await gammaCircuitPackWithoutOwner(addresses[0], testDAI, gammaPacks, gammaCards, [25,62,94,71,41,77,100,90,3,58,113,28])
   await gammaCircuitPackWithoutOwner(addresses[1], testDAI, gammaPacks, gammaCards, [25,62,94,71,41,77,100,90,3,58,113,28])
   
+  await gammaCircuitAllCards(addresses[1], gammaCards)
+  await gammaCircuitAllCards(addresses[1], gammaCards)
+  await gammaCircuitAllCards(addresses[2], gammaCards)
+  await gammaCircuitAllCards(addresses[3], gammaCards)
   await gammaCircuitAllCards(addresses[4], gammaCards)
   await gammaCircuitAllCards(addresses[5], gammaCards)
   await gammaCircuitAllCards(addresses[6], gammaCards)
