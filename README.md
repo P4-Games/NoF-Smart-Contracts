@@ -86,11 +86,14 @@ ADDITIONAL_OWNERS_WALLETS_ADDRESSES=''
 # (it will use the ones defined in these variables)
 NOF_DAI_CONTRACT_CURRENT_ADDRESS=''
 NOF_ALPHA_CONTRACT_CURRENT_ADDRESS=''
-NOF_GAMMA_PACKS_CONTRACT_CURRENT_ADDRESS=''
 NOF_GAMMA_CARDS_CONTRACT_CURRENT_ADDRESS=''
+NOF_GAMMA_PACKS_CONTRACT_CURRENT_ADDRESS=''
 NOF_GAMMA_OFFERS_CONTRACT_CURRENT_ADDRESS=''
+NOF_GAMMA_LIB_PACK_VERIFIER_CONTRACT_NAME=''
+NOF_GAMMA_LIB_STRING_UTILS_CONTRACT_NAME=''
+NOF_GAMMA_LIB_OWNERS_MGMT_CONTRACT_NAME=''
 
-# Addresses to mint DAIs using a script (scripts/mint-dais.ts)
+# Addresses to mint DAIs using a script (scripts/support-mint-dais.ts)
 NOF_DAI_MINT_EXTRA_WALLET_ADDRESSES=''
 
 # Just a flag to enable ('1') print to console or not ('0' - default -)
@@ -113,10 +116,14 @@ npx hardhat compile
 npx hardhat test
 
 # Deploy to local
-npx hardhat run scripts/deploy.ts --network localhost
+npx hardhat run scripts/deploy.ts
 
 # Deploy to Mumnbai 
 npx hardhat run scripts/deploy.ts --network mumbai
+
+# Deploy Mock Data (local)
+npx hardhat run scripts/deploy-mock-data.ts
+
 
 # Solidity Security and Style guides validations with solhint [https://protofire.github.io/solhint/]
 npm install -g solhint
@@ -136,10 +143,12 @@ See detaills about gamma Smart Contracts in this [file](./.doc/contracts-info.md
 
 ### Mumbai 
 * DAI: 0xEa4c35c858E15Cef77821278A88435dE57bc8707
-* Alpha: 0x37Ee2C0768c047A3b4892613007b3eaE217411f4
-* Gamma Packs: 0x1F69307e85463fd0Fe2Db048Be932BE5f263d485
-* Gamma Cards: 0xa58eF78A16b7c6300DdaE0e26e96AcaF2eC39b4f
-* Gamma Offers: 0xD46EC7D15B9cd30C86668200cC9f7307E2aB9331
+* Alpha: 0x7C201e88e43b5FBEEfB77F966c2a5D2E09178B49
+* Gamma Cards: 0x34658c07F05638E12793d0961595cBc72fA69452
+* Gamma Cards NFT: 0x1b3aeb1652bf9a9ab269fa987feec34a65ef7b69
+* Gamma Packs: 0xDc06FbD70b2159863d079aE282d69AEe8a88A18E
+* Gamma Offers: 0x3Da346C40A0D90cf5642944613586439A3456d45
+* Gamma Tickets: 0x7593aad3e13fBd27F113aad8688E8817Ac4f9A33
 
 ### Mainet
 

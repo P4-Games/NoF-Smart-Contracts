@@ -139,6 +139,10 @@ async function createGammaMockData(
   await gammaCircuitPackWithoutOwner(addresses[0], testDAI, gammaPacks, gammaCards, [25,62,94,71,41,77,100,90,3,58,113,28])
   await gammaCircuitPackWithoutOwner(addresses[1], testDAI, gammaPacks, gammaCards, [25,62,94,71,41,77,100,90,3,58,113,28])
   
+  await gammaCircuitAllCards(addresses[1], gammaCards)
+  await gammaCircuitAllCards(addresses[1], gammaCards)
+  await gammaCircuitAllCards(addresses[2], gammaCards)
+  await gammaCircuitAllCards(addresses[3], gammaCards)
   await gammaCircuitAllCards(addresses[4], gammaCards)
   await gammaCircuitAllCards(addresses[5], gammaCards)
   await gammaCircuitAllCards(addresses[6], gammaCards)
@@ -193,11 +197,6 @@ async function createOfferMockData(
   await gammaOffers.connect(addresses[1]).createOffer(uuidv4(), 90, [0,1,2])
   await gammaOffers.connect(addresses[1]).createOffer(uuidv4(), 102, [32,2,4,5,6,7])
 
-  /*
-  printOffers(await gammaOffers.getOffers())
-  printCardsByUser(addresses[0].address, await gammaCards.getCardsByUser(addresses[0].address))
-  printCardsByUser(addresses[1].address, await gammaCards.getCardsByUser(addresses[1].address))
-  */
   // printOffers(await gammaOffers.getOffers())
   console.log('Doing one offer exchange...')
   await gammaOffers.confirmOfferExchange(addresses[1].address, 110, addresses[0].address, 28);
@@ -221,18 +220,19 @@ async function main() {
   try {
     const addresses: SignerWithAddress[] = await getInitData()
     const contracts: { 
-      testDAI: Contract;
-      alpha: Contract;
-      gammaPacks: Contract;
-      gammaCards: Contract;
-      gammaOffers: Contract;
+      testDAIContract: Contract;
+      alphaContract: Contract;
+      packsContract: Contract;
+      cardsContract: Contract;
+      offersContract: Contract;
+      ticketsContract: Contract;
       signatureMethod: string;
     } = await deployContracts (addresses)
 
     if (isHardhat || isLocalhost) {
-      await createAlphaMockData(addresses, contracts.testDAI, contracts.alpha);
-      await createGammaMockData(addresses, contracts.testDAI, contracts.gammaPacks, contracts.gammaCards);
-      await createOfferMockData (addresses, contracts.gammaPacks, contracts.gammaCards, contracts.gammaOffers);
+      await createAlphaMockData(addresses, contracts.testDAIContract, contracts.alphaContract);
+      await createGammaMockData(addresses, contracts.testDAIContract, contracts.packsContract, contracts.cardsContract);
+      await createOfferMockData (addresses, contracts.packsContract, contracts.cardsContract, contracts.offersContract);
     }
     process.exit(0);
   } catch (error) {

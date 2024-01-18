@@ -4,6 +4,10 @@ on:
     branches:
       - main
       - develop
+  pull_request:
+    branches:
+      - main
+      - develop
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -21,4 +25,11 @@ jobs:
       - name: Test deploy harhat
         run:  npx hardhat node & npx hardhat run --network hardhat scripts/deploy.ts
       - name: Run tests
-        run: npx hardhat test
+        run: npx hardhat test      
+  block-on-failure:
+    needs: build
+    runs-on: ubuntu-latest
+    if: ${{ failure() }}
+    steps:
+      - name: Block push on failure
+        run: exit 1

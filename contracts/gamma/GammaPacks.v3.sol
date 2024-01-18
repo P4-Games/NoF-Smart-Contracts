@@ -3,6 +3,7 @@ pragma solidity ^0.8.20;
 
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
+import "./libs/LibControlMgmt.sol";
 import "hardhat/console.sol";
 
 interface IGammaCardsContract {
@@ -10,59 +11,70 @@ interface IGammaCardsContract {
     function changePackPrice(uint256 amount) external;
 }
 
+interface IgammaTicketsContract {
+    function getLotteryWinner() external 
+        returns (uint256 timestamp, bytes32 ticketId, uint256 ticketCounter, address user);
+    function deleteAllTickets() external;
+}
+
 contract NofGammaPacksV3 is Ownable {
+    using LibControlMgmt for LibControlMgmt.Data;
+
     IGammaCardsContract public gammaCardsContract;
+    IgammaTicketsContract public gammaTicketsContract;
+
+    LibControlMgmt.Data private ownersData;
+
     address public DAI_TOKEN;
     uint256 public constant totalSupply = 50000;
     uint256 public packPrice = 12e17; // 1.2 DAI
     address public balanceReceiver;
-    uint256 private _tokenIdCounter;
+    uint256 private packsCounter = 0;
     bool transferDai = true;
 
     mapping(uint256 tokenId => address owner) public packs;
     mapping(address owner => uint256[] tokenIds) public packsByUser;
-    mapping(address => bool) public owners;
     
-    event NewOwnerAdded(address owner);
-    event OwnerRemoved(address owner);
-    event NewBalanceReceiver(address balanceReceiver);
-    event PackPurchase(address buyer, uint256 tokenId);
-    event PacksPurchase(address buyer, uint256[] tokenIds);
-    event PackTransfer(address from, address to, uint256 tokenId);
-    event PackOpen(address user, uint256 tokenId);
-    event NewPrice(uint256 newPrice);
     event NewGammaCardsContract(address newCardsContract);
+    event NewGammaTicketsContract(address newGammaTicketContract);
+    event NewBalanceReceiver(address balanceReceiver);
+    event PackPurchased(address buyer, uint256 tokenId);
+    event PacksPurchased(address buyer, uint256[] tokenIds);
+    event PackTransfered(address from, address to, uint256 tokenId);
+    event PacksTransfered(address from, address to, uint256[] tokenId);
+    event PackOpened(address user, uint256 tokenId);
+    event NewPrice(uint256 newPrice);
     
-    constructor(address _daiTokenAddress, address _balanceReceiver) {
-        DAI_TOKEN = _daiTokenAddress;
-        balanceReceiver = _balanceReceiver;
-        owners[msg.sender] = true;
-        transferDai = true;
-    }
-
-    modifier onlyGammaCardsContract {
+    modifier onlyGammaCardsContract{
         require(msg.sender == address(gammaCardsContract), "Only gamma cards contract can call this function.");
         _;
     }
 
     modifier onlyOwners() {
-        require(owners[msg.sender], "Only owners can call this function.");
+        require(ownersData.owners[msg.sender], "Only owners.");
         _;
     }
 
+    function init(address _daiTokenAddress, address _balanceReceiver, 
+        address _gammaCardsContract, address _gammaTicketsContract) external onlyOwner {
+        require(_balanceReceiver != address(0), "Invalid address.");
+        require(_gammaCardsContract != address(0), "Invalid address.");
+        require(_gammaTicketsContract != address(0), "Invalid address.");
+
+        DAI_TOKEN = _daiTokenAddress;
+        balanceReceiver = _balanceReceiver;
+        gammaCardsContract = IGammaCardsContract(_gammaCardsContract);
+        gammaTicketsContract = IgammaTicketsContract(_gammaTicketsContract);
+
+        ownersData.owners[msg.sender] = true;
+    }
+
     function addOwner(address _newOwner) external onlyOwners {
-        require(_newOwner != address(0), "Invalid address.");
-        require(!owners[_newOwner], "Address is already an owner.");
-        owners[_newOwner] = true;
-        emit NewOwnerAdded(_newOwner);
+        ownersData.addOwner(_newOwner);
     }
 
     function removeOwner(address _ownerToRemove) external onlyOwners {
-        require(_ownerToRemove != address(0), "Invalid address.");
-        require(_ownerToRemove != msg.sender, "You cannot remove yourself as an owner.");
-        require(owners[_ownerToRemove], "Address is not an owner.");
-        owners[_ownerToRemove] = false;
-        emit OwnerRemoved(_ownerToRemove);
+        ownersData.removeOwner(_ownerToRemove);
     }
 
     function changeBalanceReceiver(address _newBalanceReceiver) external onlyOwners {
@@ -87,6 +99,16 @@ contract NofGammaPacksV3 is Ownable {
         emit NewGammaCardsContract(_gammaCardsContract);
     }
 
+    function setGammaTicketsContract(address _gammaTicketsContract) public onlyOwners {
+        require(_gammaTicketsContract != address(0), "Invalid address.");
+        gammaTicketsContract = IgammaTicketsContract(_gammaTicketsContract);
+        emit NewGammaTicketsContract(_gammaTicketsContract);
+    }
+
+    function isOwner(address user) external view returns (bool) {
+        return ownersData.owners[user];
+    }
+    
     function getPrizeAmountToBuyPacks(uint256 numberOfPacks) public view returns(uint256) {
         return (packPrice - (packPrice / 6)) * numberOfPacks;
     }
@@ -110,16 +132,21 @@ contract NofGammaPacksV3 is Ownable {
         return packs[tokenId];
     }
 
+    function meetQuantityConditionsToBuy(uint256 numberOfPacks) public view returns(bool) {
+        require(numberOfPacks > 0, "Number of packs should be greater than zero.");
+        return (packsCounter + numberOfPacks) < totalSupply;
+    }
+
     function buyPack() public returns (uint256){
         return _buyPack(msg.sender);
     }
 
-    function buyPackByUser(address user) public onlyOwners returns (uint256) {
-        return _buyPack(user);
-    }
-
     function buyPacks(uint256 numberOfPacks) public returns(uint256[] memory){
         return _buyPacks(msg.sender, numberOfPacks);
+    }
+
+    function buyPackByUser(address user) public onlyOwners returns (uint256) {
+        return _buyPack(user);
     }
 
     function buyPacksByUser(address user, uint256 numberOfPacks) public onlyOwners returns(uint256[] memory){
@@ -127,29 +154,20 @@ contract NofGammaPacksV3 is Ownable {
     }
 
     function _buyPack(address user) private returns (uint256) {
-        require(address(gammaCardsContract) != address(0), "GammaCardsContract not set."); 
-    
-        uint256 tokenId = _tokenIdCounter;
-        require(tokenId < totalSupply, "There are no more packs.");
-        _tokenIdCounter += 1;
-        packs[tokenId] = user;
-        packsByUser[user].push(tokenId);
-        
-        bool tranferPrizeResult = _tranferPrizesAmounts(user, 1);
-        require(tranferPrizeResult, "The transfers related to the purchase of packs could not be completed.");
-
-        emit PackPurchase(user, tokenId);
-        return tokenId;
+        uint256[] memory tokenIds = _buyPacks(user, 1);
+        return tokenIds[0];
     }
-
     function _buyPacks(address user, uint256 numberOfPacks) private returns(uint256[] memory){
-        require(address(gammaCardsContract) != address(0), "GammaCardsContract not set."); 
+        require(user != address(0), "Invalid address.");
+        require(numberOfPacks > 0, "Number of packs should be greater than zero.");
+        require((packsCounter + numberOfPacks) < totalSupply, "The number of packs you want to buy exceeds those available.");
+
         uint256[] memory tokenIds = new uint256[](numberOfPacks);
 
         for(uint256 i; i < numberOfPacks; i++){
-            uint256 tokenId = _tokenIdCounter;
+            uint256 tokenId = packsCounter;
             require(tokenId < totalSupply, "There are no more packs.");
-            _tokenIdCounter += 1;
+            packsCounter += 1;
             packs[tokenId] = user;
             packsByUser[user].push(tokenId);
             tokenIds[i] = tokenId;
@@ -158,8 +176,12 @@ contract NofGammaPacksV3 is Ownable {
         bool tranferPrizeResult = _tranferPrizesAmounts(user, numberOfPacks);
         require(tranferPrizeResult, "The transfers related to the purchase of packs could not be completed.");
 
-        emit PacksPurchase(user, tokenIds);
-        
+        if (numberOfPacks == 1) {
+            emit PackPurchased(user, tokenIds[0]);
+        } else {
+            emit PacksPurchased(user, tokenIds);
+        }
+
         return tokenIds;
     }
 
@@ -171,6 +193,7 @@ contract NofGammaPacksV3 is Ownable {
         if (transferDai) {
             IERC20 erc20Token = IERC20(DAI_TOKEN);
             uint256 userAllowance = erc20Token.allowance(user, address(this));
+
             require(userAllowance >= (prizesAmount + prizeNoFAccount), 
                 "Insufficient allowance to transfer prizes amount and NOF Account amount.");
             require(erc20Token.balanceOf(user) >= prizesAmount, "Insufficient balance to transfer prizes amount.");
@@ -207,6 +230,7 @@ contract NofGammaPacksV3 is Ownable {
             uint256 tokenId = tokenIds[i];
             _transferPack(to, tokenId);
         }
+        emit PacksTransfered(msg.sender, to, tokenIds);
     }
 
     function _transferPack(address to, uint256 tokenId) private {
@@ -215,7 +239,7 @@ contract NofGammaPacksV3 is Ownable {
         packs[tokenId] = to;
         deleteTokenId(tokenId, msg.sender);
         packsByUser[to].push(tokenId);
-        emit PackTransfer(msg.sender, to, tokenId);
+        emit PackTransfered(msg.sender, to, tokenId);
     }
 
     function openPack(uint256 tokenId, address owner) public onlyGammaCardsContract {
@@ -243,6 +267,22 @@ contract NofGammaPacksV3 is Ownable {
     function _openPack(uint256 tokenId, address owner) private {
         deleteTokenId(tokenId, owner);
         delete packs[tokenId];
-        emit PackOpen(owner, tokenId);
+        emit PackOpened(owner, tokenId);
+    }
+
+    function _lottery () private {
+        require(address(gammaTicketsContract) != address(0), "GammaTicketsContract not set.");
+        // (uint256 timestamp, bytes32 ticketId, uint256 ticketCounter, address user) = gammaTicketsContract.getLotteryWinner();
+
+        // TODO: get %price from gamma cards contract
+
+        // TODO: transfer price
+       if (transferDai) {
+            // IERC20 erc20Token = IERC20(DAI_TOKEN);
+  
+        }
+
+        // TODO: burn tickets en gamma tickets contract
+        gammaTicketsContract.deleteAllTickets();
     }
 }
