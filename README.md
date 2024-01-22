@@ -56,6 +56,7 @@ INFURA_ID={your infura project id}
 ALCHEMY_ID={your infura api key}
 PUBLIC_ADDRESS={your wallet address}
 PRIVATE_KEY={your private key to deploy SCs}
+MNEMONIC={your mnemoic words}
 NOF_DAI_CONTRACT_NAME='NofTestDAIV2'
 NOF_ALPHA_CONTRACT_NAME='NofAlphaV2'
 NOF_GAMMA_PACKS_CONTRACT_NAME='NofGammaPacksV2'
@@ -149,6 +150,15 @@ See detaills about gamma Smart Contracts in this [file](./.doc/contracts-info.md
 * Gamma Packs: 0xDc06FbD70b2159863d079aE282d69AEe8a88A18E
 * Gamma Offers: 0x3Da346C40A0D90cf5642944613586439A3456d45
 * Gamma Tickets: 0x7593aad3e13fBd27F113aad8688E8817Ac4f9A33
+
+### Bsc Tesnet
+* DAI: 0x83330b5803838604d85B7Cba393C930084F45A7d
+* Alpha: 0x4eE8C9cc2cF081f11F56A264EF52e3FeaDe1b35e
+* Gamma Cards: 0x25f85D878972f9506b4De49cEff480f627935521
+* Gamma Cards NFT: 0x05863097c97d93F264A7713295DE11517164ACCc
+* Gamma Packs: 0x71aA05fD8532a1395DffaB6FdA8be191fC8168FE
+* Gamma Offers: 0x71aA05fD8532a1395DffaB6FdA8be191fC8168FE
+* Gamma Tickets: 0xA5c3Cd20AB6FF1e299D93ee268370BCC19a32E71
 
 ### Mainet
 
