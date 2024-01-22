@@ -8,6 +8,7 @@ dotenv.config()
 const INFURA_API_KEY = process.env.INFURA_API_KEY || 'INFURA_API_KEY'
 const ALCHEMY_API_KEY = process.env.ALCHEMY_API_KEY || 'ALCHEMY_API_KEY'
 const PRIVATE_KEY = process.env.PRIVATE_KEY
+const MNEMONIC = process.env.MNEMONIC
 const solidityVersions = ["0.6.0", "0.6.2", "0.6.6", "0.8.18", "0.8.20"]
 const compilers = solidityVersions.map((version) => ({
   version,
@@ -37,6 +38,12 @@ const config: HardhatUserConfig = {
     sepolia: {
       url: `https://sepolia.infura.io/v3/${INFURA_API_KEY}`,
       ...(PRIVATE_KEY ? { accounts: [`${PRIVATE_KEY}`] } : {})
+    },
+    bsc: {
+      url: "https://data-seed-prebsc-1-s1.bnbchain.org:8545",
+      chainId: 97,
+      gasPrice: 20000000000,
+      accounts: {mnemonic: `${MNEMONIC}`}
     }
   },
   solidity: {
