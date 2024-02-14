@@ -39,11 +39,17 @@ const config: HardhatUserConfig = {
       url: `https://sepolia.infura.io/v3/${INFURA_API_KEY}`,
       ...(PRIVATE_KEY ? { accounts: [`${PRIVATE_KEY}`] } : {})
     },
-    bsc: {
+    bsc_testnet: {
       url: "https://data-seed-prebsc-1-s1.bnbchain.org:8545",
       chainId: 97,
       gasPrice: 20000000000,
       accounts: {mnemonic: `${MNEMONIC}`}
+    },
+    opbnb_testnet: {
+      url: "https://opbnb-testnet-rpc.bnbchain.org/", 
+      chainId: 5611,
+      gasPrice: 20000000000,
+      ...(PRIVATE_KEY ? { accounts: [`${PRIVATE_KEY}`] } : {})
     }
   },
   solidity: {
