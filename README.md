@@ -160,6 +160,16 @@ See detaills about gamma Smart Contracts in this [file](./.doc/contracts-info.md
 * Gamma Offers: 0x71aA05fD8532a1395DffaB6FdA8be191fC8168FE
 * Gamma Tickets: 0xA5c3Cd20AB6FF1e299D93ee268370BCC19a32E71
 
+### OpBNB Testnet
+* DAI: 0x46480E0d10966Ea274831D9693a56f9c09D7339d
+* Alpha: 0x36f19A5397DbE26b548b15C158f7a8e00979B408
+* Gamma Cards: 0x2842c8FD88F801018E53dDDeBbC944aE377D0F72
+* Gamma Cards NFT: 0x8df52bd59823F0080958AEB1DfdaBf230ef7EdEd
+* Gamma Packs: 0x1116218412559628B67aa15F3c527D68F0A71b91
+* Gamma Offers: 0xe810524F7C7C62A2201FdF1bCA20649Bd7D70844
+* Gamma Tickets: 0xd9988C491805AE2573FA156b27CDE1a6f7B3E073
+
+
 ### Mainet
 
 (not yet)
@@ -208,4 +218,12 @@ git reset --soft HEAD~1
 
 For more information, refer to: [commitlint](https://commitlint.js.org/#/).
 
+
+## Links
+
+* Mumbai Faucet: https://mumbaifaucet.com/
+
+* BNB faucet: https://www.bnbchain.org/en/testnet-faucet
+
+* Bridge (BNB-opBNB) Testnet: https://opbnb-testnet-bridge.bnbchain.org/deposit
 
