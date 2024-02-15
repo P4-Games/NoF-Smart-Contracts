@@ -28,7 +28,7 @@ contract NofGammaPacksV3 is Ownable {
   error InvalidAddress();
   error NumberOfPacksAreZero();
   error InsufficientPacksAvailable();
-  error TransferPrizeError();
+  error TransferPrizeError(address _to);
   error InsufficientAllowance();
   error InsufficientBalance();
   error NotYourPack();
@@ -198,7 +198,7 @@ contract NofGammaPacksV3 is Ownable {
     }
 
     bool transferPrizeResult = _transferPrizesAmounts(user, numberOfPacks);
-    if (!transferPrizeResult) revert TransferPrizeError();
+    if (!transferPrizeResult) revert TransferPrizeError(user);
 
     if (numberOfPacks == 1) {
       emit PackPurchased(user, tokenIds[0]);
@@ -224,11 +224,11 @@ contract NofGammaPacksV3 is Ownable {
 
       // send prize amount to the card contract
       bool successTx1 = erc20Token.transferFrom(user, address(gammaCardsContract), prizesAmount);
-      if(!successTx1) revert TransferPrizeError();
+      if(!successTx1) revert TransferPrizeError(address(gammaCardsContract));
 
       // send profit amount to NoF account
       bool successTx2 = erc20Token.transferFrom(user, balanceReceiver, prizeNoFAccount);
-      if(!successTx2) revert TransferPrizeError();
+      if(!successTx2) revert TransferPrizeError(balanceReceiver);
     }
     return true;
   }
