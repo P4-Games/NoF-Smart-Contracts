@@ -197,8 +197,8 @@ contract NofGammaPacksV3 is Ownable {
       tokenIds[i] = tokenId;
     }
 
-    bool tranferPrizeResult = _tranferPrizesAmounts(user, numberOfPacks);
-    if (!tranferPrizeResult) revert TransferPrizeError();
+    bool transferPrizeResult = _transferPrizesAmounts(user, numberOfPacks);
+    if (!transferPrizeResult) revert TransferPrizeError();
 
     if (numberOfPacks == 1) {
       emit PackPurchased(user, tokenIds[0]);
@@ -209,7 +209,7 @@ contract NofGammaPacksV3 is Ownable {
     return tokenIds;
   }
 
-  function _tranferPrizesAmounts(address user, uint256 numberOfPacks) private returns (bool) {
+  function _transferPrizesAmounts(address user, uint256 numberOfPacks) private returns (bool) {
     uint256 prizesAmount = getPrizeAmountToBuyPacks(numberOfPacks);
     uint256 prizeNoFAccount = getPrizeNoFAccountAmountToBuyPacks(numberOfPacks);
     gammaCardsContract.setPrizesBalance(prizesAmount);
