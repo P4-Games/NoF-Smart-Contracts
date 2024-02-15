@@ -12,8 +12,8 @@ async function main() {
     const acc = await deployer.getAddress()
     console.log(`Working with the account ${acc}, current acc balance: ${ethers.utils.formatEther(balance)}\n`)
 
-    const wallet = '0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266'
-    const cardsContract = await ethers.getContractAt('NofGammaCardsV5', '0x5FC8d32690cc91D4c39d9d3abcBD16989F875707')
+    const wallet = '0x117b706DEF40310eF5926aB57868dAcf46605b8d'
+    const cardsContract = await ethers.getContractAt('NofGammaCardsV5', '0x34658c07F05638E12793d0961595cBc72fA69452')
     await cardsContract.testAddCards(wallet)
 
     process.exit(0)
