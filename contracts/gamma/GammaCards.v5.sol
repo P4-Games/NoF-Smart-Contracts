@@ -525,31 +525,6 @@ contract NofGammaCardsV5 is NofGammaCardsNFTV1, Ownable {
     _tokenIdCounter += 1;
   }
 
-  function testAddCards(address user) public onlyOwners {
-    for (uint8 i; i <= 121; i++) {
-      // 0-119: cards, 120: album-120, 121: album-60
-      cardsByUser[user][i]++;
-    }
-  }
-
-  function testOpenPack(
-    address user,
-    uint256 packNumber,
-    uint8[] memory packData
-  ) external onlyOwners {
-    gammaPacksContract.openPack(packNumber, user);
-    prizesBalance += packPrice - packPrice / 6;
-
-    for (uint8 i; i < packData.length; i++) {
-      require(
-        packData[i] == 120 ? cardsInventory[120] < 3001 : cardsInventory[packData[i]] < 5001,
-        "invalid cardInventory position"
-      );
-      cardsInventory[packData[i]]++; // 280k gas aprox.
-      cardsByUser[user][packData[i]]++; // 310k gas aprox.
-    }
-  }
-
   // do not call unless really necessary
   function emergencyWithdraw(uint256 amount) public onlyOwners {
     if(balanceOf(address(this)) < amount) revert InsufficientFunds();
