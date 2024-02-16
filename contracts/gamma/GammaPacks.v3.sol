@@ -6,6 +6,17 @@ import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 import {LibControlMgmt} from "./libs/LibControlMgmt.sol";
 import {console} from "hardhat/console.sol";
 
+error NotGammaCardsContract();
+error OwnlyOwners();
+error InvalidAddress();
+error NumberOfPacksAreZero();
+error InsufficientPacksAvailable();
+error TransferPrizeError(address _to);
+error InsufficientAllowance();
+error InsufficientBalance();
+error NotYourPack();
+error ContractAddressNotSet();
+
 interface IGammaCardsContract {
   function setPrizesBalance(uint256 amount) external;
 
@@ -22,17 +33,6 @@ interface IgammaTicketsContract {
 
 contract NofGammaPacksV3 is Ownable {
   using LibControlMgmt for LibControlMgmt.Data;
-
-  error NotGammaCardsContract();
-  error OwnlyOwners();
-  error InvalidAddress();
-  error NumberOfPacksAreZero();
-  error InsufficientPacksAvailable();
-  error TransferPrizeError(address _to);
-  error InsufficientAllowance();
-  error InsufficientBalance();
-  error NotYourPack();
-  error ContractAddressNotSet();
 
   IGammaCardsContract public gammaCardsContract;
   IgammaTicketsContract public gammaTicketsContract;
