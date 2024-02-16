@@ -9,6 +9,22 @@ import {LibControlMgmt} from "./libs/LibControlMgmt.sol";
 import {console} from "hardhat/console.sol";
 import {NofGammaCardsNFTV1} from "./GammaCardsNFT.v1.sol";
 
+error OnlyGammaPacksContract();
+error OnlyOffersContract();
+error OnlyOwners();
+error InvalidAddress();
+error InvalidTransfer();
+error InvalidSignature();
+error IncorrectPrizeAmount();
+error WrongPacksQuantity();
+error NotYourPack();
+error CardLimitExceeded();
+error UserDoesNotHaveCardOrAlbum();
+error InsufficientFunds();
+error InsufficientCards();
+error MustCompleteAlbum();
+error CannotRemoveUserOffers();
+
 interface IgammaPacksContract {
   function getPackOwner(uint256 tokenId) external view returns (address);
 
@@ -88,17 +104,22 @@ contract NofGammaCardsV5 is NofGammaCardsNFTV1, Ownable {
   event CardsBurned(address user, uint8[] cardsNumber);
 
   modifier onlyGammaPacksContract() {
-    require(msg.sender == address(gammaPacksContract), "Only packs contract.");
+    if(msg.sender != address(gammaPacksContract)) revert OnlyGammaPacksContract();
     _;
   }
 
   modifier onlyGammaOffersContract() {
-    require(msg.sender == address(gammaOffersContract), "Only offers contract.");
+    if(msg.sender != address(gammaOffersContract)) revert OnlyOffersContract();
     _;
   }
 
   modifier onlyOwners() {
-    require(ownersData.owners[msg.sender], "Only owners.");
+    if(!ownersData.owners[msg.sender]) revert OnlyOwners();
+    _;
+  }
+
+  modifier checkAddressZero(address _address) {
+    if(_address == address(0)) revert InvalidAddress();
     _;
   }
 
@@ -145,20 +166,17 @@ contract NofGammaCardsV5 is NofGammaCardsNFTV1, Ownable {
     signersData.removeSigner(_signerToRemove);
   }
 
-  function setGammaOffersContract(address _gammaOffersContract) external onlyOwners {
-    require(_gammaOffersContract != address(0), "bad address.");
+  function setGammaOffersContract(address _gammaOffersContract) external onlyOwners checkAddressZero(_gammaOffersContract) {
     gammaOffersContract = IgammaOffersContract(_gammaOffersContract);
     emit NewGammaOffersContract(_gammaOffersContract);
   }
 
-  function setGammaPacksContract(address _gammaPacksContract) external onlyOwners {
-    require(_gammaPacksContract != address(0), "bad address.");
+  function setGammaPacksContract(address _gammaPacksContract) external onlyOwners checkAddressZero(_gammaPacksContract){
     gammaPacksContract = IgammaPacksContract(_gammaPacksContract);
     emit NewGammaPacksContract(_gammaPacksContract);
   }
 
-  function setGammaTicketsContract(address _gammaTicketsContract) external onlyOwners {
-    require(_gammaTicketsContract != address(0), "bad address.");
+  function setGammaTicketsContract(address _gammaTicketsContract) external onlyOwners checkAddressZero(_gammaTicketsContract){
     gammaTicketsContract = IgammaTicketsContract(_gammaTicketsContract);
     emit NewGammaTicketsContract(_gammaTicketsContract);
   }
@@ -168,17 +186,17 @@ contract NofGammaCardsV5 is NofGammaCardsNFTV1, Ownable {
   }
 
   function setMainAlbumPrize(uint256 amount) external onlyOwners {
-    require(amount > 0, "The prize for completing the album must be > 0.");
+    if(amount == 0) revert IncorrectPrizeAmount();
     mainAlbumPrize = amount;
   }
 
   function setSecondaryAlbumPrize(uint256 amount) external onlyOwners {
-    require(amount > 0, "The prize for completing the burning album must be > 0.");
+    if(amount == 0) revert IncorrectPrizeAmount();
     secondaryAlbumPrize = amount;
   }
 
   function setLotteryPrizePercentage(uint8 amount) external onlyOwners {
-    require(amount <= 100, "The % must be between 0 & 100.");
+    if(amount > 100) revert IncorrectPrizeAmount();
     lotteryPrizePercentage = amount;
   }
 
@@ -223,8 +241,7 @@ contract NofGammaCardsV5 is NofGammaCardsNFTV1, Ownable {
     return cardsByUser[user][cardNumber] > 0;
   }
 
-  function hasCard(address user, uint8 cardNum) public view returns (bool has) {
-    require(user != address(0), "bad address.");
+  function hasCard(address user, uint8 cardNum) public view checkAddressZero(user) returns (bool has) {
     return cardsByUser[user][cardNum] > 0;
   }
 
@@ -240,13 +257,11 @@ contract NofGammaCardsV5 is NofGammaCardsNFTV1, Ownable {
     return (lotteryPrizePercentage * prizesBalance) / 100;
   }
 
-  function getCardQuantityByUser(address user, uint8 cardNum) public view returns (uint8) {
-    require(user != address(0), "bad address.");
+  function getCardQuantityByUser(address user, uint8 cardNum) public view checkAddressZero(user) returns (uint8) {
     return cardsByUser[user][cardNum];
   }
 
-  function getBurnedCardQttyByUser(address user) public view returns (uint256) {
-    require(user != address(0), "bad address.");
+  function getBurnedCardQttyByUser(address user) public view checkAddressZero(user) returns (uint256) {
     return burnedCards[user];
   }
 
@@ -302,8 +317,7 @@ contract NofGammaCardsV5 is NofGammaCardsNFTV1, Ownable {
     uint8[][] memory packsData,
     bytes[] calldata signatures
   ) external {
-    require(packsQuantity > 0, "packs qtty must be > 0.");
-    require(packsQuantity <= maxPacksToOpenAtOnce, "packs qtty must be < max qtty allowed.");
+    if(packsQuantity == 0 || packsQuantity > maxPacksToOpenAtOnce) revert WrongPacksQuantity();
 
     for (uint8 i = 0; i < packsQuantity; i++) {
       _openPack(msg.sender, packsNumber[i], packsData[i], signatures[i]);
@@ -316,8 +330,8 @@ contract NofGammaCardsV5 is NofGammaCardsNFTV1, Ownable {
     uint8[] memory packData,
     bytes calldata signature
   ) private {
-    require(gammaPacksContract.getPackOwner(packNumber) == user, "This pack is not yours.");
-    require(packData.length < 15, "Card limit exceeded");
+    if(gammaPacksContract.getPackOwner(packNumber) != user) revert NotYourPack();
+    if(packData.length >= 15) revert CardLimitExceeded();
 
     if (requireOpenPackSignerValidation) {
       // Recreates the message present in the `signature`
@@ -327,7 +341,8 @@ contract NofGammaCardsV5 is NofGammaCardsNFTV1, Ownable {
         packData,
         signature
       );
-      require(signersData.signers[signer], "Invalid signature.");
+      
+      if(!signersData.signers[signer]) revert InvalidSignature();
     }
 
     gammaPacksContract.openPack(packNumber, user);
@@ -350,11 +365,8 @@ contract NofGammaCardsV5 is NofGammaCardsNFTV1, Ownable {
     uint8 cardNumberFrom,
     address to,
     uint8 cardNumberTo
-  ) external onlyGammaOffersContract {
-    require(from != address(0), "bad address.");
-    require(to != address(0), "bad address.");
-    require(cardsByUser[from][cardNumberFrom] > 0, "User (from) does not have card (from).");
-    require(cardsByUser[to][cardNumberTo] > 0, "User (to) does not have card (to).");
+  ) external onlyGammaOffersContract checkAddressZero(from) checkAddressZero(to) {
+    if(cardsByUser[from][cardNumberFrom] == 0 || cardsByUser[to][cardNumberTo] == 0) revert UserDoesNotHaveCardOrAlbum();
 
     cardsByUser[from][cardNumberFrom]--;
     cardsByUser[to][cardNumberFrom]++;
@@ -364,10 +376,9 @@ contract NofGammaCardsV5 is NofGammaCardsNFTV1, Ownable {
     emit OfferCardsExchanged(from, to, cardNumberFrom, cardNumberTo);
   }
 
-  function transferCard(address to, uint8 cardNumber) external {
-    require(cardsByUser[msg.sender][cardNumber] > 0, "You does not have this card.");
-    require(to != msg.sender, "Own transfer not allowed.");
-    require(to != address(0), "bad address.");
+  function transferCard(address to, uint8 cardNumber) external checkAddressZero(to) {
+    if(cardsByUser[msg.sender][cardNumber] == 0) revert UserDoesNotHaveCardOrAlbum();
+    if(to == msg.sender) revert InvalidTransfer();
 
     if (requireOfferValidationInTransfer) {
       bool hasOffer = gammaOffersContract.hasOffer(msg.sender, cardNumber);
@@ -385,12 +396,11 @@ contract NofGammaCardsV5 is NofGammaCardsNFTV1, Ownable {
     emit CardTransfered(msg.sender, to, cardNumber);
   }
 
-  function transferCards(address to, uint8[] calldata cardNumbers) public {
-    require(to != msg.sender, "You cannot send cards to yourself.");
-    require(to != address(0), "bad address.");
+  function transferCards(address to, uint8[] calldata cardNumbers) public checkAddressZero(to) {
+    if(to == msg.sender) revert InvalidTransfer();
 
     for (uint8 i; i < cardNumbers.length; i++) {
-      require(cardsByUser[msg.sender][cardNumbers[i]] > 0, "You does not have this card.");
+      if(cardsByUser[msg.sender][cardNumbers[i]] == 0) revert UserDoesNotHaveCardOrAlbum();
       cardsByUser[msg.sender][cardNumbers[i]]--;
       cardsByUser[to][cardNumbers[i]]++;
 
@@ -412,11 +422,11 @@ contract NofGammaCardsV5 is NofGammaCardsNFTV1, Ownable {
   // card of each number (120 total) + a 120 album card
   function finishAlbum() public returns (bool) {
     // requires the user to have at least one 120 album
-    require(cardsByUser[msg.sender][120] > 0, "You does not have any album.");
-    require(prizesBalance >= mainAlbumPrize, "Insufficient funds (open-packs balance).");
+    if(cardsByUser[msg.sender][120] == 0) revert UserDoesNotHaveCardOrAlbum();
+    if(prizesBalance < mainAlbumPrize) revert IncorrectPrizeAmount();
 
     uint256 contractBalance = IERC20(DAI_TOKEN).balanceOf(address(this));
-    require(contractBalance >= mainAlbumPrize, "Insufficient funds (contract).");
+    if(contractBalance < mainAlbumPrize) revert InsufficientFunds();
 
     // check that you have at least one card of each number
     bool unfinished;
@@ -427,7 +437,7 @@ contract NofGammaCardsV5 is NofGammaCardsNFTV1, Ownable {
       }
       cardsByUser[msg.sender][i]--;
     }
-    require(!unfinished, "Must complete the album.");
+    if(unfinished) revert MustCompleteAlbum();
 
     // mint the completed album.
     safeMint(msg.sender, mainUri, 120, 2);
@@ -437,7 +447,7 @@ contract NofGammaCardsV5 is NofGammaCardsNFTV1, Ownable {
     prizesBalance -= mainAlbumPrize;
 
     bool userOffersRemoved = gammaOffersContract.removeOffersByUser(msg.sender);
-    require(userOffersRemoved, "Cannot remove user offers");
+    if(!userOffersRemoved) revert CannotRemoveUserOffers();
 
     emit AlbumCompleted(msg.sender, 1);
     return true;
@@ -446,26 +456,22 @@ contract NofGammaCardsV5 is NofGammaCardsNFTV1, Ownable {
   // user should call this function if they want to 'paste' selected cards in
   // the 60 cards album to 'burn' them.
   function burnCards(uint8[] calldata cardNumbers) public {
-    require(cardsByUser[msg.sender][121] > 0, "You does not have any burning album.");
+    if(cardsByUser[msg.sender][121] == 0) revert UserDoesNotHaveCardOrAlbum();
     uint256 totalUserBurnedCards = burnedCards[msg.sender] + cardNumbers.length;
     bool mustPayPrize = false;
 
     if (totalUserBurnedCards >= 60) {
-      require(prizesBalance >= secondaryAlbumPrize, "Insufficient funds (burnCards balance).");
       uint256 contractBalance = IERC20(DAI_TOKEN).balanceOf(address(this));
-      require(contractBalance >= secondaryAlbumPrize, "Insufficient funds (contract).");
+      if(contractBalance < secondaryAlbumPrize || prizesBalance < secondaryAlbumPrize) revert InsufficientFunds();
       mustPayPrize = true;
     }
 
     bool userHasOffers = (gammaOffersContract.getOffersByUserCounter(msg.sender) > 0);
     for (uint8 i; i < cardNumbers.length; i++) {
-      require(cardsByUser[msg.sender][cardNumbers[i]] > 0, "You does not have this card.");
+      if(cardsByUser[msg.sender][cardNumbers[i]] == 0) revert UserDoesNotHaveCardOrAlbum();
       if (userHasOffers) {
         if (gammaOffersContract.hasOffer(msg.sender, cardNumbers[i])) {
-          require(
-            cardsByUser[msg.sender][cardNumbers[i]] >= 2,
-            "You cannot burn any more copies of this card."
-          );
+          if(cardsByUser[msg.sender][cardNumbers[i]] < 2) revert InsufficientCards();
         }
       }
       cardsByUser[msg.sender][cardNumbers[i]]--;
@@ -487,7 +493,7 @@ contract NofGammaCardsV5 is NofGammaCardsNFTV1, Ownable {
   }
 
   function mintCard(uint8 cardNum) public {
-    require(cardsByUser[msg.sender][cardNum] > 0, "You does not have this card.");
+    if(cardsByUser[msg.sender][cardNum] == 0) revert UserDoesNotHaveCardOrAlbum();
 
     if (requireOfferValidationInMint) {
       bool hasOffer = gammaOffersContract.hasOffer(msg.sender, cardNum);
@@ -546,7 +552,7 @@ contract NofGammaCardsV5 is NofGammaCardsNFTV1, Ownable {
 
   // do not call unless really necessary
   function emergencyWithdraw(uint256 amount) public onlyOwners {
-    require(balanceOf(address(this)) >= amount);
+    if(balanceOf(address(this)) < amount) revert InsufficientFunds();
     prizesBalance -= amount;
     IERC20(DAI_TOKEN).transfer(msg.sender, amount);
     emit EmergencyWithdrawal(msg.sender, amount);
