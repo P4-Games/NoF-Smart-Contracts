@@ -46,16 +46,16 @@ contract NofGammaCardsV5 is NofGammaCardsNFTV1, Ownable {
   LibControlMgmt.Data private signersData;
 
   uint8 public maxPacksToOpenAtOnce = 10;
-  uint256 public _tokenIdCounter;
+  uint8 public lotteryPrizePercentage = 50;
   address public DAI_TOKEN;
+  uint256 public _tokenIdCounter;
   uint256 public packPrice = 12e17; // 1.2 DAI
   uint256 public prizesBalance = 0;
-  string public baseUri;
   uint256 public mainAlbumPrize = 15e18; // 15 DAI por album principal completado
   uint256 public secondaryAlbumPrize = 1e18; // 1 DAI por album secundario completado
-  uint8 public lotteryPrizePercentage = 50;
   string public mainUri;
   string public secondaryUri;
+  string public baseUri;
   bool public requireOpenPackSignerValidation;
   bool public requireOfferValidationInMint = true;
   bool public requireOfferValidationInTransfer = true;
