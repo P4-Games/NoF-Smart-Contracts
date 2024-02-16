@@ -49,7 +49,7 @@ contract NofGammaCardsV5 is NofGammaCardsNFTV1, Ownable {
     uint8 public lotteryPrizePercentage = 50;
     string public mainUri;
     string public secondaryUri;
-    bool public requireOpenPackSignerValidation = false;
+    bool public requireOpenPackSignerValidation;
     bool public requireOfferValidationInMint = true;
     bool public requireOfferValidationInTransfer = true;
 
