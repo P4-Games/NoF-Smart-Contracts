@@ -1,12 +1,13 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.20;
 
-import "@openzeppelin/contracts/access/Ownable.sol";
-import "./libs/LibStringUtils.sol";
-import "./libs/LibPackVerifier.sol";
-import "./libs/LibControlMgmt.sol";
-import "./GammaCardsNFT.v1.sol";
-import "hardhat/console.sol";
+import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
+import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import {LibStringUtils} from "./libs/LibStringUtils.sol";
+import {LibPackVerifier} from "./libs/LibPackVerifier.sol";
+import {LibControlMgmt} from "./libs/LibControlMgmt.sol";
+import {console} from "hardhat/console.sol";
+import {NofGammaCardsNFTV1} from "./GammaCardsNFT.v1.sol";
 
 interface IgammaPacksContract {
     function getPackOwner(uint256 tokenId) external view returns (address);

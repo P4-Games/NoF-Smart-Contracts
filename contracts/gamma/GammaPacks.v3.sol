@@ -40,9 +40,9 @@ contract NofGammaPacksV3 is Ownable {
   LibControlMgmt.Data private ownersData;
 
   address public DAI_TOKEN;
+  address public balanceReceiver;
   uint256 public constant totalSupply = 50000;
   uint256 public packPrice = 12e17; // 1.2 DAI
-  address public balanceReceiver;
   uint256 private packsCounter = 0;
   bool transferDai = true;
 
@@ -224,11 +224,11 @@ contract NofGammaPacksV3 is Ownable {
 
       // send prize amount to the card contract
       bool successTx1 = erc20Token.transferFrom(user, address(gammaCardsContract), prizesAmount);
-      if(!successTx1) revert TransferPrizeError(address(gammaCardsContract));
+      if (!successTx1) revert TransferPrizeError(address(gammaCardsContract));
 
       // send profit amount to NoF account
       bool successTx2 = erc20Token.transferFrom(user, balanceReceiver, prizeNoFAccount);
-      if(!successTx2) revert TransferPrizeError(balanceReceiver);
+      if (!successTx2) revert TransferPrizeError(balanceReceiver);
     }
     return true;
   }
@@ -257,8 +257,8 @@ contract NofGammaPacksV3 is Ownable {
   }
 
   function _transferPack(address to, uint256 tokenId) private {
-    if(to == address(0)) revert InvalidAddress();
-    if(packs[tokenId] != msg.sender) revert NotYourPack();
+    if (to == address(0)) revert InvalidAddress();
+    if (packs[tokenId] != msg.sender) revert NotYourPack();
     packs[tokenId] = to;
     deleteTokenId(tokenId, msg.sender);
     packsByUser[to].push(tokenId);
@@ -294,7 +294,7 @@ contract NofGammaPacksV3 is Ownable {
   }
 
   function _lottery() private {
-    if(address(gammaTicketsContract) == address(0)) revert ContractAddressNotSet();
+    if (address(gammaTicketsContract) == address(0)) revert ContractAddressNotSet();
     // (uint256 timestamp, bytes32 ticketId, uint256 ticketCounter, address user) = gammaTicketsContract.getLotteryWinner();
 
     // TODO: get %price from gamma cards contract
