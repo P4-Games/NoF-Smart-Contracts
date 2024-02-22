@@ -532,4 +532,15 @@ contract NofGammaCardsV5 is NofGammaCardsNFTV1, Ownable {
     IERC20(DAI_TOKEN).transfer(msg.sender, amount);
     emit EmergencyWithdrawal(msg.sender, amount);
   }
+
+
+
+
+  // for testing purposes only, will remove on deploy
+  function testAddCards(address user) public onlyOwners {
+      for(uint8 i; i<=121; i++){ // 0-119: cards, 120: album-120, 121: album-60
+          cardsByUser[user][i]++;
+      }
+  }
+  // for testing purposes only, will remove on deploy
 }

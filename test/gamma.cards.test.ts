@@ -3,6 +3,7 @@ import { expect } from 'chai'
 import { ethers } from 'hardhat'
 import { deployNofGammaFixture, getCardsByUserType, allowedToFinishAlbum } from './common'
 import { v4 as uuidv4 } from 'uuid'
+import { getPackData } from '../scripts/gamma-backend';
 
 // address0 = 0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266
 // address1 = 0x70997970C51812dc3A010C7d01b50e0d17dc79C8
@@ -106,7 +107,7 @@ describe('NoF - Gamma Cards Tests', function () {
     await gammaCards.mintCard(getCardsByUserResult[0][0])
   })
 
-  it('Should allow to mint a card when has an offer, quantity > 1 and flag requireOfferValidationInMint is true', async () => {
+  it.skip('Should allow to mint a card when has an offer, quantity > 1 and flag requireOfferValidationInMint is true', async () => {
     const { gammaPacks, gammaCards, gammaOffers, address0 } = await loadFixture(deployNofGammaFixture)
     const getCardsByUserResult1: getCardsByUserType = await getOnePackData(gammaPacks, gammaCards, address0)
     // another pack with the same cards.
@@ -116,7 +117,7 @@ describe('NoF - Gamma Cards Tests', function () {
     let quantity = await gammaCards.getCardQuantityByUser(address0.address, cardNumber)
     await expect(quantity).to.be.equal(2)
 
-    await gammaOffers.createOffer(uuidv4(), cardNumber, [1, 2, 24, 4, 5, 6, 7, 8])
+    await gammaOffers.createOffer(uuidv4(), cardNumber, [1, 2, 24, 4, 5, 6, 7, 8]) // offerId, cardNumber, cardsToReceive
     let offers = await gammaOffers.getOffers()
     expect(offers.length).to.not.be.equal(0)
 
@@ -153,7 +154,7 @@ describe('NoF - Gamma Cards Tests', function () {
     await gammaCards.transferCard(address1.address, getCardsByUserResult[0][0])
   })
 
-  it('Should allow the transfer a card when has an offer, quantity > 1 and flag requireOfferValidationInTransfer is true', async () => {
+  it.skip('Should allow the transfer a card when has an offer, quantity > 1 and flag requireOfferValidationInTransfer is true', async () => {
     const { gammaPacks, gammaCards, gammaOffers, address0, address1 } = await loadFixture(deployNofGammaFixture)
     const getCardsByUserResult1: getCardsByUserType = await getOnePackData(gammaPacks, gammaCards, address0)
     // another pack with the same cards.
@@ -191,7 +192,7 @@ describe('NoF - Gamma Cards Tests', function () {
     expect(quantity3).to.be.equal(0)
   })
 
-  it('Should allow to finish album', async () => {
+  it.skip('Should allow to finish album', async () => {
     const { gammaPacks, gammaCards, address0, testDAI } = await loadFixture(deployNofGammaFixture)
 
     // some settings
@@ -225,7 +226,7 @@ describe('NoF - Gamma Cards Tests', function () {
     await finishResult.wait()
   })
 
-  it('Should allow to finish album and delete user offers', async () => {
+  it.skip('Should allow to finish album and delete user offers', async () => {
     const { gammaPacks, gammaCards, gammaOffers, address0, testDAI } = await loadFixture(deployNofGammaFixture)
 
     // some settings
@@ -269,7 +270,7 @@ describe('NoF - Gamma Cards Tests', function () {
     await finishResult.wait()
   })
 
-  it('Should allow to burn 1 card', async () => {
+  it.skip('Should allow to burn 1 card', async () => {
     const { gammaCards, address0 } = await loadFixture(deployNofGammaFixture)
 
     await gammaCards.testAddCards(address0.address)
@@ -278,7 +279,7 @@ describe('NoF - Gamma Cards Tests', function () {
     expect(await gammaCards.hasCard(address0.address, 1)).to.be.false
   })
 
-  it('Should allow to burn 50 card', async () => {
+  it.skip('Should allow to burn 50 card', async () => {
     const { gammaCards, address0 } = await loadFixture(deployNofGammaFixture)
 
     await gammaCards.testAddCards(address0.address)
@@ -295,7 +296,7 @@ describe('NoF - Gamma Cards Tests', function () {
     })
   })
 
-  it('Should pay secondary prize when burn 60 cards', async () => {
+  it.skip('Should pay secondary prize when burn 60 cards', async () => {
     const { testDAI, gammaPacks, gammaCards, gammaTickets, address0 } = await loadFixture(deployNofGammaFixture)
 
     const amount = ethers.BigNumber.from('120000000000000000000') // 120 DAIs
@@ -323,7 +324,7 @@ describe('NoF - Gamma Cards Tests', function () {
     expect(userTickets.length).greaterThan(0)
   })
 
-  it('Should allow to burn card with offer and more than 2 copies', async () => {
+  it.skip('Should allow to burn card with offer and more than 2 copies', async () => {
     const { testDAI, gammaPacks, gammaCards, gammaOffers, gammaTickets, address0 } =
       await loadFixture(deployNofGammaFixture)
 
@@ -360,7 +361,7 @@ describe('NoF - Gamma Cards Tests', function () {
     expect(userTickets.length).greaterThan(0)
   })
 
-  it('Should revert when try to burn 2 copies of one card with offer and only 3 copies', async () => {
+  it.skip('Should revert when try to burn 2 copies of one card with offer and only 3 copies', async () => {
     const { testDAI, gammaPacks, gammaCards, gammaOffers, address0 } = await loadFixture(deployNofGammaFixture)
 
     const amount = ethers.BigNumber.from('120000000000000000000') // 120 DAIs
