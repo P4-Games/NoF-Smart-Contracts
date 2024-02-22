@@ -4,12 +4,16 @@ import { ethers } from 'hardhat'
 import { deployNofGammaFixture, getCardsByUserType, allowedToFinishAlbum } from './common'
 import { v4 as uuidv4 } from 'uuid'
 
+// address0 = 0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266
+// address1 = 0x70997970C51812dc3A010C7d01b50e0d17dc79C8
+
 describe('NoF - Gamma Cards Tests', function () {
   async function getOnePackData(gammaPacks: any, gammaCards: any, address0: any): Promise<getCardsByUserType> {
     const tokenId = await gammaPacks.buyPack({ from: address0.address })
     const pack0Data = [25, 62, 94, 71, 41, 77, 100, 90, 3, 58, 113, 28] // valid only with pack 0
+    const pack0Signature = "0xe617c82fccee2ce7cea8398f16c5bb5690bea8c55b0e02fbe6844fbd0f981d9607391754b11173a49f52e3f89897a92779744cd9a9e40087019643bb544d851d1b" // valid only for address 0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266 and pack 0
     await gammaCards.changeRequireOpenPackSignerValidation(false)
-    await gammaCards.testOpenPack(address0.address, tokenId.value, pack0Data)
+    await gammaCards.openPack(tokenId.value, pack0Data, pack0Signature)
 
     const cardData: getCardsByUserType = await gammaCards.getCardsByUser(address0.address)
     return cardData
