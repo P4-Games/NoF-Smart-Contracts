@@ -9,6 +9,11 @@ import { getPackData } from '../scripts/gamma-backend';
 // address1 = 0x70997970C51812dc3A010C7d01b50e0d17dc79C8
 
 describe('NoF - Gamma Cards Tests', function () {
+  async function callGetPackData(userAddress: string, packNumber: number) {
+    const data = await getPackData(userAddress, packNumber);
+    return data;
+  }
+  
   async function getOnePackData(gammaPacks: any, gammaCards: any, address0: any): Promise<getCardsByUserType> {
     const tokenId = await gammaPacks.buyPack({ from: address0.address })
     const pack0Data = [25, 62, 94, 71, 41, 77, 100, 90, 3, 58, 113, 28] // valid only with pack 0
@@ -226,7 +231,7 @@ describe('NoF - Gamma Cards Tests', function () {
     await finishResult.wait()
   })
 
-  it.skip('Should allow to finish album and delete user offers', async () => {
+  it('Should allow to finish album and delete user offers', async () => {
     const { gammaPacks, gammaCards, gammaOffers, address0, testDAI } = await loadFixture(deployNofGammaFixture)
 
     // some settings
@@ -256,11 +261,14 @@ describe('NoF - Gamma Cards Tests', function () {
     expect(userBalanceToken >= amountRequiredToBuyPacks).to.be.true
     await testDAI.approve(gammaPacks.address, amountRequiredToBuyPacks)
 
-    await gammaPacks.buyPacks(packsToBuy)
-    const pack0Data = [25, 62, 94, 71, 41, 77, 100, 90, 3, 58, 113, 28]
+    const buyPacksTx = await gammaPacks.buyPacks(packsToBuy)
+    await buyPacksTx.wait()
 
     for (let index = 0; index < packsToBuy; index++) {
-      await gammaCards.testOpenPack(address0.address, index, pack0Data)
+      const data = await callGetPackData(address0.address, index)
+      const owner = await gammaPacks.getPackOwner(index);
+      if(owner == ethers.constants.AddressZero) continue;
+      await gammaCards.openPack(index, data.packet_data, data.signature.signature);
     }
 
     const allowedToFinish: boolean = await allowedToFinishAlbum(gammaCards, testDAI, address0.address)
