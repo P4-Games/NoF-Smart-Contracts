@@ -219,9 +219,8 @@ contract NofGammaPacksV3 is Ownable {
 
     if (transferDai) {
       IERC20 erc20Token = IERC20(DAI_TOKEN);
-      uint256 userAllowance = erc20Token.allowance(user, address(this));
 
-      if (userAllowance < (prizesAmount + prizeNoFAccount)) revert InsufficientAllowance();
+      if (erc20Token.allowance(user, address(this)) < (prizesAmount + prizeNoFAccount)) revert InsufficientAllowance();
       if (erc20Token.balanceOf(user) < prizesAmount || erc20Token.balanceOf(user) < prizeNoFAccount)
         revert InsufficientBalance();
 
