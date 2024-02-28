@@ -19,8 +19,6 @@ describe('NoF - Gamma Cards Tests', function () {
     const tokenId = await gammaPacks.buyPack({ from: address0.address })
     const tokenInteger = ethers.BigNumber.from(tokenId.value).toNumber();
     const data = await callGetPackData(address0.address, tokenInteger)
-    // const pack0Data = [25, 62, 94, 71, 41, 77, 100, 90, 3, 58, 113, 28] // valid only with pack 0
-    // const pack0Signature = "0xe617c82fccee2ce7cea8398f16c5bb5690bea8c55b0e02fbe6844fbd0f981d9607391754b11173a49f52e3f89897a92779744cd9a9e40087019643bb544d851d1b" // valid only for address 0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266 and pack 0
     await gammaCards.changeRequireOpenPackSignerValidation(false)
     await gammaCards.openPack(tokenId.value, data.packet_data, data.signature.signature)
 
