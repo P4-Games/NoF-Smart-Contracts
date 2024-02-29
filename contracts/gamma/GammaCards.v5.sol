@@ -61,20 +61,20 @@ contract NofGammaCardsV5 is NofGammaCardsNFTV1, Ownable {
   LibControlMgmt.Data private ownersData;
   LibControlMgmt.Data private signersData;
 
-  uint8 public maxPacksToOpenAtOnce = 10;
-  uint8 public lotteryPrizePercentage = 50;
+  uint8 public s_maxPacksToOpenAtOnce = 10;
+  uint8 public s_lotteryPrizePercentage = 50;
   address public DAI_TOKEN;
-  uint256 public _tokenIdCounter;
-  uint256 public packPrice = 12e17; // 1.2 DAI
-  uint256 public prizesBalance = 0;
-  uint256 public mainAlbumPrize = 15e18; // 15 DAI por album principal completado
-  uint256 public secondaryAlbumPrize = 1e18; // 1 DAI por album secundario completado
-  string public mainUri;
-  string public secondaryUri;
-  string public baseUri;
-  bool public requireOpenPackSignerValidation;
-  bool public requireOfferValidationInMint = true;
-  bool public requireOfferValidationInTransfer = true;
+  uint256 public s_tokenIdCounter;
+  uint256 public s_packPrice = 12e17; // 1.2 DAI
+  uint256 public s_prizesBalance = 0;
+  uint256 public s_mainAlbumPrize = 15e18; // 15 DAI por album principal completado
+  uint256 public s_secondaryAlbumPrize = 1e18; // 1 DAI por album secundario completado
+  string public s_mainUri;
+  string public s_secondaryUri;
+  string public s_baseUri;
+  bool public s_requireOpenPackSignerValidation;
+  bool public s_requireOfferValidationInMint = true;
+  bool public s_requireOfferValidationInTransfer = true;
 
   struct Card {
     uint256 tokenId;
@@ -84,10 +84,10 @@ contract NofGammaCardsV5 is NofGammaCardsNFTV1, Ownable {
     uint256 completion; // solo se modifica en el caso de los albums
   }
 
-  mapping(uint256 tokenId => Card) public cards;
-  mapping(uint256 cardNumber => uint256 amount) public cardsInventory; // maximos: 120 => 5000
-  mapping(address user => uint256 amount) public burnedCards;
-  mapping(address user => mapping(uint8 cardNumber => uint8 amount)) public cardsByUser;
+  mapping(uint256 tokenId => Card) public s_cards;
+  mapping(uint256 cardNumber => uint256 amount) public s_cardsInventory; // maximos: 120 => 5000
+  mapping(address user => uint256 amount) public s_burnedCards;
+  mapping(address user => mapping(uint8 cardNumber => uint8 amount)) public s_cardsByUser;
 
   event NewGammaOffersContract(address newGammaOffersContract);
   event NewGammaPacksContract(address newGammaPacksContract);
@@ -138,15 +138,15 @@ contract NofGammaCardsV5 is NofGammaCardsNFTV1, Ownable {
     gammaTicketsContract = IgammaTicketsContract(_gammaTicketsContract);
     gammaOffersContract = IgammaOffersContract(_gammaOffersContract);
 
-    baseUri = _baseUri;
-    mainUri = string(abi.encodePacked(bytes(baseUri), bytes("/"), bytes("120"), bytes("F.json")));
-    secondaryUri = string(
-      abi.encodePacked(bytes(baseUri), bytes("/"), bytes("121"), bytes("F.json"))
+    s_baseUri = _baseUri;
+    s_mainUri = string(abi.encodePacked(bytes(s_baseUri), bytes("/"), bytes("120"), bytes("F.json")));
+    s_secondaryUri = string(
+      abi.encodePacked(bytes(s_baseUri), bytes("/"), bytes("121"), bytes("F.json"))
     );
     signersData.signers[_signer] = true;
 
     for (uint256 i; i < 122; i++) {
-      cardsInventory[i] = 1;
+      s_cardsInventory[i] = 1;
     }
   }
 
@@ -182,67 +182,67 @@ contract NofGammaCardsV5 is NofGammaCardsNFTV1, Ownable {
   }
 
   function setPrizesBalance(uint256 amount) external onlyGammaPacksContract {
-    prizesBalance += amount;
+    s_prizesBalance += amount;
   }
 
   function setMainAlbumPrize(uint256 amount) external onlyOwners {
     if(amount == 0) revert IncorrectPrizeAmount();
-    mainAlbumPrize = amount;
+    s_mainAlbumPrize = amount;
   }
 
   function setSecondaryAlbumPrize(uint256 amount) external onlyOwners {
     if(amount == 0) revert IncorrectPrizeAmount();
-    secondaryAlbumPrize = amount;
+    s_secondaryAlbumPrize = amount;
   }
 
   function setLotteryPrizePercentage(uint8 amount) external onlyOwners {
     if(amount > 100) revert IncorrectPrizeAmount();
-    lotteryPrizePercentage = amount;
+    s_lotteryPrizePercentage = amount;
   }
 
   function setUris(string memory newMainUri, string memory newSecondaryUri) external onlyOwners {
-    mainUri = newMainUri;
-    secondaryUri = newSecondaryUri;
+    s_mainUri = newMainUri;
+    s_secondaryUri = newSecondaryUri;
     emit NewUris(newMainUri, newSecondaryUri);
   }
 
   function changeRequireOpenPackSignerValidation(bool required) external onlyOwners {
-    requireOpenPackSignerValidation = required;
+    s_requireOpenPackSignerValidation = required;
   }
 
   function changeRequireOfferValidationInMint(bool required) external onlyOwners {
-    requireOfferValidationInMint = required;
+    s_requireOfferValidationInMint = required;
   }
 
   function changeRequireOfferValidationInTransfer(bool required) external onlyOwners {
-    requireOfferValidationInTransfer = required;
+    s_requireOfferValidationInTransfer = required;
   }
 
   function changePackPrice(uint256 newPackPrice) external onlyGammaPacksContract {
-    packPrice = newPackPrice;
+    s_packPrice = newPackPrice;
   }
 
   function changeMaxPacksToOpenAtOnce(uint8 _maxPacksToOpenAtOnce) external onlyOwners {
-    maxPacksToOpenAtOnce = _maxPacksToOpenAtOnce;
+    s_maxPacksToOpenAtOnce = _maxPacksToOpenAtOnce;
   }
 
   function removeCardByOffer(address user, uint8 cardNumber) external onlyGammaOffersContract {
-    cardsByUser[user][cardNumber]--;
+    s_cardsByUser[user][cardNumber]--;
   }
 
   function restoreCardByOffer(address user, uint8 cardNumber) external onlyGammaOffersContract {
-    cardsByUser[user][cardNumber]++;
+    s_cardsByUser[user][cardNumber]++;
   }
 
   function hasCardByOffer(
     address user,
     uint8 cardNumber
   ) external view onlyGammaOffersContract returns (bool has) {
-    return cardsByUser[user][cardNumber] > 0;
+    return s_cardsByUser[user][cardNumber] > 0;
   }
 
   function hasCard(address user, uint8 cardNum) public view checkAddressZero(user) returns (bool has) {
-    return cardsByUser[user][cardNum] > 0;
+    return s_cardsByUser[user][cardNum] > 0;
   }
 
   function isOwner(address user) external view returns (bool) {
@@ -254,15 +254,15 @@ contract NofGammaCardsV5 is NofGammaCardsNFTV1, Ownable {
   }
 
   function getLotteryPrize() public view returns (uint256) {
-    return (lotteryPrizePercentage * prizesBalance) / 100;
+    return (s_lotteryPrizePercentage * s_prizesBalance) / 100;
   }
 
   function getCardQuantityByUser(address user, uint8 cardNum) public view checkAddressZero(user) returns (uint8) {
-    return cardsByUser[user][cardNum];
+    return s_cardsByUser[user][cardNum];
   }
 
   function getBurnedCardQttyByUser(address user) public view checkAddressZero(user) returns (uint256) {
-    return burnedCards[user];
+    return s_burnedCards[user];
   }
 
   function getCardsByUser(
@@ -274,9 +274,9 @@ contract NofGammaCardsV5 is NofGammaCardsNFTV1, Ownable {
     uint8 index = 0;
 
     for (uint8 i = 0; i <= 121; i++) {
-      if (cardsByUser[user][i] > 0) {
+      if (s_cardsByUser[user][i] > 0) {
         cardNumbers[index] = i;
-        quantities[index] = cardsByUser[user][i];
+        quantities[index] = s_cardsByUser[user][i];
         offers[index] = gammaOffersContract.hasOffer(user, i);
         index++;
       }
@@ -317,7 +317,7 @@ contract NofGammaCardsV5 is NofGammaCardsNFTV1, Ownable {
     uint8[][] memory packsData,
     bytes[] calldata signatures
   ) external {
-    if(packsQuantity == 0 || packsQuantity > maxPacksToOpenAtOnce) revert WrongPacksQuantity();
+    if(packsQuantity == 0 || packsQuantity > s_maxPacksToOpenAtOnce) revert WrongPacksQuantity();
 
     for (uint8 i = 0; i < packsQuantity; i++) {
       _openPack(msg.sender, packsNumber[i], packsData[i], signatures[i]);
@@ -333,7 +333,7 @@ contract NofGammaCardsV5 is NofGammaCardsNFTV1, Ownable {
     if(gammaPacksContract.getPackOwner(packNumber) != user) revert NotYourPack();
     if(packData.length >= 15) revert CardLimitExceeded();
 
-    if (requireOpenPackSignerValidation) {
+    if (s_requireOpenPackSignerValidation) {
       // Recreates the message present in the `signature`
       address signer = LibPackVerifier.verifyPackSigner(
         msg.sender,
@@ -346,15 +346,15 @@ contract NofGammaCardsV5 is NofGammaCardsNFTV1, Ownable {
     }
 
     gammaPacksContract.openPack(packNumber, user);
-    prizesBalance += packPrice - packPrice / 6;
+    s_prizesBalance += s_packPrice - s_packPrice / 6;
 
     for (uint8 i; i < packData.length; i++) {
       require(
-        packData[i] == 120 ? cardsInventory[120] < 3001 : cardsInventory[packData[i]] < 5001,
+        packData[i] == 120 ? s_cardsInventory[120] < 3001 : s_cardsInventory[packData[i]] < 5001,
         "invalid cardInventory position"
       );
-      cardsInventory[packData[i]]++; // 280k gas aprox.
-      cardsByUser[user][packData[i]]++; // 310k gas aprox.
+      s_cardsInventory[packData[i]]++; // 280k gas aprox.
+      s_cardsByUser[user][packData[i]]++; // 310k gas aprox.
     }
 
     emit PackOpened(user, packData, packNumber);
@@ -366,23 +366,23 @@ contract NofGammaCardsV5 is NofGammaCardsNFTV1, Ownable {
     address to,
     uint8 cardNumberTo
   ) external onlyGammaOffersContract checkAddressZero(from) checkAddressZero(to) {
-    if(cardsByUser[from][cardNumberFrom] == 0 || cardsByUser[to][cardNumberTo] == 0) revert UserDoesNotHaveCardOrAlbum();
+    if(s_cardsByUser[from][cardNumberFrom] == 0 || s_cardsByUser[to][cardNumberTo] == 0) revert UserDoesNotHaveCardOrAlbum();
 
-    cardsByUser[from][cardNumberFrom]--;
-    cardsByUser[to][cardNumberFrom]++;
-    cardsByUser[to][cardNumberTo]--;
-    cardsByUser[from][cardNumberTo]++;
+    s_cardsByUser[from][cardNumberFrom]--;
+    s_cardsByUser[to][cardNumberFrom]++;
+    s_cardsByUser[to][cardNumberTo]--;
+    s_cardsByUser[from][cardNumberTo]++;
 
     emit OfferCardsExchanged(from, to, cardNumberFrom, cardNumberTo);
   }
 
   function transferCard(address to, uint8 cardNumber) external checkAddressZero(to) {
-    if(cardsByUser[msg.sender][cardNumber] == 0) revert UserDoesNotHaveCardOrAlbum();
+    if(s_cardsByUser[msg.sender][cardNumber] == 0) revert UserDoesNotHaveCardOrAlbum();
     if(to == msg.sender) revert InvalidTransfer();
 
-    if (requireOfferValidationInTransfer) {
+    if (s_requireOfferValidationInTransfer) {
       bool hasOffer = gammaOffersContract.hasOffer(msg.sender, cardNumber);
-      bool hasMoreThanOne = cardsByUser[msg.sender][cardNumber] > 1;
+      bool hasMoreThanOne = s_cardsByUser[msg.sender][cardNumber] > 1;
       /* 
             The user can only make an offer for one letter and in that case he cannot mint or transfer it.
             If you have more than one copy (quantity > 1) of that card, you must be able to mint 
@@ -391,8 +391,8 @@ contract NofGammaCardsV5 is NofGammaCardsNFTV1, Ownable {
       require(!hasOffer || hasMoreThanOne, "This card has an offer.");
     }
 
-    cardsByUser[msg.sender][cardNumber]--;
-    cardsByUser[to][cardNumber]++;
+    s_cardsByUser[msg.sender][cardNumber]--;
+    s_cardsByUser[to][cardNumber]++;
     emit CardTransfered(msg.sender, to, cardNumber);
   }
 
@@ -400,13 +400,13 @@ contract NofGammaCardsV5 is NofGammaCardsNFTV1, Ownable {
     if(to == msg.sender) revert InvalidTransfer();
 
     for (uint8 i; i < cardNumbers.length; i++) {
-      if(cardsByUser[msg.sender][cardNumbers[i]] == 0) revert UserDoesNotHaveCardOrAlbum();
-      cardsByUser[msg.sender][cardNumbers[i]]--;
-      cardsByUser[to][cardNumbers[i]]++;
+      if(s_cardsByUser[msg.sender][cardNumbers[i]] == 0) revert UserDoesNotHaveCardOrAlbum();
+      s_cardsByUser[msg.sender][cardNumbers[i]]--;
+      s_cardsByUser[to][cardNumbers[i]]++;
 
-      if (requireOfferValidationInTransfer) {
+      if (s_requireOfferValidationInTransfer) {
         bool hasOffer = gammaOffersContract.hasOffer(msg.sender, cardNumbers[i]);
-        bool hasMoreThanOne = cardsByUser[msg.sender][cardNumbers[i]] > 1;
+        bool hasMoreThanOne = s_cardsByUser[msg.sender][cardNumbers[i]] > 1;
         /* 
                 The user can only make an offer for one letter and in that case he cannot mint or transfer it.
                 If you have more than one copy (quantity > 1) of that card, you must be able to mint 
@@ -422,29 +422,29 @@ contract NofGammaCardsV5 is NofGammaCardsNFTV1, Ownable {
   // card of each number (120 total) + a 120 album card
   function finishAlbum() public returns (bool) {
     // requires the user to have at least one 120 album
-    if(cardsByUser[msg.sender][120] == 0) revert UserDoesNotHaveCardOrAlbum();
-    if(prizesBalance < mainAlbumPrize) revert IncorrectPrizeAmount();
+    if(s_cardsByUser[msg.sender][120] == 0) revert UserDoesNotHaveCardOrAlbum();
+    if(s_prizesBalance < s_mainAlbumPrize) revert IncorrectPrizeAmount();
 
     uint256 contractBalance = IERC20(DAI_TOKEN).balanceOf(address(this));
-    if(contractBalance < mainAlbumPrize) revert InsufficientFunds();
+    if(contractBalance < s_mainAlbumPrize) revert InsufficientFunds();
 
     // check that you have at least one card of each number
     bool unfinished;
     for (uint8 i; i <= 120; i++) {
-      if (cardsByUser[msg.sender][i] == 0) {
+      if (s_cardsByUser[msg.sender][i] == 0) {
         unfinished = true;
         break;
       }
-      cardsByUser[msg.sender][i]--;
+      s_cardsByUser[msg.sender][i]--;
     }
     if(unfinished) revert MustCompleteAlbum();
 
     // mint the completed album.
-    safeMint(msg.sender, mainUri, 120, 2);
+    safeMint(msg.sender, s_mainUri, 120, 2);
 
     // transfer prize in DAI.
-    IERC20(DAI_TOKEN).transfer(msg.sender, mainAlbumPrize);
-    prizesBalance -= mainAlbumPrize;
+    IERC20(DAI_TOKEN).transfer(msg.sender, s_mainAlbumPrize);
+    s_prizesBalance -= s_mainAlbumPrize;
 
     bool userOffersRemoved = gammaOffersContract.removeOffersByUser(msg.sender);
     if(!userOffersRemoved) revert CannotRemoveUserOffers();
@@ -456,36 +456,36 @@ contract NofGammaCardsV5 is NofGammaCardsNFTV1, Ownable {
   // user should call this function if they want to 'paste' selected cards in
   // the 60 cards album to 'burn' them.
   function burnCards(uint8[] calldata cardNumbers) public {
-    if(cardsByUser[msg.sender][121] == 0) revert UserDoesNotHaveCardOrAlbum();
-    uint256 totalUserBurnedCards = burnedCards[msg.sender] + cardNumbers.length;
+    if(s_cardsByUser[msg.sender][121] == 0) revert UserDoesNotHaveCardOrAlbum();
+    uint256 totalUserBurnedCards = s_burnedCards[msg.sender] + cardNumbers.length;
     bool mustPayPrize = false;
 
     if (totalUserBurnedCards >= 60) {
       uint256 contractBalance = IERC20(DAI_TOKEN).balanceOf(address(this));
-      if(contractBalance < secondaryAlbumPrize || prizesBalance < secondaryAlbumPrize) revert InsufficientFunds();
+      if(contractBalance < s_secondaryAlbumPrize || s_prizesBalance < s_secondaryAlbumPrize) revert InsufficientFunds();
       mustPayPrize = true;
     }
 
     bool userHasOffers = (gammaOffersContract.getOffersByUserCounter(msg.sender) > 0);
     for (uint8 i; i < cardNumbers.length; i++) {
-      if(cardsByUser[msg.sender][cardNumbers[i]] == 0) revert UserDoesNotHaveCardOrAlbum();
+      if(s_cardsByUser[msg.sender][cardNumbers[i]] == 0) revert UserDoesNotHaveCardOrAlbum();
       if (userHasOffers) {
         if (gammaOffersContract.hasOffer(msg.sender, cardNumbers[i])) {
-          if(cardsByUser[msg.sender][cardNumbers[i]] < 2) revert InsufficientCards();
+          if(s_cardsByUser[msg.sender][cardNumbers[i]] < 2) revert InsufficientCards();
         }
       }
-      cardsByUser[msg.sender][cardNumbers[i]]--;
+      s_cardsByUser[msg.sender][cardNumbers[i]]--;
     }
 
-    burnedCards[msg.sender] += cardNumbers.length;
+    s_burnedCards[msg.sender] += cardNumbers.length;
     emit CardsBurned(msg.sender, cardNumbers);
 
     if (mustPayPrize) {
-      cardsByUser[msg.sender][121]--;
-      safeMint(msg.sender, secondaryUri, 121, 2); // mint album of 60 cards.
+      s_cardsByUser[msg.sender][121]--;
+      safeMint(msg.sender, s_secondaryUri, 121, 2); // mint album of 60 cards.
 
-      prizesBalance -= secondaryAlbumPrize;
-      IERC20(DAI_TOKEN).transfer(msg.sender, secondaryAlbumPrize);
+      s_prizesBalance -= s_secondaryAlbumPrize;
+      IERC20(DAI_TOKEN).transfer(msg.sender, s_secondaryAlbumPrize);
 
       gammaTicketsContract.generateTicket(msg.sender);
       emit AlbumCompleted(msg.sender, 2);
@@ -493,11 +493,11 @@ contract NofGammaCardsV5 is NofGammaCardsNFTV1, Ownable {
   }
 
   function mintCard(uint8 cardNum) public {
-    if(cardsByUser[msg.sender][cardNum] == 0) revert UserDoesNotHaveCardOrAlbum();
+    if(s_cardsByUser[msg.sender][cardNum] == 0) revert UserDoesNotHaveCardOrAlbum();
 
-    if (requireOfferValidationInMint) {
+    if (s_requireOfferValidationInMint) {
       bool hasOffer = gammaOffersContract.hasOffer(msg.sender, cardNum);
-      bool hasMoreThanOne = cardsByUser[msg.sender][cardNum] > 1;
+      bool hasMoreThanOne = s_cardsByUser[msg.sender][cardNum] > 1;
       /* 
             The user can only make an offer for one letter and in that case he cannot mint or transfer it.
             If you have more than one copy (quantity > 1) of that card, you must be able to mint 
@@ -506,29 +506,29 @@ contract NofGammaCardsV5 is NofGammaCardsNFTV1, Ownable {
       require(!hasOffer || hasMoreThanOne, "This card has an offer.");
     }
 
-    cardsByUser[msg.sender][cardNum]--;
+    s_cardsByUser[msg.sender][cardNum]--;
 
     string memory uri = string(
-      abi.encodePacked(bytes(baseUri), bytes("/"), bytes(cardNum.toString()), bytes(".json"))
+      abi.encodePacked(bytes(s_baseUri), bytes("/"), bytes(cardNum.toString()), bytes(".json"))
     );
 
     safeMint(msg.sender, uri, cardNum, 1);
   }
 
   function safeMint(address _to, string memory _uri, uint256 _number, uint8 _class) internal {
-    uint256 tokenId = _tokenIdCounter;
-    cards[tokenId].tokenId = tokenId;
-    cards[tokenId].number = _number;
-    cards[tokenId].class = _class;
+    uint256 tokenId = s_tokenIdCounter;
+    s_cards[tokenId].tokenId = tokenId;
+    s_cards[tokenId].number = _number;
+    s_cards[tokenId].class = _class;
     _safeMint(_to, tokenId);
     _setTokenURI(tokenId, _uri);
-    _tokenIdCounter += 1;
+    s_tokenIdCounter += 1;
   }
 
   // do not call unless really necessary
   function emergencyWithdraw(uint256 amount) public onlyOwners {
     if(balanceOf(address(this)) < amount) revert InsufficientFunds();
-    prizesBalance -= amount;
+    s_prizesBalance -= amount;
     IERC20(DAI_TOKEN).transfer(msg.sender, amount);
     emit EmergencyWithdrawal(msg.sender, amount);
   }
@@ -539,7 +539,7 @@ contract NofGammaCardsV5 is NofGammaCardsNFTV1, Ownable {
   // for testing purposes only, will remove on deploy
   function testAddCards(address user) public onlyOwners {
       for(uint8 i; i<=121; i++){ // 0-119: cards, 120: album-120, 121: album-60
-          cardsByUser[user][i]++;
+          s_cardsByUser[user][i]++;
       }
   }
   // for testing purposes only, will remove on deploy
