@@ -190,7 +190,7 @@ contract NofGammaPacksV3 is Ownable {
     uint256 m_packsCounter = s_packsCounter;
 
     for (uint256 i; i < numberOfPacks; i++) {
-      uint256 tokenId = s_packsCounter;
+      uint256 tokenId = m_packsCounter;
       if (tokenId >= TOTALSUPPLY) revert InsufficientPacksAvailable();
       m_packsCounter++;
       s_packs[tokenId] = user;

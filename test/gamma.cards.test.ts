@@ -268,6 +268,7 @@ describe('NoF - Gamma Cards Tests', function () {
     for (let index = 0; index < packsToBuy; index++) {
       const data = await callGetPackData(address0.address, index)
       const owner = await gammaPacks.getPackOwner(index); // @tomas TODO: remove this line when the issue is fixed
+      console.log({ owner });
       if(owner == ethers.constants.AddressZero) continue; // @tomas TODO: remove this line when the issue is fixed
       await gammaCards.openPack(index, data.packet_data, data.signature.signature);
     }
