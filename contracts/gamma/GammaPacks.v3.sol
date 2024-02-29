@@ -185,7 +185,6 @@ contract NofGammaPacksV3 is Ownable {
     if (user == address(0)) revert InvalidAddress();
     if (numberOfPacks == 0) revert NumberOfPacksAreZero();
     if ((s_packsCounter + numberOfPacks) >= TOTALSUPPLY) revert InsufficientPacksAvailable();
-
     uint256[] memory tokenIds = new uint256[](numberOfPacks);
     uint256 m_packsCounter = s_packsCounter;
 
@@ -207,7 +206,7 @@ contract NofGammaPacksV3 is Ownable {
     } else {
       emit PacksPurchased(user, tokenIds);
     }
-
+    
     return tokenIds;
   }
 

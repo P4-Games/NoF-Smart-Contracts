@@ -542,5 +542,18 @@ contract NofGammaCardsV5 is NofGammaCardsNFTV1, Ownable {
           s_cardsByUser[user][i]++;
       }
   }
+
+  function testOpenPack(address user, uint256 packNumber, uint8[] memory packData) external onlyOwners {
+        gammaPacksContract.openPack(packNumber, user);
+        s_prizesBalance += s_packPrice - s_packPrice / 6;
+
+        for(uint8 i; i<packData.length; i++){
+            require(packData[i] == 120 ? s_cardsInventory[120] < 3001 : s_cardsInventory[packData[i]] < 5001, 
+                'invalid cardInventory position');
+            s_cardsInventory[packData[i]]++; // 280k gas aprox.
+            s_cardsByUser[user][packData[i]]++; // 310k gas aprox.
+        }
+    }
+
   // for testing purposes only, will remove on deploy
 }
