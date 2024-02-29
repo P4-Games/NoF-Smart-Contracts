@@ -40,14 +40,14 @@ contract NofGammaPacksV3 is Ownable {
   LibControlMgmt.Data private ownersData;
 
   address public DAI_TOKEN;
-  address public balanceReceiver;
-  uint256 public constant totalSupply = 50000;
-  uint256 public packPrice = 12e17; // 1.2 DAI
-  uint256 private packsCounter = 0;
-  bool transferDai = true;
+  address public s_balanceReceiver;
+  uint256 public constant TOTALSUPPLY = 50000;
+  uint256 public s_packPrice = 12e17; // 1.2 DAI
+  uint256 private s_packsCounter = 0;
+  bool s_transferDai = true;
 
-  mapping(uint256 tokenId => address owner) public packs;
-  mapping(address owner => uint256[] tokenIds) public packsByUser;
+  mapping(uint256 tokenId => address owner) public s_packs;
+  mapping(address owner => uint256[] tokenIds) public s_packsByUser;
 
   event NewGammaCardsContract(address newCardsContract);
   event NewGammaTicketsContract(address newGammaTicketContract);
@@ -82,7 +82,7 @@ contract NofGammaPacksV3 is Ownable {
     ) revert InvalidAddress();
 
     DAI_TOKEN = _daiTokenAddress;
-    balanceReceiver = _balanceReceiver;
+    s_balanceReceiver = _balanceReceiver;
     gammaCardsContract = IGammaCardsContract(_gammaCardsContract);
     gammaTicketsContract = IgammaTicketsContract(_gammaTicketsContract);
 
@@ -99,18 +99,18 @@ contract NofGammaPacksV3 is Ownable {
 
   function changeBalanceReceiver(address _newBalanceReceiver) external onlyOwners {
     if (_newBalanceReceiver == address(0)) revert InvalidAddress();
-    balanceReceiver = _newBalanceReceiver;
+    s_balanceReceiver = _newBalanceReceiver;
     emit NewBalanceReceiver(_newBalanceReceiver);
   }
 
   function changePrice(uint256 _newPrice) public onlyOwners {
-    packPrice = _newPrice;
+    s_packPrice = _newPrice;
     gammaCardsContract.changePackPrice(_newPrice);
     emit NewPrice(_newPrice);
   }
 
   function changeTransferDaiFlag(bool _transferDai) public onlyOwners {
-    transferDai = _transferDai;
+    s_transferDai = _transferDai;
   }
 
   function setGammaCardsContract(address _gammaCardsContract) public onlyOwners {
@@ -130,12 +130,12 @@ contract NofGammaPacksV3 is Ownable {
   }
 
   function getPrizeAmountToBuyPacks(uint256 numberOfPacks) public view returns (uint256) {
-    return (packPrice - (packPrice / 6)) * numberOfPacks;
+    return (s_packPrice - (s_packPrice / 6)) * numberOfPacks;
   }
 
   function getPrizeNoFAccountAmountToBuyPacks(uint256 numberOfPacks) public view returns (uint256) {
     uint256 prizesAmount = getPrizeAmountToBuyPacks(numberOfPacks);
-    return (packPrice * numberOfPacks) - prizesAmount;
+    return (s_packPrice * numberOfPacks) - prizesAmount;
   }
 
   function getAmountRequiredToBuyPacks(uint256 numberOfPacks) public view returns (uint256) {
@@ -145,16 +145,16 @@ contract NofGammaPacksV3 is Ownable {
   }
 
   function getPacksByUser(address owner) public view returns (uint256[] memory) {
-    return packsByUser[owner];
+    return s_packsByUser[owner];
   }
 
   function getPackOwner(uint256 tokenId) public view returns (address) {
-    return packs[tokenId];
+    return s_packs[tokenId];
   }
 
   function meetQuantityConditionsToBuy(uint256 numberOfPacks) public view returns (bool) {
     if (numberOfPacks == 0) revert NumberOfPacksAreZero();
-    return (packsCounter + numberOfPacks) < totalSupply;
+    return (s_packsCounter + numberOfPacks) < TOTALSUPPLY;
   }
 
   function buyPack() public returns (uint256) {
@@ -184,21 +184,21 @@ contract NofGammaPacksV3 is Ownable {
   function _buyPacks(address user, uint256 numberOfPacks) private returns (uint256[] memory) {
     if (user == address(0)) revert InvalidAddress();
     if (numberOfPacks == 0) revert NumberOfPacksAreZero();
-    if ((packsCounter + numberOfPacks) >= totalSupply) revert InsufficientPacksAvailable();
+    if ((s_packsCounter + numberOfPacks) >= TOTALSUPPLY) revert InsufficientPacksAvailable();
 
     uint256[] memory tokenIds = new uint256[](numberOfPacks);
-    uint256 m_packsCounter = packsCounter;
+    uint256 m_packsCounter = s_packsCounter;
 
     for (uint256 i; i < numberOfPacks; i++) {
-      uint256 tokenId = packsCounter;
-      if (tokenId >= totalSupply) revert InsufficientPacksAvailable();
+      uint256 tokenId = s_packsCounter;
+      if (tokenId >= TOTALSUPPLY) revert InsufficientPacksAvailable();
       m_packsCounter++;
-      packs[tokenId] = user;
-      packsByUser[user].push(tokenId);
+      s_packs[tokenId] = user;
+      s_packsByUser[user].push(tokenId);
       tokenIds[i] = tokenId;
     }
     
-    packsCounter = m_packsCounter;
+    s_packsCounter = m_packsCounter;
 
     bool transferPrizeResult = _transferPrizesAmounts(user, numberOfPacks);
     if (!transferPrizeResult) revert TransferPrizeError(user);
@@ -217,7 +217,7 @@ contract NofGammaPacksV3 is Ownable {
     uint256 prizeNoFAccount = getPrizeNoFAccountAmountToBuyPacks(numberOfPacks);
     gammaCardsContract.setPrizesBalance(prizesAmount);
 
-    if (transferDai) {
+    if (s_transferDai) {
       IERC20 erc20Token = IERC20(DAI_TOKEN);
 
       if (erc20Token.allowance(user, address(this)) < (prizesAmount + prizeNoFAccount)) revert InsufficientAllowance();
@@ -229,18 +229,18 @@ contract NofGammaPacksV3 is Ownable {
       if (!successTx1) revert TransferPrizeError(address(gammaCardsContract));
 
       // send profit amount to NoF account
-      bool successTx2 = erc20Token.transferFrom(user, balanceReceiver, prizeNoFAccount);
-      if (!successTx2) revert TransferPrizeError(balanceReceiver);
+      bool successTx2 = erc20Token.transferFrom(user, s_balanceReceiver, prizeNoFAccount);
+      if (!successTx2) revert TransferPrizeError(s_balanceReceiver);
     }
     return true;
   }
 
   function deleteTokenId(uint256 tokenId, address owner) internal {
-    uint256 packsByUserLength = packsByUser[owner].length;
+    uint256 packsByUserLength = s_packsByUser[owner].length;
     for (uint256 i; i < packsByUserLength; i++) {
-      if (packsByUser[owner][i] == tokenId) {
-        packsByUser[owner][i] = packsByUser[owner][packsByUser[owner].length - 1];
-        packsByUser[owner].pop();
+      if (s_packsByUser[owner][i] == tokenId) {
+        s_packsByUser[owner][i] = s_packsByUser[owner][s_packsByUser[owner].length - 1];
+        s_packsByUser[owner].pop();
         break;
       }
     }
@@ -260,10 +260,10 @@ contract NofGammaPacksV3 is Ownable {
 
   function _transferPack(address to, uint256 tokenId) private {
     if (to == address(0)) revert InvalidAddress();
-    if (packs[tokenId] != msg.sender) revert NotYourPack();
-    packs[tokenId] = to;
+    if (s_packs[tokenId] != msg.sender) revert NotYourPack();
+    s_packs[tokenId] = to;
     deleteTokenId(tokenId, msg.sender);
-    packsByUser[to].push(tokenId);
+    s_packsByUser[to].push(tokenId);
     emit PackTransfered(msg.sender, to, tokenId);
   }
 
@@ -291,7 +291,7 @@ contract NofGammaPacksV3 is Ownable {
 
   function _openPack(uint256 tokenId, address owner) private {
     deleteTokenId(tokenId, owner);
-    delete packs[tokenId];
+    delete s_packs[tokenId];
     emit PackOpened(owner, tokenId);
   }
 
@@ -302,7 +302,7 @@ contract NofGammaPacksV3 is Ownable {
     // TODO: get %price from gamma cards contract
 
     // TODO: transfer price
-    if (transferDai) {
+    if (s_transferDai) {
       // IERC20 erc20Token = IERC20(DAI_TOKEN);
     }
 
