@@ -190,12 +190,11 @@ contract NofGammaPacksV3 is Ownable {
     uint256 m_packsCounter = s_packsCounter;
 
     for (uint256 i; i < numberOfPacks; i++) {
-      uint256 tokenId = m_packsCounter;
-      if (tokenId >= TOTALSUPPLY) revert InsufficientPacksAvailable();
+      if (m_packsCounter >= TOTALSUPPLY) revert InsufficientPacksAvailable();
+      s_packs[m_packsCounter] = user;
+      s_packsByUser[user].push(m_packsCounter);
+      tokenIds[i] = m_packsCounter;
       m_packsCounter++;
-      s_packs[tokenId] = user;
-      s_packsByUser[user].push(tokenId);
-      tokenIds[i] = tokenId;
     }
     
     s_packsCounter = m_packsCounter;
