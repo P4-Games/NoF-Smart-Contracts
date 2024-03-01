@@ -9,7 +9,7 @@ import {console} from "hardhat/console.sol";
 error NotGammaCardsContract();
 error OwnlyOwners();
 error InvalidAddress();
-error NumberOfPacksAreZero();
+error InvalidNumberOfPacks();
 error InsufficientPacksAvailable();
 error TransferPrizeError(address _to);
 error InsufficientAllowance();
@@ -153,7 +153,7 @@ contract NofGammaPacksV3 is Ownable {
   }
 
   function meetQuantityConditionsToBuy(uint256 numberOfPacks) public view returns (bool) {
-    if (numberOfPacks == 0) revert NumberOfPacksAreZero();
+    if (numberOfPacks == 0) revert InvalidNumberOfPacks();
     return (s_packsCounter + numberOfPacks) < TOTALSUPPLY;
   }
 
@@ -183,17 +183,20 @@ contract NofGammaPacksV3 is Ownable {
 
   function _buyPacks(address user, uint256 numberOfPacks) private returns (uint256[] memory) {
     if (user == address(0)) revert InvalidAddress();
-    if (numberOfPacks == 0) revert NumberOfPacksAreZero();
+    if (numberOfPacks == 0 || numberOfPacks > 100) revert InvalidNumberOfPacks();
     if ((s_packsCounter + numberOfPacks) >= TOTALSUPPLY) revert InsufficientPacksAvailable();
     uint256[] memory tokenIds = new uint256[](numberOfPacks);
     uint256 m_packsCounter = s_packsCounter;
 
-    for (uint256 i; i < numberOfPacks; i++) {
+    for (uint256 i; i < numberOfPacks;) {
       if (m_packsCounter >= TOTALSUPPLY) revert InsufficientPacksAvailable();
       s_packs[m_packsCounter] = user;
       s_packsByUser[user].push(m_packsCounter);
       tokenIds[i] = m_packsCounter;
       m_packsCounter++;
+      unchecked {
+         i++;
+      }
     }
     
     s_packsCounter = m_packsCounter;

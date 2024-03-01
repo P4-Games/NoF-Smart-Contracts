@@ -110,6 +110,6 @@ describe('NoF - Gamma Packs Tests', function () {
 
   it('Should revert when number of packs is zero in meetQuantityConditionsToBuy', async () => {
     const { gammaPacks } = await loadFixture(deployNofGammaFixture)
-    await expect(gammaPacks.meetQuantityConditionsToBuy(0)).to.be.revertedWithCustomError(gammaPacks, 'NumberOfPacksAreZero')
+    await expect(gammaPacks.meetQuantityConditionsToBuy(0)).to.be.revertedWithCustomError(gammaPacks, 'InvalidNumberOfPacks')
   })
 })
