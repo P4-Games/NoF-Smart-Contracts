@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.20;
 
-import "@openzeppelin/contracts/access/Ownable.sol";
-import "./libs/LibControlMgmt.sol";
-import "hardhat/console.sol";
+import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
+import {LibControlMgmt} from "./libs/LibControlMgmt.sol";
+import {console} from "hardhat/console.sol";
 
 error OnlyCardsContract();
 error OnlyOwners();
