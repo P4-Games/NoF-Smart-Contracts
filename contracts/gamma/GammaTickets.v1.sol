@@ -5,6 +5,11 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 import "./libs/LibControlMgmt.sol";
 import "hardhat/console.sol";
 
+error OnlyGammaContractsCanCall();
+error OnlyOwners();
+error InvalidAddress();
+error NoTicketsAvailable();
+
 interface IGammaCardsContract {}
 interface IgammaPacksContract {}
 
@@ -35,23 +40,22 @@ contract NofGammaTicketsV1 is Ownable {
     event AllTicketsRemoved();
 
     modifier onlyCardsContract {
-        require(msg.sender == address(gammaCardsContract), "Only gamma cards contract can call this function.");
+        if(msg.sender != address(gammaCardsContract)) revert OnlyGammaContractsCanCall();
         _;
     }
 
     modifier onlyGammaPacksContract {
-        require(msg.sender == address(gammaPacksContract), "Only gamma packs contract can call this function.");
+        if(msg.sender != address(gammaPacksContract)) revert OnlyGammaContractsCanCall();
         _;
     }
 
     modifier onlyOwners() {
-        require(ownersData.owners[msg.sender], "Only owners.");
+        if(!ownersData.owners[msg.sender]) revert OnlyOwners();
         _;
     }
 
     function init (address _gammaPacksContract, address _gammaCardsContract) external onlyOwner {
-        require(_gammaPacksContract != address(0), "Invalid address.");
-        require(_gammaCardsContract != address(0), "Invalid address.");
+        if(_gammaPacksContract == address(0) || _gammaCardsContract == address(0)) revert InvalidAddress();
         gammaPacksContract = IgammaPacksContract(_gammaPacksContract);
         gammaCardsContract = IGammaCardsContract(_gammaCardsContract);
         ownersData.owners[msg.sender] = true;
@@ -66,13 +70,13 @@ contract NofGammaTicketsV1 is Ownable {
     }
 
     function setGammaCardsContract(address _gammaCardsContract) public onlyOwners {
-        require(_gammaCardsContract != address(0), "Invalid address.");
+        if(_gammaCardsContract == address(0)) revert InvalidAddress();
         gammaCardsContract = IGammaCardsContract(_gammaCardsContract);
         emit NewGammaCardsContract(_gammaCardsContract);
     }
 
     function setGammaPacksContract(address _gammaPacksContract) public onlyOwners {
-        require(_gammaPacksContract != address(0), "Invalid address.");
+        if(_gammaPacksContract == address(0)) revert InvalidAddress();
         gammaPacksContract = IgammaPacksContract(_gammaPacksContract);
         emit NewGammaPacksContract(_gammaPacksContract);
     }
@@ -106,7 +110,7 @@ contract NofGammaTicketsV1 is Ownable {
 
    function getLotteryWinner() external onlyGammaPacksContract 
         returns (uint256 timestamp, bytes32 ticketId, uint256 ticketCounter, address user) {
-        require(tickets.length > 0, "No tickets available for the lottery.");
+        if(tickets.length == 0) revert NoTicketsAvailable();
 
         if (winner.timestamp != 0) {
             return (winner.timestamp, winner.ticketId, winner.ticketCounter, winner.user);
