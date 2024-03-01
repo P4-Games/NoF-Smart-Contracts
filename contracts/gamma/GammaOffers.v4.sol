@@ -265,7 +265,6 @@ contract NofGammaOffersV4 is Ownable {
     uint8[] memory wantedCardNumbers = offer.wantedCardNumbers;
     if (wantedCardNumbers.length == 0) {
       //buscamos que el usuario no tenga la carta
-      if (gammaCardsContract.hasCardByOffer(from, cardNumberWanted)) revert UserAlreadyHasCard();
       if (gammaCardsContract.hasCardByOffer(offerWallet, cardNumberWanted))
         revert UserAlreadyHasCard();
     } else {
@@ -383,7 +382,8 @@ contract NofGammaOffersV4 is Ownable {
     Offer[] storage userOffers = offersByUser[user];
     for (uint256 i = 0; i < userOffers.length; i++) {
       if (_sameOfferId(userOffers[i].offerId, offerId)) {
-        if (userOffers[i].owner != user || userOffers[i].cardNumber != cardNumber) revert RemoveOfferFromUserMapping_DoNotMatch();
+        if (userOffers[i].owner != user || userOffers[i].cardNumber != cardNumber)
+          revert RemoveOfferFromUserMapping_DoNotMatch();
         if (i < (userOffers.length - 1)) {
           userOffers[i] = userOffers[userOffers.length - 1];
         }
@@ -402,7 +402,8 @@ contract NofGammaOffersV4 is Ownable {
 
     for (uint256 i = 0; i < cardOffers.length; i++) {
       if (_sameOfferId(cardOffers[i].offerId, offerId)) {
-        if(cardOffers[i].owner != user || cardOffers[i].cardNumber != cardNumber) revert RemoveOfferFromCardNumberMapping_DoNotMatch();
+        if (cardOffers[i].owner != user || cardOffers[i].cardNumber != cardNumber)
+          revert RemoveOfferFromCardNumberMapping_DoNotMatch();
 
         if (i < cardOffers.length - 1) {
           cardOffers[i] = cardOffers[cardOffers.length - 1];
