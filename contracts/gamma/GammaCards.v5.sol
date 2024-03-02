@@ -13,6 +13,7 @@ error OnlyGammaPacksContract();
 error OnlyOffersContract();
 error OnlyOwners();
 error InvalidAddress();
+error InvalidCardNumber();
 error InvalidTransfer();
 error InvalidSignature();
 error IncorrectPrizeAmount();
@@ -273,7 +274,7 @@ contract NofGammaCardsV5 is NofGammaCardsNFTV1, Ownable {
     bool[] memory offers = new bool[](122);
     uint8 index = 0;
 
-    for (uint8 i = 0; i <= 121; i++) {
+    for (uint8 i; i <= 121; i++) {
       if (s_cardsByUser[user][i] > 0) {
         cardNumbers[index] = i;
         quantities[index] = s_cardsByUser[user][i];
@@ -286,7 +287,7 @@ contract NofGammaCardsV5 is NofGammaCardsNFTV1, Ownable {
     uint8[] memory userCardsQtty = new uint8[](index);
     bool[] memory userCardsOffers = new bool[](index);
 
-    for (uint8 j = 0; j < index; j++) {
+    for (uint256 j; j < index; j++) {
       userCardNumbers[j] = cardNumbers[j];
       userCardsQtty[j] = quantities[j];
       userCardsOffers[j] = offers[j];
@@ -319,7 +320,7 @@ contract NofGammaCardsV5 is NofGammaCardsNFTV1, Ownable {
   ) external {
     if(packsQuantity == 0 || packsQuantity > s_maxPacksToOpenAtOnce) revert WrongPacksQuantity();
 
-    for (uint8 i = 0; i < packsQuantity; i++) {
+    for (uint256 i; i < packsQuantity; i++) {
       _openPack(msg.sender, packsNumber[i], packsData[i], signatures[i]);
     }
   }
@@ -330,10 +331,10 @@ contract NofGammaCardsV5 is NofGammaCardsNFTV1, Ownable {
     uint8[] memory packData,
     bytes calldata signature
   ) private {
-    if(gammaPacksContract.getPackOwner(packNumber) != user) revert NotYourPack();
+    if(gammaPacksContract.getPackOwner(packNumber) != user) revert NotYourPack(); // @tomas read storage in packs
     if(packData.length >= 15) revert CardLimitExceeded();
 
-    if (s_requireOpenPackSignerValidation) {
+    if (s_requireOpenPackSignerValidation) { // @tomas read storage
       // Recreates the message present in the `signature`
       address signer = LibPackVerifier.verifyPackSigner(
         msg.sender,
@@ -345,16 +346,21 @@ contract NofGammaCardsV5 is NofGammaCardsNFTV1, Ownable {
       if(!signersData.signers[signer]) revert InvalidSignature();
     }
 
-    gammaPacksContract.openPack(packNumber, user);
-    s_prizesBalance += s_packPrice - s_packPrice / 6;
+    gammaPacksContract.openPack(packNumber, user); // @tomas read storage in packs
+    s_prizesBalance += s_packPrice - s_packPrice / 6; // @tomas read storage
 
-    for (uint8 i; i < packData.length; i++) {
-      require(
-        packData[i] == 120 ? s_cardsInventory[120] < 3001 : s_cardsInventory[packData[i]] < 5001,
-        "invalid cardInventory position"
-      );
-      s_cardsInventory[packData[i]]++; // 280k gas aprox.
-      s_cardsByUser[user][packData[i]]++; // 310k gas aprox.
+    
+    for (uint256 i; i < packData.length;) {
+      if(packData[i] == 120){
+        if(s_cardsInventory[120] > 3000) revert InvalidCardNumber();
+      } else {
+        if(s_cardsInventory[packData[i]] > 5000) revert InvalidCardNumber();
+      }
+      s_cardsInventory[packData[i]]++; // @tomas modify storage / 280k gas aprox.
+      s_cardsByUser[user][packData[i]]++; // @tomas modify storage / 310k gas aprox.
+      unchecked {
+        i++;
+      }
     }
 
     emit PackOpened(user, packData, packNumber);
@@ -399,7 +405,7 @@ contract NofGammaCardsV5 is NofGammaCardsNFTV1, Ownable {
   function transferCards(address to, uint8[] calldata cardNumbers) public checkAddressZero(to) {
     if(to == msg.sender) revert InvalidTransfer();
 
-    for (uint8 i; i < cardNumbers.length; i++) {
+    for (uint256 i; i < cardNumbers.length; i++) {
       if(s_cardsByUser[msg.sender][cardNumbers[i]] == 0) revert UserDoesNotHaveCardOrAlbum();
       s_cardsByUser[msg.sender][cardNumbers[i]]--;
       s_cardsByUser[to][cardNumbers[i]]++;
@@ -430,12 +436,16 @@ contract NofGammaCardsV5 is NofGammaCardsNFTV1, Ownable {
 
     // check that you have at least one card of each number
     bool unfinished;
-    for (uint8 i; i <= 120; i++) {
+    
+    for (uint8 i; i <= 120;) {
       if (s_cardsByUser[msg.sender][i] == 0) {
         unfinished = true;
         break;
       }
       s_cardsByUser[msg.sender][i]--;
+      unchecked {
+        i++;
+      }
     }
     if(unfinished) revert MustCompleteAlbum();
 
@@ -467,7 +477,7 @@ contract NofGammaCardsV5 is NofGammaCardsNFTV1, Ownable {
     }
 
     bool userHasOffers = (gammaOffersContract.getOffersByUserCounter(msg.sender) > 0);
-    for (uint8 i; i < cardNumbers.length; i++) {
+    for (uint256 i; i < cardNumbers.length; i++) {
       if(s_cardsByUser[msg.sender][cardNumbers[i]] == 0) revert UserDoesNotHaveCardOrAlbum();
       if (userHasOffers) {
         if (gammaOffersContract.hasOffer(msg.sender, cardNumbers[i])) {
@@ -547,13 +557,12 @@ contract NofGammaCardsV5 is NofGammaCardsNFTV1, Ownable {
         gammaPacksContract.openPack(packNumber, user);
         s_prizesBalance += s_packPrice - s_packPrice / 6;
 
-        for(uint8 i; i<packData.length; i++){
+        for(uint256 i; i<packData.length; i++){
             require(packData[i] == 120 ? s_cardsInventory[120] < 3001 : s_cardsInventory[packData[i]] < 5001, 
                 'invalid cardInventory position');
             s_cardsInventory[packData[i]]++; // 280k gas aprox.
             s_cardsByUser[user][packData[i]]++; // 310k gas aprox.
         }
     }
-
   // for testing purposes only, will remove on deploy
 }
