@@ -279,17 +279,6 @@ contract NofGammaPacksV3 is Ownable {
     }
   }
 
-  function testOpenPack(uint256 tokenId, address owner) public onlyOwners {
-    _openPack(tokenId, owner);
-  }
-
-  function testOpenPacks(uint256[] memory tokenIds, address owner) public onlyOwners {
-    for (uint256 i = 0; i < tokenIds.length; i++) {
-      uint256 tokenId = tokenIds[i];
-      _openPack(tokenId, owner);
-    }
-  }
-
   function _openPack(uint256 tokenId, address owner) private {
     deleteTokenId(tokenId, owner);
     delete s_packs[tokenId];
@@ -310,4 +299,17 @@ contract NofGammaPacksV3 is Ownable {
     // TODO: burn tickets en gamma tickets contract
     gammaTicketsContract.deleteAllTickets();
   }
+
+  // for testing purposes only, will delete upon deployment
+  function testOpenPack(uint256 tokenId, address owner) public onlyOwners {
+    _openPack(tokenId, owner);
+  }
+
+  function testOpenPacks(uint256[] memory tokenIds, address owner) public onlyOwners {
+    for (uint256 i = 0; i < tokenIds.length; i++) {
+      uint256 tokenId = tokenIds[i];
+      _openPack(tokenId, owner);
+    }
+  }
+  // for testing purposes only, will delete upon deployment
 }
