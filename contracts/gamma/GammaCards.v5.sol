@@ -90,19 +90,19 @@ contract NofGammaCardsV5 is NofGammaCardsNFTV1, Ownable {
   mapping(address user => uint256 amount) public s_burnedCards;
   mapping(address user => mapping(uint8 cardNumber => uint8 amount)) public s_cardsByUser;
 
-  event NewGammaOffersContract(address newGammaOffersContract);
-  event NewGammaPacksContract(address newGammaPacksContract);
-  event NewGammaTicketsContract(address newGammaTicketContract);
-  event PackOpened(address player, uint8[] packData, uint256 packNumber);
-  event AlbumCompleted(address player, uint8 albumClass);
-  event CardPasted(address player, uint256 cardTokenId, uint256 albumTokenId);
-  event EmergencyWithdrawal(address receiver, uint256 amount);
-  event NewSigner(address newSigner);
-  event NewUris(string newMainUri, string newSecondaryUri);
-  event OfferCardsExchanged(address from, address to, uint8 cardNumberFrom, uint8 cardNumberTo);
-  event CardTransfered(address from, address to, uint8 cardNumber);
-  event CardsTransfered(address from, address to, uint8[] cardNumber);
-  event CardsBurned(address user, uint8[] cardsNumber);
+  event NewGammaOffersContract(address indexed newGammaOffersContract);
+  event NewGammaPacksContract(address indexed newGammaPacksContract);
+  event NewGammaTicketsContract(address indexed newGammaTicketContract);
+  event PackOpened(address indexed player, uint8[] indexed packData, uint256 indexed packNumber);
+  event AlbumCompleted(address indexed player, uint8 indexed albumClass);
+  event CardPasted(address indexed player, uint256 indexed cardTokenId, uint256 indexed albumTokenId);
+  event EmergencyWithdrawal(address indexed receiver, uint256 indexed amount);
+  event NewSigner(address indexed newSigner);
+  event NewUris(string indexed newMainUri, string indexed newSecondaryUri);
+  event OfferCardsExchanged(address indexed from, address indexed to, uint8 cardNumberFrom, uint8 cardNumberTo);
+  event CardTransfered(address indexed from, address indexed to, uint8 cardNumber);
+  event CardsTransfered(address indexed from, address indexed to, uint8[] indexed cardNumber);
+  event CardsBurned(address indexed user, uint8[] indexed cardsNumber);
 
   modifier onlyGammaPacksContract() {
     if(msg.sender != address(gammaPacksContract)) revert OnlyGammaPacksContract();
