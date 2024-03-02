@@ -49,15 +49,15 @@ contract NofGammaPacksV3 is Ownable {
   mapping(uint256 tokenId => address owner) public s_packs;
   mapping(address owner => uint256[] tokenIds) public s_packsByUser;
 
-  event NewGammaCardsContract(address newCardsContract);
-  event NewGammaTicketsContract(address newGammaTicketContract);
-  event NewBalanceReceiver(address balanceReceiver);
-  event PackPurchased(address buyer, uint256 tokenId);
-  event PacksPurchased(address buyer, uint256[] tokenIds);
-  event PackTransfered(address from, address to, uint256 tokenId);
-  event PacksTransfered(address from, address to, uint256[] tokenId);
-  event PackOpened(address user, uint256 tokenId);
-  event NewPrice(uint256 newPrice);
+  event NewGammaCardsContract(address indexed newCardsContract);
+  event NewGammaTicketsContract(address indexed newGammaTicketContract);
+  event NewBalanceReceiver(address indexed balanceReceiver);
+  event PackPurchased(address indexed buyer, uint256 indexed tokenId);
+  event PacksPurchased(address indexed buyer, uint256[] indexed tokenIds);
+  event PackTransfered(address indexed from, address indexed to, uint256 indexed tokenId);
+  event PacksTransfered(address indexed from, address indexed to, uint256[] indexed tokenId);
+  event PackOpened(address indexed user, uint256 indexed tokenId);
+  event NewPrice(uint256 indexed newPrice);
 
   modifier onlyGammaCardsContract() {
     if (msg.sender != address(gammaCardsContract)) revert NotGammaCardsContract();
