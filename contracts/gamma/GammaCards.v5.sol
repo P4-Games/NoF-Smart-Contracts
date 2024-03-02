@@ -468,7 +468,7 @@ contract NofGammaCardsV5 is NofGammaCardsNFTV1, Ownable {
   function burnCards(uint8[] calldata cardNumbers) public {
     if(s_cardsByUser[msg.sender][121] == 0) revert UserDoesNotHaveCardOrAlbum();
     uint256 totalUserBurnedCards = s_burnedCards[msg.sender] + cardNumbers.length;
-    bool mustPayPrize = false;
+    bool mustPayPrize;
 
     if (totalUserBurnedCards >= 60) {
       uint256 contractBalance = IERC20(DAI_TOKEN).balanceOf(address(this));
@@ -477,7 +477,8 @@ contract NofGammaCardsV5 is NofGammaCardsNFTV1, Ownable {
     }
 
     bool userHasOffers = (gammaOffersContract.getOffersByUserCounter(msg.sender) > 0);
-    for (uint256 i; i < cardNumbers.length; i++) {
+    uint256 cardNumbersLength = cardNumbers.length;
+    for (uint256 i; i < cardNumbersLength;) {
       if(s_cardsByUser[msg.sender][cardNumbers[i]] == 0) revert UserDoesNotHaveCardOrAlbum();
       if (userHasOffers) {
         if (gammaOffersContract.hasOffer(msg.sender, cardNumbers[i])) {
@@ -485,9 +486,12 @@ contract NofGammaCardsV5 is NofGammaCardsNFTV1, Ownable {
         }
       }
       s_cardsByUser[msg.sender][cardNumbers[i]]--;
+      unchecked {
+        i++;
+      }
     }
 
-    s_burnedCards[msg.sender] += cardNumbers.length;
+    s_burnedCards[msg.sender] += cardNumbersLength;
     emit CardsBurned(msg.sender, cardNumbers);
 
     if (mustPayPrize) {

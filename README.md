@@ -119,7 +119,7 @@ npx hardhat test
 # Deploy to local
 npx hardhat run scripts/deploy.ts
 
-# Deploy to Mumnbai 
+# Deploy to Mumbai 
 npx hardhat run scripts/deploy.ts --network mumbai
 
 # Deploy Mock Data (local)
