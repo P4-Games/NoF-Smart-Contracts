@@ -331,10 +331,10 @@ contract NofGammaCardsV5 is NofGammaCardsNFTV1, Ownable {
     uint8[] memory packData,
     bytes calldata signature
   ) private {
-    if(gammaPacksContract.getPackOwner(packNumber) != user) revert NotYourPack(); // @tomas read storage in packs
+    if(gammaPacksContract.getPackOwner(packNumber) != user) revert NotYourPack();
     if(packData.length >= 15) revert CardLimitExceeded();
 
-    if (s_requireOpenPackSignerValidation) { // @tomas read storage
+    if (s_requireOpenPackSignerValidation) {
       // Recreates the message present in the `signature`
       address signer = LibPackVerifier.verifyPackSigner(
         msg.sender,
@@ -346,8 +346,8 @@ contract NofGammaCardsV5 is NofGammaCardsNFTV1, Ownable {
       if(!signersData.signers[signer]) revert InvalidSignature();
     }
 
-    gammaPacksContract.openPack(packNumber, user); // @tomas read storage in packs
-    s_prizesBalance += s_packPrice - s_packPrice / 6; // @tomas read storage
+    gammaPacksContract.openPack(packNumber, user);
+    s_prizesBalance += s_packPrice - s_packPrice / 6;
 
     
     for (uint256 i; i < packData.length;) {
@@ -356,8 +356,8 @@ contract NofGammaCardsV5 is NofGammaCardsNFTV1, Ownable {
       } else {
         if(s_cardsInventory[packData[i]] > 5000) revert InvalidCardNumber();
       }
-      s_cardsInventory[packData[i]]++; // @tomas modify storage / 280k gas aprox.
-      s_cardsByUser[user][packData[i]]++; // @tomas modify storage / 310k gas aprox.
+      s_cardsInventory[packData[i]]++;
+      s_cardsByUser[user][packData[i]]++;
       unchecked {
         i++;
       }
