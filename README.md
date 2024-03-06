@@ -123,7 +123,7 @@ npx hardhat run scripts/deploy.ts
 npx hardhat run scripts/deploy.ts --network mumbai
 
 # Deploy Mock Data (local)
-npx hardhat run scripts/deploy-mock-data.ts
+t
 
 
 # Solidity Security and Style guides validations with solhint [https://protofire.github.io/solhint/]

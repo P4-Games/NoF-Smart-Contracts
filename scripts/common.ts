@@ -208,16 +208,16 @@ export async function deployContracts(wallets: SignerWithAddress[]) {
     }
   }
 
-  console.log('\nFacility text to use in .env in nof-landing:')
+  console.log('\nFacility text to use in nof-landing/config.js for hardhat local environment')
   console.log(`
-    NEXT_PUBLIC_ADMIN_ACCOUNTS='${wallets[0].address}'
-    NEXT_PUBLIC_DAI_ADDRESS='${testDAIContract.address}'
-    NEXT_PUBLIC_ALPHA_ADDRESS='${alphaContract.address}'
-    NEXT_PUBLIC_GAMMA_CARDS_ADDRESS='${cardsContract.address}'
-    NEXT_PUBLIC_GAMMA_PACKS_ADDRESS='${packsContract.address}'
-    NEXT_PUBLIC_GAMMA_OFFERS_ADDRESS='${offersContract.address}'
-    NEXT_PUBLIC_GAMMA_TICKETS_ADDRESS='${ticketsContract.address}'
-  `)
+  contracts: {
+    daiAddress: '${testDAIContract.address}',
+    alphaAddress: '${alphaContract.address}',
+    gammaCardsAddress: '${cardsContract.address}',
+    gammaPackAddress: '${packsContract.address}',
+    gammaOffersAddress: '${offersContract.address}',
+    gammaTicketsAddress: '${ticketsContract.address}'
+  }`)
 
   return { 
     testDAIContract, alphaContract, packsContract, 
