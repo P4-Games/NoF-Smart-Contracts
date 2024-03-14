@@ -453,8 +453,8 @@ contract NofGammaCardsV5 is NofGammaCardsNFTV1, Ownable {
     safeMint(msg.sender, s_mainUri, 120, 2);
 
     // transfer prize in DAI.
-    IERC20(DAI_TOKEN).transfer(msg.sender, s_mainAlbumPrize);
     s_prizesBalance -= s_mainAlbumPrize;
+    IERC20(DAI_TOKEN).transfer(msg.sender, s_mainAlbumPrize);
 
     bool userOffersRemoved = gammaOffersContract.removeOffersByUser(msg.sender);
     if(!userOffersRemoved) revert CannotRemoveUserOffers();
