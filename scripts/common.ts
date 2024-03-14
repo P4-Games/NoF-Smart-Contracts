@@ -208,16 +208,28 @@ export async function deployContracts(wallets: SignerWithAddress[]) {
     }
   }
 
-  console.log('\nFacility text to use in nof-landing/config.js for hardhat local environment')
-  console.log(`
-  contracts: {
-    daiAddress: '${testDAIContract.address}',
-    alphaAddress: '${alphaContract.address}',
-    gammaCardsAddress: '${cardsContract.address}',
-    gammaPackAddress: '${packsContract.address}',
-    gammaOffersAddress: '${offersContract.address}',
-    gammaTicketsAddress: '${ticketsContract.address}'
-  }`)
+  if (isLocalhost || isHardhat) {
+    console.log('\nFacility text to update .env (only apply to local with hardhat)')
+    console.log(`
+      NEXT_PUBLIC_NOF_DAI_HARDHAT_CONTRACT_ADDRESS='${testDAIContract.address}',
+      NEXT_PUBLIC_NOF_ALPHA_HARDHAT_CONTRACT_ADDRESS='${alphaContract.address}',
+      NEXT_PUBLIC_NOF_GAMMA_CARDS_HARDHAT_CONTRACT_ADDRESS='${cardsContract.address}',
+      NEXT_PUBLIC_NOF_GAMMA_PACKS_HARDHAT_CONTRACT_ADDRESS='${packsContract.address}',
+      NEXT_PUBLIC_NOF_GAMMA_OFFERS_HARDHAT_CONTRACT_ADDRESS='${offersContract.address}',
+      NEXT_PUBLIC_NOF_GAMMA_TICKETS_HARDHAT_CONTRACT_ADDRESS='${ticketsContract.address}'
+    `)
+  } else {
+    console.log('\nFacility text to use in nof-landing/config.js to update real networks contracts addresses')
+    console.log(`
+    contracts: {
+      daiAddress: '${testDAIContract.address}',
+      alphaAddress: '${alphaContract.address}',
+      gammaCardsAddress: '${cardsContract.address}',
+      gammaPackAddress: '${packsContract.address}',
+      gammaOffersAddress: '${offersContract.address}',
+      gammaTicketsAddress: '${ticketsContract.address}'
+    }`)
+  }
 
   return { 
     testDAIContract, alphaContract, packsContract, 
