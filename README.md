@@ -142,6 +142,11 @@ See detaills about gamma Smart Contracts in this [file](./.doc/contracts-info.md
 
 ## Deployed Contracts last Addresses
 
+NOTA: The ERC20 token being used is DAI, the official addresses of the Mainnet and Testnet smart contracts of the different networks can be found in the references (at the end of this file). Also the faucets for testnet.
+
+Alternatively for testnet, the source code of the DAI contract is in this repository (contracts folder) to deploy your own and avoid collecting cents from faucets.
+
+
 ### Mumbai 
 * DAI: 0xEa4c35c858E15Cef77821278A88435dE57bc8707
 * Alpha: 0x816EA704F9bEf91284bA72bEBdAC1d1c5788246b
@@ -169,11 +174,36 @@ See detaills about gamma Smart Contracts in this [file](./.doc/contracts-info.md
 * Gamma Offers: 0xB90B462d5c609CC548a8135C264b212688A9Fe1f
 * Gamma Tickets: 0xa7ec2fd75cAfd694866AF76e865D8b34b24CB5D8
 
-### Mainet
+### Polygon Mainet
 
 (not yet)
 
-* DAI:
+* DAI: 0x8f3cf7ad23cd3cadbd9735aff958023239c6a063 (official makerDAO contract address)
+* Alpha:
+* Gamma Cards:
+* Gamma Cards NFT:
+* Gamma Packs: 
+* Gamma Offers: 
+* Gamma Tickets: 
+
+### BSC Mainet
+
+(not yet)
+
+* DAI: 0x1af3f329e8be154074d8769d1ffa4ee058b1dbc3 (official makerDAO contract address)
+* Alpha:
+* Gamma Cards:
+* Gamma Cards NFT:
+* Gamma Packs: 
+* Gamma Offers: 
+* Gamma Tickets: 
+
+
+### OpBNB Testnet
+
+(not yet)
+
+* DAI: TBC (official makerDAO contract address)
 * Alpha:
 * Gamma Cards:
 * Gamma Cards NFT:
@@ -228,9 +258,37 @@ For more information, refer to: [commitlint](https://commitlint.js.org/#/).
 
 ## Links
 
-* Mumbai Faucet: https://mumbaifaucet.com/
+### Faucets
 
-* BNB faucet: https://www.bnbchain.org/en/testnet-faucet
+* Matic Faucet on Mumbai: 
+    - https://mumbaifaucet.com/
 
-* Bridge (BNB-opBNB) Testnet: https://opbnb-testnet-bridge.bnbchain.org/deposit
+* BNB & DAI faucet on BSC: 
+    - https://www.bnbchain.org/en/testnet-faucet
 
+* DAI faucet on Mumbai: 
+    - https://faucet.paradigm.xyz/
+    - https://staging.aave.com/faucet/ (get DAI on Sepolian and then transfer to Mumbai with bridge)
+
+* Get BNB & DAI on opBNB with Bridge (BNB-opBNB): 
+    - https://opbnb-testnet-bridge.bnbchain.org/deposit
+
+### Maker DAO (DAI) Contracts Addresses
+
+* MakerDAO (DAI) Testnet:
+    - Mumbai: https://mumbai.polygonscan.com/address/0x001b3b4d0f3714ca98ba10f6042daebf0b1b7b6f  
+    - BSC-testnet: https://testnet.bscscan.com/address/0xec5dcb5dbf4b114c9d0f65bccab49ec54f6a0867
+    - opBNB-testinet:  
+
+* MakerDAO (DAI) Mainnet: 
+    - source info: https://www.coingecko.com/en/coins/dai
+    - Polygon: https://polygonscan.com/token/0x8f3cf7ad23cd3cadbd9735aff958023239c6a063
+    - BSC: https://bscscan.com/token/0x1af3f329e8be154074d8769d1ffa4ee058b1dbc3
+    - opBNB: 
+
+
+### Bridges
+
+* Bridger Finder
+    - https://app.findmybridge.com/finder/2863311531
+    - https://testnet.meson.fi/
