@@ -87,6 +87,11 @@ export async function deployContracts(wallets: SignerWithAddress[]) {
   const nofGammaLibStringutilsCurrentAddress = process.env.NOF_GAMMA_LIB_STRING_UTILS_CONTRACT_CURRENT_ADDRESS || ''
   const nofGammaLibControlMgmtCurrentAddress = process.env.NOF_GAMMA_LIB_OWNERS_MGMT_CONTRACT_CURRENT_ADDRESS || ''
 
+  if(nofDaiContractCurrentAddress === '' && !isLocalhost && !isHardhat) {
+    console.error('Real DAI Smart Contract Address must be filled in NOF_DAI_CONTRACT_CURRENT_ADDRESS variable in .env')
+    process.exit(1);
+  }
+
   const libPackVerifier = await deployContract(nofGammaLibPackVerifierCurrentAddress, nofGammaLibPackVerifierName)
   const libStringUtils = await deployContract(nofGammaLibStringutilsCurrentAddress, nofGammaLibStringUtilsName)
   const libControlMgmt = await deployContract(nofGammaLibControlMgmtCurrentAddress, nofGammaLibControlMgmtName)
@@ -208,16 +213,28 @@ export async function deployContracts(wallets: SignerWithAddress[]) {
     }
   }
 
-  console.log('\nFacility text to use in .env in nof-landing:')
-  console.log(`
-    NEXT_PUBLIC_ADMIN_ACCOUNTS='${wallets[0].address}'
-    NEXT_PUBLIC_DAI_ADDRESS='${testDAIContract.address}'
-    NEXT_PUBLIC_ALPHA_ADDRESS='${alphaContract.address}'
-    NEXT_PUBLIC_GAMMA_CARDS_ADDRESS='${cardsContract.address}'
-    NEXT_PUBLIC_GAMMA_PACKS_ADDRESS='${packsContract.address}'
-    NEXT_PUBLIC_GAMMA_OFFERS_ADDRESS='${offersContract.address}'
-    NEXT_PUBLIC_GAMMA_TICKETS_ADDRESS='${ticketsContract.address}'
-  `)
+  if (isLocalhost || isHardhat) {
+    console.log('\nFacility text to update .env (only apply to local with hardhat)')
+    console.log(`
+      NEXT_PUBLIC_NOF_DAI_HARDHAT_CONTRACT_ADDRESS='${testDAIContract.address}',
+      NEXT_PUBLIC_NOF_ALPHA_HARDHAT_CONTRACT_ADDRESS='${alphaContract.address}',
+      NEXT_PUBLIC_NOF_GAMMA_CARDS_HARDHAT_CONTRACT_ADDRESS='${cardsContract.address}',
+      NEXT_PUBLIC_NOF_GAMMA_PACKS_HARDHAT_CONTRACT_ADDRESS='${packsContract.address}',
+      NEXT_PUBLIC_NOF_GAMMA_OFFERS_HARDHAT_CONTRACT_ADDRESS='${offersContract.address}',
+      NEXT_PUBLIC_NOF_GAMMA_TICKETS_HARDHAT_CONTRACT_ADDRESS='${ticketsContract.address}'
+    `)
+  } else {
+    console.log('\nFacility text to use in nof-landing/config.js to update real networks contracts addresses')
+    console.log(`
+    contracts: {
+      daiAddress: '${testDAIContract.address}',
+      alphaAddress: '${alphaContract.address}',
+      gammaCardsAddress: '${cardsContract.address}',
+      gammaPackAddress: '${packsContract.address}',
+      gammaOffersAddress: '${offersContract.address}',
+      gammaTicketsAddress: '${ticketsContract.address}'
+    }`)
+  }
 
   return { 
     testDAIContract, alphaContract, packsContract, 

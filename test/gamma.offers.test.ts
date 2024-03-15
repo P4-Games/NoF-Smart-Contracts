@@ -172,7 +172,7 @@ describe('NoF - Gamma Offers Tests', function () {
   it('Create Offer should revert when gammaCardsContract is not set', async () => {
     const { gammaPacks, gammaCards, gammaOffers, address0 } = await loadFixture(deployNofGammaFixture)
     const getCardsByUserResult: getCardsByUserType = await getOnePackData(gammaPacks, gammaCards, address0)
-    await expect(gammaOffers.setGammaCardsContract(ethers.constants.AddressZero)).to.be.revertedWith('Invalid address.')
+    await expect(gammaOffers.setGammaCardsContract(ethers.constants.AddressZero)).to.be.revertedWithCustomError(gammaOffers, 'InvalidAddress')
   })
 
   it('Create Offer should revert when cardNumber in wantedCardNumbers', async () => {
@@ -180,7 +180,7 @@ describe('NoF - Gamma Offers Tests', function () {
     const getCardsByUserResult: getCardsByUserType = await getOnePackData(gammaPacks, gammaCards, address0)
     await expect(
       gammaOffers.createOffer(uuidv4(), getCardsByUserResult[0][0], [getCardsByUserResult[0][0], 2, 24, 4, 5, 6, 7, 8])
-    ).to.be.revertedWith('The cardNumber cannot be in wantedCardNumbers.')
+    ).to.be.revertedWithCustomError(gammaOffers, 'InvalidCardNumber')
   })
 
   it('Create Offer should revert when user does not have cardNumber', async () => {
@@ -188,7 +188,7 @@ describe('NoF - Gamma Offers Tests', function () {
     const getCardsByUserResult: getCardsByUserType = await getOnePackData(gammaPacks, gammaCards, address0)
     await expect(
       gammaOffers.createOffer(uuidv4(), 140, [getCardsByUserResult[0][0], 2, 24, 4, 5, 6, 7, 8])
-    ).to.be.revertedWith('You does not have that card.')
+    ).to.be.revertedWithCustomError(gammaOffers, 'UserDoesNotHaveCard')
   })
 
   it('Create Offer should revert when user repeats the cardNumber', async () => {
@@ -202,7 +202,7 @@ describe('NoF - Gamma Offers Tests', function () {
 
     await expect(
       gammaOffers.createOffer(uuidv4(), getCardsByUserResult[0][0], [1, 2, 24, 4, 5, 6, 7, 8])
-    ).to.be.revertedWith('An offer for this user and cardNumber already exists.')
+    ).to.be.revertedWithCustomError(gammaOffers, 'OfferAlreadyExists')
   })
 
   it('Should retrieve an offer using getOfferByIndex', async () => {
@@ -457,8 +457,8 @@ describe('NoF - Gamma Offers Tests', function () {
     await expect(await gammaOffers.hasOffer(address0.address, 3)).to.be.equal(true)
     await expect(await gammaCards.hasCard(address1.address, 90)).to.be.equal(true)
 
-    await expect(gammaOffers.confirmOfferExchange(address1.address, 90, address0.address, 3)).to.be.revertedWith(
-      'The card is not in wantedCardNumbers.'
+    await expect(gammaOffers.confirmOfferExchange(address1.address, 90, address0.address, 3)).to.be.revertedWithCustomError(gammaOffers,
+      'InvalidCard'
     )
   })
 
@@ -537,8 +537,8 @@ describe('NoF - Gamma Offers Tests', function () {
     await expect(await gammaCards.hasCard(address0.address, 101)).to.be.equal(true)
     await expect(await gammaCards.hasCard(address1.address, 3)).to.be.equal(false)
 
-    await expect(gammaOffers.confirmOfferExchange(address1.address, 101, address0.address, 3)).to.be.revertedWith(
-      'The user already has that card.'
+    await expect(gammaOffers.confirmOfferExchange(address1.address, 101, address0.address, 3)).to.be.revertedWithCustomError(gammaOffers,
+      'UserAlreadyHasCard'
     )
   })
 

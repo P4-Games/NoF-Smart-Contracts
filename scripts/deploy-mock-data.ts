@@ -46,7 +46,7 @@ async function createAlphaMockData( addresses: SignerWithAddress[], testDAI: Con
 async function gammaCircuitPack(signer: SignerWithAddress, testDAI: Contract, gammaPacks: Contract) {
 
   const packPrice = 10000000000000000000
-  const TenPacksPrice = ethers.BigNumber.from((packPrice * 10).toString()) 
+  const TenPacksPrice = ethers.BigNumber.from((packPrice * 10).toString())
 
   console.log('buying Pack...')
   const tokenId = await gammaPacks.buyPackByUser(signer.address);
@@ -176,7 +176,7 @@ async function createOfferMockData(
   gammaPacks: Contract, 
   gammaCards: Contract, 
   gammaOffers: Contract) {
-      
+  
   console.log('\n----------------------------------')
   console.log('Creating Gamma Offers Mock Data')
   console.log('----------------------------------\n')

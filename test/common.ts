@@ -162,9 +162,9 @@ async function allowedToFinishAlbum(gammaCards: any, daiContract: any, address: 
   // Las 4 se validan en el contrato y aquí (para evitar la llamada al contrato)
 
   // require(cardsByUser[msg.sender][120] > 0, "No tienes ningun album");
-  const userHasAlbum = await gammaCards.cardsByUser(address, 120)
-  const prizesBalance = await gammaCards.prizesBalance()
-  const mainAlbumPrize = await gammaCards.mainAlbumPrize()
+  const userHasAlbum = await gammaCards.s_cardsByUser(address, 120)
+  const prizesBalance = await gammaCards.s_prizesBalance()
+  const mainAlbumPrize = await gammaCards.s_mainAlbumPrize()
   const gammaContractBalance = await daiContract.balanceOf(gammaCards.address)
   const prizeBalanceFormatted = ethers.utils.formatUnits(prizesBalance, 18)
   const albumPrizeFormatted = ethers.utils.formatUnits(mainAlbumPrize, 18)

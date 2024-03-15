@@ -59,7 +59,6 @@ contracts-exposed
 
 # Hardhat
 /cache
-/artifacts
 /generated
 typechain
 typechain-types

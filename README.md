@@ -119,7 +119,7 @@ npx hardhat test
 # Deploy to local
 npx hardhat run scripts/deploy.ts
 
-# Deploy to Mumnbai 
+# Deploy to Mumbai 
 npx hardhat run scripts/deploy.ts --network mumbai
 
 # Deploy Mock Data (local)
@@ -142,37 +142,74 @@ See detaills about gamma Smart Contracts in this [file](./.doc/contracts-info.md
 
 ## Deployed Contracts last Addresses
 
+NOTA: The ERC20 token being used is DAI, the official addresses of the Mainnet and Testnet smart contracts of the different networks can be found in the references (at the end of this file). Also the faucets for testnet.
+
+Alternatively for testnet, the source code of the DAI contract is in this repository (contracts folder) to deploy your own and avoid collecting cents from faucets.
+
+
 ### Mumbai 
 * DAI: 0xEa4c35c858E15Cef77821278A88435dE57bc8707
-* Alpha: 0x7C201e88e43b5FBEEfB77F966c2a5D2E09178B49
-* Gamma Cards: 0x34658c07F05638E12793d0961595cBc72fA69452
-* Gamma Cards NFT: 0x1b3aeb1652bf9a9ab269fa987feec34a65ef7b69
-* Gamma Packs: 0xDc06FbD70b2159863d079aE282d69AEe8a88A18E
-* Gamma Offers: 0x3Da346C40A0D90cf5642944613586439A3456d45
-* Gamma Tickets: 0x7593aad3e13fBd27F113aad8688E8817Ac4f9A33
+* Alpha: 0x816EA704F9bEf91284bA72bEBdAC1d1c5788246b
+* Gamma Cards: 0x394Fc1975972de88806b2E81Ed53f3E020f29D09
+* Gamma Cards NFT: 0xe90FFf9825159e9Ce88f2Df3d766666CaD9DdF3a
+* Gamma Packs: 0xfb4C387227d3692Be50376ff930472294ADEcED8
+* Gamma Offers: 0x1eDB114Bb7A0CBaDA9c9550BD2F3F1bFC08Bd7a7
+* Gamma Tickets: 0x091C994c5766D79bF592e08C71D49C49Eaf1DCee
 
 ### Bsc Tesnet
-* DAI: 0x83330b5803838604d85B7Cba393C930084F45A7d
-* Alpha: 0x4eE8C9cc2cF081f11F56A264EF52e3FeaDe1b35e
-* Gamma Cards: 0x25f85D878972f9506b4De49cEff480f627935521
-* Gamma Cards NFT: 0x05863097c97d93F264A7713295DE11517164ACCc
-* Gamma Packs: 0x71aA05fD8532a1395DffaB6FdA8be191fC8168FE
-* Gamma Offers: 0x71aA05fD8532a1395DffaB6FdA8be191fC8168FE
-* Gamma Tickets: 0xA5c3Cd20AB6FF1e299D93ee268370BCC19a32E71
+* DAI: 0x1ba960c6f624eC8d3fA3ACC4aFaF867538afd787
+* Alpha: 0x56e14bf3adBE4C7566b4F9dCC9acc264429f5DC9
+* Gamma Cards: 0x369443c3a885b6687d0f2a2Dc97b4EC69b9d90b3
+* Gamma Cards NFT: 0x8842E2A0bF1ed60b360c4Ea46C0F1beBC8f5e64d
+* Gamma Packs: 0xA62A947c0BD0A14317A6EAd7e32b227f4F9C36ef
+* Gamma Offers: 0x4C1d15c7EcEDF52eE7073CeD26b0A6c482b27c69
+* Gamma Tickets: 0xC67963E0742074bfa74610D28663FB3a524201D8
 
 ### OpBNB Testnet
-* DAI: 0x46480E0d10966Ea274831D9693a56f9c09D7339d
-* Alpha: 0x36f19A5397DbE26b548b15C158f7a8e00979B408
-* Gamma Cards: 0x2842c8FD88F801018E53dDDeBbC944aE377D0F72
-* Gamma Cards NFT: 0x8df52bd59823F0080958AEB1DfdaBf230ef7EdEd
-* Gamma Packs: 0x1116218412559628B67aa15F3c527D68F0A71b91
-* Gamma Offers: 0xe810524F7C7C62A2201FdF1bCA20649Bd7D70844
-* Gamma Tickets: 0xd9988C491805AE2573FA156b27CDE1a6f7B3E073
+* DAI: 0xE3Afd0e2b6b955a56A1823039DE577d3ce7B15BC
+* Alpha: 0xaAf52b86Cb71c14bd01eC6AC88481BC94470fFD7
+* Gamma Cards: 0x4a65B5138fCaBFE8a7c676688E9884F1eBdc1906
+* Gamma Cards NFT: 0x28C768b53b051989c0952FcAC7167Ad9ff1C18A5
+* Gamma Packs: 0xd792e3040FaCa21E0a7414422DeC6000Cc66BB79
+* Gamma Offers: 0xB90B462d5c609CC548a8135C264b212688A9Fe1f
+* Gamma Tickets: 0xa7ec2fd75cAfd694866AF76e865D8b34b24CB5D8
 
-
-### Mainet
+### Polygon Mainet
 
 (not yet)
+
+* DAI: 0x8f3cf7ad23cd3cadbd9735aff958023239c6a063 (official makerDAO contract address)
+* Alpha:
+* Gamma Cards:
+* Gamma Cards NFT:
+* Gamma Packs: 
+* Gamma Offers: 
+* Gamma Tickets: 
+
+### BSC Mainet
+
+(not yet)
+
+* DAI: 0x1af3f329e8be154074d8769d1ffa4ee058b1dbc3 (official makerDAO contract address)
+* Alpha:
+* Gamma Cards:
+* Gamma Cards NFT:
+* Gamma Packs: 
+* Gamma Offers: 
+* Gamma Tickets: 
+
+
+### OpBNB Testnet
+
+(not yet)
+
+* DAI: TBC (official makerDAO contract address)
+* Alpha:
+* Gamma Cards:
+* Gamma Cards NFT:
+* Gamma Packs: 
+* Gamma Offers: 
+* Gamma Tickets: 
 
 
 ## Contribution
@@ -221,9 +258,37 @@ For more information, refer to: [commitlint](https://commitlint.js.org/#/).
 
 ## Links
 
-* Mumbai Faucet: https://mumbaifaucet.com/
+### Faucets
 
-* BNB faucet: https://www.bnbchain.org/en/testnet-faucet
+* Matic Faucet on Mumbai: 
+    - https://mumbaifaucet.com/
 
-* Bridge (BNB-opBNB) Testnet: https://opbnb-testnet-bridge.bnbchain.org/deposit
+* BNB & DAI faucet on BSC: 
+    - https://www.bnbchain.org/en/testnet-faucet
 
+* DAI faucet on Mumbai: 
+    - https://faucet.paradigm.xyz/
+    - https://staging.aave.com/faucet/ (get DAI on Sepolian and then transfer to Mumbai with bridge)
+
+* Get BNB & DAI on opBNB with Bridge (BNB-opBNB): 
+    - https://opbnb-testnet-bridge.bnbchain.org/deposit
+
+### Maker DAO (DAI) Contracts Addresses
+
+* MakerDAO (DAI) Testnet:
+    - Mumbai: https://mumbai.polygonscan.com/address/0x001b3b4d0f3714ca98ba10f6042daebf0b1b7b6f  
+    - BSC-testnet: https://testnet.bscscan.com/address/0xec5dcb5dbf4b114c9d0f65bccab49ec54f6a0867
+    - opBNB-testinet:  
+
+* MakerDAO (DAI) Mainnet: 
+    - source info: https://www.coingecko.com/en/coins/dai
+    - Polygon: https://polygonscan.com/token/0x8f3cf7ad23cd3cadbd9735aff958023239c6a063
+    - BSC: https://bscscan.com/token/0x1af3f329e8be154074d8769d1ffa4ee058b1dbc3
+    - opBNB: 
+
+
+### Bridges
+
+* Bridger Finder
+    - https://app.findmybridge.com/finder/2863311531
+    - https://testnet.meson.fi/
