@@ -174,11 +174,17 @@ export async function deployContracts(wallets: SignerWithAddress[]) {
   console.log('Gamma Packs balance receiver setted:', balanceReceiverAddress)
   console.log('Gamma Cards micro-services Signature Wallets Addresses setted:', microServiceSignatureWalletsAddresses[0])
 
-  const walletsString = wallets.map(item => item.address)
-  const addressString = walletsString.join (',')
-  console.log(`\nMinting some DAIs for these wallet address:\n ${addressString}`)
-  for (const wallet of wallets) {
-    await testDAIContract._mint(wallet.address, ethers.BigNumber.from('900000000000000000000'))
+  if (isLocalhost || isHardhat) {
+    const walletsString = wallets.map(item => item.address)
+    const addressString = walletsString.join (',')
+    console.log(`\nMinting some DAIs for these wallet address:\n ${addressString}`)
+    try {
+      for (const wallet of wallets) {
+        await testDAIContract._mint(wallet.address, ethers.BigNumber.from('900000000000000000000'))
+      }
+    } catch (ex) {
+      console.error('Error minting some DAIs for env addresses.' + ex)
+    }
   }
 
   // 0x20517cf8C140F7F393F92cEa6158f57385a75733,0x4c46a8a7cf253e2fb7afe816a4bc273fbdd46c8c,0xfc355c1731a9f4e49a2fe7f9412aa22fa8fde198,0x1836acb4f313f21cbb86ffe2e8e9dfe2d853a657,0x422db8aef9748680d13e29d3495a66254f5e9061
