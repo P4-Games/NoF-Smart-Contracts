@@ -207,19 +207,6 @@ Alternatively for testnet, the source code of the DAI contract is in this reposi
 * Gamma Tickets: 
 
 
-### OpBNB Testnet
-
-(not yet)
-
-* DAI: TBC (official makerDAO contract address)
-* Alpha:
-* Gamma Cards:
-* Gamma Cards NFT:
-* Gamma Packs: 
-* Gamma Offers: 
-* Gamma Tickets: 
-
-
 # Contribution
 
 Thank you for considering helping out with the source code! We welcome contributions from anyone on the internet, and are grateful for even the smallest of fixes!
