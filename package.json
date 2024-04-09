@@ -10,7 +10,7 @@
     "compile": "hardhat compile",
     "deploy": "npx hardhat run scripts/deploy.ts --network localhost",
     "deploy-mock-data": "npx hardhat run scripts/deploy-mock-data.ts --network localhost",
-    "deploy-mumbai": "npx hardhat run scripts/deploy.ts --network mumbai",
+    "deploy-amoy": "npx hardhat run scripts/deploy.ts --network amoy",
     "solhint": "npx solhint \"{contracts,test}/**/*.sol\"",
     "lint": "npx eslint --ignore-path .gitignore .",
     "lint:fix": "npx eslint --ignore-path .gitignore . --fix",

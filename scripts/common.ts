@@ -87,11 +87,6 @@ export async function deployContracts(wallets: SignerWithAddress[]) {
   const nofGammaLibStringutilsCurrentAddress = process.env.NOF_GAMMA_LIB_STRING_UTILS_CONTRACT_CURRENT_ADDRESS || ''
   const nofGammaLibControlMgmtCurrentAddress = process.env.NOF_GAMMA_LIB_OWNERS_MGMT_CONTRACT_CURRENT_ADDRESS || ''
 
-  if(nofDaiContractCurrentAddress === '' && !isLocalhost && !isHardhat) {
-    console.error('Real DAI Smart Contract Address must be filled in NOF_DAI_CONTRACT_CURRENT_ADDRESS variable in .env')
-    process.exit(1);
-  }
-
   const libPackVerifier = await deployContract(nofGammaLibPackVerifierCurrentAddress, nofGammaLibPackVerifierName)
   const libStringUtils = await deployContract(nofGammaLibStringutilsCurrentAddress, nofGammaLibStringUtilsName)
   const libControlMgmt = await deployContract(nofGammaLibControlMgmtCurrentAddress, nofGammaLibControlMgmtName)

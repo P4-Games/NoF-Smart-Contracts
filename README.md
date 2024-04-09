@@ -119,8 +119,8 @@ npx hardhat test
 # Deploy to local
 npx hardhat run scripts/deploy.ts
 
-# Deploy to Mumbai 
-npx hardhat run scripts/deploy.ts --network mumbai
+# Deploy to Testnet 
+npx hardhat run scripts/deploy.ts --network amoy
 
 # Deploy Mock Data (local)
 npx hardhat run scripts/deploy-mock-data.ts
@@ -146,6 +146,14 @@ NOTA: The ERC20 token being used is DAI, the official addresses of the Mainnet a
 
 Alternatively for testnet, the source code of the DAI contract is in this repository (contracts folder) to deploy your own and avoid collecting cents from faucets.
 
+### Amoy
+* DAI: 0xd5654b986d5aDba8662c06e847E32579078561dC
+* Alpha: 0xBA5E2aF09e39CC36dfBc9530c4d4C89d5C44d323
+* Gamma Cards: 0xe6C812381DF5532A4bA4dA27baA1889adf67eec4
+* Gamma Cards NFT: 0xCcF821c87bE912984bCb952A36Fdfca066a925F8
+* Gamma Packs: 0xc616ac2191C6012791d3aBFA0e8f372579986090
+* Gamma Offers: 0x7DC00081F078D64B7b02535d82D3b6041D79Ce32
+* Gamma Tickets: 0xCD177Fa01b249Ee8ca1afF0136c06cD279E8Bf3e
 
 ### Mumbai 
 * DAI: 0xEa4c35c858E15Cef77821278A88435dE57bc8707
@@ -230,6 +238,11 @@ see more in: https://github.com/P4-Games/NoF-Smart-Contracts/graphs/contributors
 ## Links
 
 ### Faucets
+
+* Matic Faucet on Amoy:
+    - https://www.alchemy.com/faucets/polygon-amoy
+    - https://faucet.trade/polygon-amoy-matic-faucet
+    - https://learnweb3.io/faucets/polygon_amoy/ 
 
 * Matic Faucet on Mumbai: 
     - https://mumbaifaucet.com/
