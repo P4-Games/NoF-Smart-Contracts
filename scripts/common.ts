@@ -55,9 +55,12 @@ async function deployContract(
 
     resultContract = await factory.deploy()    
     await resultContract.deployed()
+    console.log(`contract ${contractName} deployed`)
   } else {
+    console.log(`using existing contract for ${contractName}`)
     resultContract = await ethers.getContractAt(contractName, contractCurrentAddress)
   }
+
   return resultContract
 }
 
@@ -90,7 +93,6 @@ export async function deployContracts(wallets: SignerWithAddress[]) {
   const libPackVerifier = await deployContract(nofGammaLibPackVerifierCurrentAddress, nofGammaLibPackVerifierName)
   const libStringUtils = await deployContract(nofGammaLibStringutilsCurrentAddress, nofGammaLibStringUtilsName)
   const libControlMgmt = await deployContract(nofGammaLibControlMgmtCurrentAddress, nofGammaLibControlMgmtName)
-  
   const testDAIContract = await deployContract(nofDaiContractCurrentAddress, nofDaiContractName)
   const alphaContract = await deployContract(nofAlphaContractCurrentAddress, nofAlphaContractName)
   const cardsNftContract = await deployContract(nofGammaCardsNftContractCurrentAddress, nofGammaCardsNftContractName)
@@ -130,12 +132,14 @@ export async function deployContracts(wallets: SignerWithAddress[]) {
       ? wallets[0].address 
       : (process.env.BALANCE_RECEIVER_WALLET_ADDRESS || '0x6b510284C49705eA14e92aD35D86FD3075eC56e0')
 
+  console.log('Initializing contract Alpha')
   await alphaContract.init(
     'https://storage.googleapis.com/nof-alfa/T1', 
     testDAIContract.address, 
     balanceReceiverAddress
   )
 
+  console.log('Initializing contract Gamma Cards')
   await cardsContract.init(
     testDAIContract.address, 
     packsContract.address, 
@@ -145,6 +149,7 @@ export async function deployContracts(wallets: SignerWithAddress[]) {
     microServiceSignatureWalletsAddresses[0]
   )
 
+  console.log('Initializing contract Gamma Packs')
   await packsContract.init(
     testDAIContract.address,
     balanceReceiverAddress,
@@ -152,7 +157,10 @@ export async function deployContracts(wallets: SignerWithAddress[]) {
     ticketsContract.address
   )
 
+  console.log('Initializing contract Gamma Offers')
   await offersContract.init(cardsContract.address)
+
+  console.log('Initializing contract Gamma Tickets')
   await ticketsContract.init(packsContract.address, cardsContract.address)
 
   console.log('\nTestDAI deployed address:', testDAIContract.address)  
@@ -182,36 +190,45 @@ export async function deployContracts(wallets: SignerWithAddress[]) {
     }
   }
 
-  // 0x20517cf8C140F7F393F92cEa6158f57385a75733,0x4c46a8a7cf253e2fb7afe816a4bc273fbdd46c8c,0xfc355c1731a9f4e49a2fe7f9412aa22fa8fde198,0x1836acb4f313f21cbb86ffe2e8e9dfe2d853a657,0x422db8aef9748680d13e29d3495a66254f5e9061
   // se contempla si tiene más de 1 agregado, dado que el primero (posición 0), ya se incorpora en el deploy de gammaCards
   if (microServiceSignatureWalletsAddresses.length > 1) {
     // Se skipea la primera posición que fue incorporada en el deploy de gammaCards
     const additionalSignatureWallets = microServiceSignatureWalletsAddresses.slice(1)
-    console.log(`\nAdded these additional signature wallets addresses in Gamma Cards Contract:\n`, additionalSignatureWallets.join(','))
+    console.log(`\nAdding these additional signature wallets addresses in Gamma Cards Contract:\n`, additionalSignatureWallets.join(','))
     for (const walletAddress of additionalSignatureWallets) {
+      console.log(`Adding wallet address ${walletAddress} as signer`)
       const alreadySigner = await cardsContract.isSigner(walletAddress)
       if (!alreadySigner) {
         await cardsContract.addSigner(walletAddress)
       }
+      console.log(`Wallet address ${walletAddress} added as signer`)
     }
   }
 
   if (additionalOwners.length > 0) {
-    console.log(`\nAdded these additional owners wallets addresses in Gamma Cards Contract:\m`, additionalOwners.join(','))
+    console.log(`\nAdding these additional owners wallets addresses in Gamma Contracts:\m`, additionalOwners.join(','))
     for (const walletAddress of additionalOwners) {
-      const alreadyOwner = await cardsContract.isOwner(walletAddress)
-      if (!alreadyOwner) {
-        await cardsContract.addOwner(walletAddress)
-      }
+      console.log(`Adding wallet address ${walletAddress} as owner in Gamma Cards Contract`)
+      let alreadyOwner = await cardsContract.isOwner(walletAddress)
+      if (!alreadyOwner) await cardsContract.addOwner(walletAddress)
+      console.log(`Wallet address ${walletAddress} added as owner in Gamma Cards Contract`)
+
+      console.log(`Adding wallet address ${walletAddress} as owner in Gamma Packs Contract`)
+      alreadyOwner = await packsContract.isOwner(walletAddress)
+      if (!alreadyOwner) await packsContract.addOwner(walletAddress)
+      console.log(`Wallet address ${walletAddress} added as owner in Gamma Packs Contract`)
+
+      console.log(`Adding wallet address ${walletAddress} as owner in Gamma Offers Contract`)
+      alreadyOwner = await offersContract.isOwner(walletAddress)
+      if (!alreadyOwner) await offersContract.addOwner(walletAddress)
+      console.log(`Wallet address ${walletAddress} added as owner in Gamma Offers Contract`)
+
+      console.log(`Adding wallet address ${walletAddress} as owner in Gamma Tickets Contract`)
+      alreadyOwner = await ticketsContract.isOwner(walletAddress)
+      if (!alreadyOwner) await ticketsContract.addOwner(walletAddress)
+      console.log(`Wallet address ${walletAddress} added as owner in Gamma Tickets Contract`)
     }
 
-    console.log(`\nAdded these additional owners wallets addresses in Gamma Packs Contract:\n`, additionalOwners.join(','))
-    for (const walletAddress of additionalOwners) {
-      const alreadyOwner = await packsContract.isOwner(walletAddress)
-      if (!alreadyOwner) {
-        await packsContract.addOwner(walletAddress)
-      }
-    }
   }
 
   if (isLocalhost || isHardhat) {
