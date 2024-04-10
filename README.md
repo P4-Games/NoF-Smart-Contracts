@@ -184,8 +184,6 @@ Alternatively for testnet, the source code of the DAI contract is in this reposi
 
 ### Polygon Mainet
 
-(not yet)
-
 * DAI: 0x8f3cf7ad23cd3cadbd9735aff958023239c6a063 (official makerDAO contract address)
 * Alpha: 0x5A2ccC423C0C36A1B05a080eb4972993a1Dd0980
 * Gamma Cards: 0x0a703481a0C67B9A4EE0EE49945F193f117F7505
