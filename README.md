@@ -187,12 +187,12 @@ Alternatively for testnet, the source code of the DAI contract is in this reposi
 (not yet)
 
 * DAI: 0x8f3cf7ad23cd3cadbd9735aff958023239c6a063 (official makerDAO contract address)
-* Alpha:
-* Gamma Cards:
-* Gamma Cards NFT:
-* Gamma Packs: 
-* Gamma Offers: 
-* Gamma Tickets: 
+* Alpha: 0x5A2ccC423C0C36A1B05a080eb4972993a1Dd0980
+* Gamma Cards: 0x0a703481a0C67B9A4EE0EE49945F193f117F7505
+* Gamma Cards NFT: 0x7543d7d265A3aEAEE894804f2426Bfb2e24bca36
+* Gamma Packs: 0x78E491965a1A8646643126A38C8217CfA27F2339 
+* Gamma Offers: 0x94Ac8Cb81Ef3c3B056dca42974bF8A57A7B9BA03
+* Gamma Tickets: 0x0DC4f203E9113018010720484d35a4bfa1c0beA5
 
 ### BSC Mainet
 
