@@ -9,6 +9,7 @@ const INFURA_API_KEY = process.env.INFURA_API_KEY || 'INFURA_API_KEY'
 const ALCHEMY_API_KEY = process.env.ALCHEMY_API_KEY || 'ALCHEMY_API_KEY'
 const PRIVATE_KEY = process.env.PRIVATE_KEY
 const MNEMONIC = process.env.MNEMONIC
+const POLYGONSCAN_KEY = process.env.POLYGONSCAN_API_KEY || ''
 const solidityVersions = ["0.6.0", "0.6.2", "0.6.6", "0.8.18", "0.8.20"]
 const compilers = solidityVersions.map((version) => ({
   version,
@@ -72,6 +73,13 @@ const config: HardhatUserConfig = {
     tests: './test',
     cache: './cache',
     artifacts: './artifacts'
+  },
+  etherscan: {
+    // your API Key from PolygonScan
+    // Obtain one at https://polygonscan.com/
+    apiKey: {
+      polygon: POLYGONSCAN_KEY
+    }
   }
 }
 
