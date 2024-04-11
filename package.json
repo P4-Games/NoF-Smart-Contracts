@@ -17,7 +17,8 @@
     "prettier": "npx prettier --log-level warn --ignore-path .gitignore \"{contracts,test}/**/*.{js,ts,.sol}\" --check",
     "prettier:fix": "npx prettier --log-level warn --ignore-path .gitignore \"{contracts,test}/**/*.{js,ts,.sol}\" --write",
     "slither": "slither . --filter-paths \" *v1.sol\"",
-    "commitlint-check-comit-msg": "npx --no-install commitlint --edit \"$1\""
+    "commitlint-check-comit-msg": "npx --no-install commitlint --edit \"$1\"",
+    "merge-contracts": "sol-merger \"./contracts/**/*.sol\" ./build"
   },
   "devDependencies": {
     "@commitlint/cli": "^18.4.3",
@@ -28,7 +29,7 @@
     "@nomicfoundation/hardhat-network-helpers": "^1.0.0",
     "@nomicfoundation/hardhat-toolbox": "^2.0.0",
     "@nomiclabs/hardhat-ethers": "^2.0.0",
-    "@nomiclabs/hardhat-etherscan": "^3.0.0",
+    "@nomiclabs/hardhat-etherscan": "^3.1.8",
     "@openzeppelin/contracts": "^4.9.5",
     "@openzeppelin/hardhat-upgrades": "^1.28.0",
     "@typechain/ethers-v5": "^10.1.0",
@@ -47,6 +48,7 @@
     "hardhat-ignore-warnings": "^0.2.9",
     "prettier": "^3.1.0",
     "prettier-plugin-solidity": "^1.2.0",
+    "sol-merger": "^4.4.1",
     "solhint": "^4.0.0",
     "solidity-coverage": "^0.8.5",
     "ts-node": "^10.9.1",
