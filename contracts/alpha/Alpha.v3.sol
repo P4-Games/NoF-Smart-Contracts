@@ -56,8 +56,8 @@ contract NofAlphaV3 is ERC721, ERC721URIStorage, Ownable, ContextMixinV2 {
 
     address public DAI_TOKEN;
 
-    event BuyPack(address buyer, string seasonName);
-    event Winner(address winner, string season, uint256 position);
+    event BuyPack(address indexed buyer, string indexed seasonName);
+    event Winner(address indexed winner, string indexed season, uint256 indexed position);
 
     constructor() 
         ERC721("NOF Alpha", "NOFA") {}
