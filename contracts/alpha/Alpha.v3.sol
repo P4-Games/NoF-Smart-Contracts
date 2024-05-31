@@ -283,12 +283,10 @@ contract NofAlphaV3 is ERC721, ERC721URIStorage, Ownable, ContextMixinV2 {
     return (seasonNames, seasonPrices);
   }
 
-  // Devuelve un array con las cartas disponibles
   function getSeasonCards(string memory _name) public view returns (uint[] memory) {
     return seasons[_name].cards;
   }
 
-  // Devuelve un arrary con los albums disponibles
   function getSeasonAlbums(string memory _name) public view returns (uint[] memory) {
     return seasons[_name].albums;
   }
