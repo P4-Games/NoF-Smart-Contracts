@@ -8,6 +8,18 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 import "./ContextMixin.v2.sol";
 import "../libs/LibStringUtils.sol";
 
+error Alpha_AlreadyHaveAPack();
+error Alpha_NotCorrectPriceForPack();
+error Alpha_PriceTooLow();
+error Alpha_AmountMustBeMultipleOf6();
+error Alpha_StillAlbumsAvailable();
+error Alpha_NotPlayingThisSeason();
+error Alpha_AlbumNotCompleted();
+error Alpha_NotYourCard();
+error Alpha_NotYourAlbum();
+error Alpha_CardIsNotAnAlbum();
+error Alpha_NotEnoughPrizeBalance();
+
 contract NofAlphaV3 is ERC721, ERC721URIStorage, Ownable, ContextMixinV2 {
     
     using LibStringUtils for uint256;
@@ -122,9 +134,10 @@ contract NofAlphaV3 is ERC721, ERC721URIStorage, Ownable, ContextMixinV2 {
     }
 
     function buyPack(uint256 _amount, string memory _name) public {
-        require(!seasons[_name].owners[msg.sender], "Ya tenes un pack wachin");
-        seasons[_name].owners[msg.sender] = true;
-        require(seasons[_name].price == _amount, "Send exact price for Pack");
+        
+        if(seasons[_name].owners[msg.sender]) revert Alpha_AlreadyHaveAPack();
+        if(_amount != seasons[_name].price) revert Alpha_NotCorrectPriceForPack();
+        
         uint256 prizesAmount = _amount * 75 / 100;
         prizesBalance += prizesAmount;
         IERC20(DAI_TOKEN).transferFrom(msg.sender, address(this), prizesAmount);
@@ -152,8 +165,10 @@ contract NofAlphaV3 is ERC721, ERC721URIStorage, Ownable, ContextMixinV2 {
     }
 
     function newSeason(string memory _name, uint _price, uint _amount, string memory _folder) public onlyOwner {
-        require(_price >= 100000000000000, "pack value must be at least 0.0001 DAI");
-        require(_amount % 6 == 0, "Amount must be multiple of 6");
+        
+        if(_price < 10e13) revert Alpha_PriceTooLow();
+        if(_amount % 6 != 0) revert Alpha_AmountMustBeMultipleOf6();
+
         seasons[_name].price = _price;
         seasons[_name].folder = _folder;
         seasonNames.push(_name);
@@ -173,13 +188,13 @@ contract NofAlphaV3 is ERC721, ERC721URIStorage, Ownable, ContextMixinV2 {
     }
 
     // Devuelve un array con las cartas disponibles
-    function getSeasonCards(string memory name) public view returns(uint[] memory) {
-        return seasons[name].cards;
+    function getSeasonCards(string memory _name) public view returns(uint[] memory) {
+        return seasons[_name].cards;
     }
 
     // Devuelve un arrary con los albums disponibles
-    function getSeasonAlbums(string memory name) public view returns(uint[] memory) {
-        return seasons[name].albums;
+    function getSeasonAlbums(string memory _name) public view returns(uint[] memory) {
+        return seasons[_name].albums;
     }
 
     function getWinners(string calldata _seasonName) public view returns(address[] memory) {
@@ -190,28 +205,30 @@ contract NofAlphaV3 is ERC721, ERC721URIStorage, Ownable, ContextMixinV2 {
         return cardsByUserBySeason[_user][_seasonName];
     }
 
-    function transferCardOwnership(address from, address to, uint256 tokenId) internal {
-        string memory seasonName = cards[tokenId].season;
-        for(uint8 i=0;i<cardsByUserBySeason[from][seasonName].length;i++){
-            if(cardsByUserBySeason[from][seasonName][i].number == cards[tokenId].number){
-                cardsByUserBySeason[from][seasonName][i] = 
-                    cardsByUserBySeason[from][seasonName][cardsByUserBySeason[from][seasonName].length - 1];
-                cardsByUserBySeason[from][seasonName].pop();
+    function transferCardOwnership(address _from, address _to, uint256 _tokenId) internal {
+        string memory seasonName = cards[_tokenId].season;
+        for(uint8 i=0;i<cardsByUserBySeason[_from][seasonName].length;i++){
+            if(cardsByUserBySeason[_from][seasonName][i].number == cards[_tokenId].number){
+                cardsByUserBySeason[_from][seasonName][i] = 
+                    cardsByUserBySeason[_from][seasonName][cardsByUserBySeason[_from][seasonName].length - 1];
+                cardsByUserBySeason[_from][seasonName].pop();
             }
         }
-        cardsByUserBySeason[to][seasonName].push(cards[tokenId]);
+        cardsByUserBySeason[_to][seasonName].push(cards[_tokenId]);
     }
 
-    function safeTransferFrom(address from, address to, uint256 tokenId, bytes memory data) public virtual override(ERC721, IERC721)  {
-        string memory seasonName = cards[tokenId].season;
-        require(getSeasonAlbums(seasonName).length == 0, "There are albums available in this season");
-        super.safeTransferFrom(from, to, tokenId, data);
-        if(cards[tokenId].class == 1){
-            require(seasons[seasonName].owners[to], "Receiver is not playing this season");
+    function safeTransferFrom(address _from, address _to, uint256 _tokenId, bytes memory _data) public virtual override(ERC721, IERC721)  {
+        
+        string memory seasonName = cards[_tokenId].season;
+        if(getSeasonAlbums(seasonName).length != 0) revert Alpha_StillAlbumsAvailable();
+        
+        super.safeTransferFrom(_from, _to, _tokenId, _data);
+        if(cards[_tokenId].class == 1){
+            if(!seasons[seasonName].owners[_to]) revert Alpha_NotPlayingThisSeason();
         } else {
-            require(cards[tokenId].completion == 5, "Only completed albums can be transferred");
+            if(cards[_tokenId].completion != 5) revert Alpha_AlbumNotCompleted();
         }
-        transferCardOwnership(from, to, tokenId);
+        transferCardOwnership(_from, _to, _tokenId);
     }
 
     function transferFrom(address from, address to, uint256 tokenId) public virtual override(ERC721, IERC721)  {
@@ -219,9 +236,9 @@ contract NofAlphaV3 is ERC721, ERC721URIStorage, Ownable, ContextMixinV2 {
     }
 
     function pasteCards(uint card, uint album) public {
-        require(ownerOf(card) == msg.sender, "This is not your card");
-        require(ownerOf(album) == msg.sender, "This is not your album");
-        require(cards[album].class == 0, "card is not an album");
+        if(ownerOf(card) != msg.sender) revert Alpha_NotYourCard();
+        if(ownerOf(album) != msg.sender) revert Alpha_NotYourAlbum();
+        if(cards[album].class != 0) revert Alpha_CardIsNotAnAlbum();
 
         string memory seasonName = cards[card].season;
         for(uint8 i=0;i<cardsByUserBySeason[msg.sender][seasonName].length;i++){
@@ -241,7 +258,7 @@ contract NofAlphaV3 is ERC721, ERC721URIStorage, Ownable, ContextMixinV2 {
             if(winners[albumSeason].length < 7){
                 winners[albumSeason].push(msg.sender);
                 uint256 prize = seasons[albumSeason].price * prizes[winners[albumSeason].length - 1] / 10;
-                require(prize <= prizesBalance, "Prize must be lower or equal than prizes balance");
+                if(prize > prizesBalance) revert Alpha_NotEnoughPrizeBalance();
                 prizesBalance -= prize;
                 IERC20(DAI_TOKEN).transfer(msg.sender, prize);
             }
