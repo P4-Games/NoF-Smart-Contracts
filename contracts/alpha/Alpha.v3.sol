@@ -6,8 +6,12 @@ import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
 import "@openzeppelin/contracts/token/ERC721/extensions/ERC721URIStorage.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "./ContextMixin.v2.sol";
+import "../libs/LibStringUtils.sol";
 
 contract NofAlphaV3 is ERC721, ERC721URIStorage, Ownable, ContextMixinV2 {
+    
+    using LibStringUtils for uint256;
+    
     uint256 private _tokenIdCounter;
     string public baseUri;
 
@@ -56,7 +60,7 @@ contract NofAlphaV3 is ERC721, ERC721URIStorage, Ownable, ContextMixinV2 {
         return baseUri;
     }
 
-    function mint(address to, string memory uri, uint _class, uint _collection, 
+    function mint(address _to, string memory _uri, uint _class, uint _collection, 
                   string memory _season, uint carNumber) internal {
         uint256 tokenId = _tokenIdCounter;
         _tokenIdCounter += 1;
@@ -65,9 +69,9 @@ contract NofAlphaV3 is ERC721, ERC721URIStorage, Ownable, ContextMixinV2 {
         cards[tokenId].collection = _collection;
         cards[tokenId].season = _season;
         cards[tokenId].number = carNumber;
-        cardsByUserBySeason[to][_season].push(cards[tokenId]);
-        _mint(to, tokenId);
-        _setTokenURI(tokenId, uri);
+        cardsByUserBySeason[_to][_season].push(cards[tokenId]);
+        _mint(_to, tokenId);
+        _setTokenURI(tokenId, _uri);
     }
 
     function _beforeTokenTransfer(address from, address to, uint256 tokenId, uint256 batchSize)
@@ -117,49 +121,49 @@ contract NofAlphaV3 is ERC721, ERC721URIStorage, Ownable, ContextMixinV2 {
         return ContextMixinV2.msgSender();
     }
 
-    function buyPack(uint256 amount, string memory name) public {
-        require(!seasons[name].owners[msg.sender], "Ya tenes un pack wachin");
-        seasons[name].owners[msg.sender] = true;
-        require(seasons[name].price == amount, "Send exact price for Pack");
-        uint256 prizesAmount = amount * 75 / 100;
+    function buyPack(uint256 _amount, string memory _name) public {
+        require(!seasons[_name].owners[msg.sender], "Ya tenes un pack wachin");
+        seasons[_name].owners[msg.sender] = true;
+        require(seasons[_name].price == _amount, "Send exact price for Pack");
+        uint256 prizesAmount = _amount * 75 / 100;
         prizesBalance += prizesAmount;
         IERC20(DAI_TOKEN).transferFrom(msg.sender, address(this), prizesAmount);
-        IERC20(DAI_TOKEN).transferFrom(msg.sender, balanceReceiver, amount - prizesAmount);
+        IERC20(DAI_TOKEN).transferFrom(msg.sender, balanceReceiver, _amount - prizesAmount);
 
         {
-            uint index = uint(keccak256(abi.encodePacked(block.timestamp)))%seasons[name].albums.length;
-            uint cardNum = seasons[name].albums[index];
-            seasons[name].albums[index] = seasons[name].albums[seasons[name].albums.length - 1];
-            seasons[name].albums.pop();
-            mint(msg.sender, string(abi.encodePacked(bytes(seasons[name].folder), bytes("/"), 
-                 bytes(toString(cardNum)), bytes(".json"))), 0, cardNum/6-1, name, cardNum);
+            uint index = uint(keccak256(abi.encodePacked(block.timestamp)))%seasons[_name].albums.length;
+            uint cardNum = seasons[_name].albums[index];
+            seasons[_name].albums[index] = seasons[_name].albums[seasons[_name].albums.length - 1];
+            seasons[_name].albums.pop();
+            mint(msg.sender, string(abi.encodePacked(bytes(seasons[_name].folder), bytes("/"), 
+                 bytes(cardNum.toString()), bytes(".json"))), 0, cardNum/6-1, _name, cardNum);
         }
 
         for(uint i ; i < 5; i++) {
-            uint index = uint(keccak256(abi.encodePacked(block.timestamp)))%seasons[name].cards.length;
-            uint cardNum = seasons[name].cards[index];
-            seasons[name].cards[index] = seasons[name].cards[seasons[name].cards.length - 1];
-            seasons[name].cards.pop();
-            mint(msg.sender,  string(abi.encodePacked(bytes(seasons[name].folder), bytes("/"), 
-                 bytes(toString(cardNum)), bytes(".json"))), 1, cardNum/6, name, cardNum);
+            uint index = uint(keccak256(abi.encodePacked(block.timestamp)))%seasons[_name].cards.length;
+            uint cardNum = seasons[_name].cards[index];
+            seasons[_name].cards[index] = seasons[_name].cards[seasons[_name].cards.length - 1];
+            seasons[_name].cards.pop();
+            mint(msg.sender,  string(abi.encodePacked(bytes(seasons[_name].folder), bytes("/"), 
+                 bytes(cardNum.toString()), bytes(".json"))), 1, cardNum/6, _name, cardNum);
         }
 
-        emit BuyPack(msg.sender, name);
+        emit BuyPack(msg.sender, _name);
     }
 
-    function newSeason(string memory name, uint price, uint amount, string memory folder) public onlyOwner {
-        require(price >= 100000000000000, "pack value must be at least 0.0001 DAI");
-        require(amount % 6 == 0, "Amount must be multiple of 6");
-        seasons[name].price = price;
-        seasons[name].folder = folder;
-        seasonNames.push(name);
-        seasonPrices.push(price);
+    function newSeason(string memory _name, uint _price, uint _amount, string memory _folder) public onlyOwner {
+        require(_price >= 100000000000000, "pack value must be at least 0.0001 DAI");
+        require(_amount % 6 == 0, "Amount must be multiple of 6");
+        seasons[_name].price = _price;
+        seasons[_name].folder = _folder;
+        seasonNames.push(_name);
+        seasonPrices.push(_price);
         
-        for(uint i = 1; i <= amount; i++) {
+        for(uint i = 1; i <= _amount; i++) {
             if(i % 6 == 0) {
-                seasons[name].albums.push(i);
+                seasons[_name].albums.push(i);
             } else {
-                seasons[name].cards.push(i);
+                seasons[_name].cards.push(i);
             }
         }
     }
@@ -168,12 +172,12 @@ contract NofAlphaV3 is ERC721, ERC721URIStorage, Ownable, ContextMixinV2 {
         return (seasonNames, seasonPrices);
     }
 
-    //Devuelve un array con las cartas disponibles
+    // Devuelve un array con las cartas disponibles
     function getSeasonCards(string memory name) public view returns(uint[] memory) {
         return seasons[name].cards;
     }
 
-    //Devuelve un arrary con los albums disponibles
+    // Devuelve un arrary con los albums disponibles
     function getSeasonAlbums(string memory name) public view returns(uint[] memory) {
         return seasons[name].albums;
     }
@@ -242,31 +246,9 @@ contract NofAlphaV3 is ERC721, ERC721URIStorage, Ownable, ContextMixinV2 {
                 IERC20(DAI_TOKEN).transfer(msg.sender, prize);
             }
             _setTokenURI(album, string(abi.encodePacked(bytes(seasons[albumSeason].folder), 
-                         bytes("/"), bytes(toString(cards[album].number)), bytes("F.json"))));
+                         bytes("/"), bytes((cards[album].number).toString()), bytes("F.json"))));
             emit Winner(msg.sender, albumSeason, winners[albumSeason].length);
         }  
-    }
-
-    function toString(uint256 value) internal pure returns (string memory) {
-        // Inspired by OraclizeAPI's implementation - MIT licence
-        // https://github.com/OpenZeppelin/openzeppelin-contracts/blob/master/contracts/utils/Strings.sol#L15-L35
-
-        if (value == 0) {
-            return "0";
-        }
-        uint256 temp = value;
-        uint256 digits;
-        while (temp != 0) {
-            digits++;
-            temp /= 10;
-        }
-        bytes memory buffer = new bytes(digits);
-        while (value != 0) {
-            digits -= 1;
-            buffer[digits] = bytes1(uint8(48 + uint256(value % 10)));
-            value /= 10;
-        }
-        return string(buffer);
     }
 
     function setBalanceReceiver(address _newBalanceReceiver) public onlyOwner {
