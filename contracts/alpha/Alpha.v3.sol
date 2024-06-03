@@ -1,12 +1,12 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.20;
 
-import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
-import "@openzeppelin/contracts/token/ERC721/extensions/ERC721URIStorage.sol";
-import "@openzeppelin/contracts/access/Ownable.sol";
-import "./ContextMixin.v2.sol";
-import "../libs/LibStringUtils.sol";
+import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import {ERC721, IERC721} from "@openzeppelin/contracts/token/ERC721/ERC721.sol";
+import {ERC721URIStorage} from "@openzeppelin/contracts/token/ERC721/extensions/ERC721URIStorage.sol";
+import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
+import {ContextMixinV2} from "./ContextMixin.v2.sol";
+import {LibStringUtils} from "../libs/LibStringUtils.sol";
 
 error Alpha_AlreadyHaveAPack();
 error Alpha_NotCorrectPriceForPack();
@@ -19,6 +19,8 @@ error Alpha_NotYourCard();
 error Alpha_NotYourAlbum();
 error Alpha_CardIsNotAnAlbum();
 error Alpha_NotEnoughPrizeBalance();
+error Alpha_NotAuthorized();
+error Alpha_AuthorizedStatusAlreadySet();
 
 contract NofAlphaV3 is ERC721, ERC721URIStorage, Ownable, ContextMixinV2 {
   using LibStringUtils for uint256;
@@ -46,6 +48,7 @@ contract NofAlphaV3 is ERC721, ERC721URIStorage, Ownable, ContextMixinV2 {
   mapping(uint => Card) public cards; // this uint is the tokenId
   mapping(string => address[]) private winners;
   mapping(address => mapping(string => Card[])) public cardsByUserBySeason;
+  mapping(address => bool) public authorized;
   string public baseUri;
   string[] public seasonNames;
   uint256 public prizesBalance;
@@ -55,6 +58,7 @@ contract NofAlphaV3 is ERC721, ERC721URIStorage, Ownable, ContextMixinV2 {
 
   event BuyPack(address indexed buyer, string indexed seasonName);
   event Winner(address indexed winner, string indexed season, uint256 indexed position);
+  event Authorized(address indexed authorized, bool status);
 
   constructor() ERC721("NOF Alpha", "NOFA") {}
 
@@ -66,6 +70,7 @@ contract NofAlphaV3 is ERC721, ERC721URIStorage, Ownable, ContextMixinV2 {
     baseUri = __baseUri;
     DAI_TOKEN = _daiTokenAddress;
     balanceReceiver = _balanceReceiver;
+    authorized[msg.sender] = true;
   }
 
   function buyPack(uint256 _amount, string memory _name) public {
@@ -130,7 +135,8 @@ contract NofAlphaV3 is ERC721, ERC721URIStorage, Ownable, ContextMixinV2 {
     uint _price,
     uint _amount,
     string memory _folder
-  ) public onlyOwner {
+  ) public {
+    if(!authorized[msg.sender]) revert Alpha_NotAuthorized();
     if (_price < 10e13) revert Alpha_PriceTooLow();
     if (_amount % 6 != 0) revert Alpha_AmountMustBeMultipleOf6();
 
@@ -157,13 +163,13 @@ contract NofAlphaV3 is ERC721, ERC721URIStorage, Ownable, ContextMixinV2 {
     string memory seasonName = cards[_tokenId].season;
     if (getSeasonAlbums(seasonName).length != 0) revert Alpha_StillAlbumsAvailable();
 
-    super.safeTransferFrom(_from, _to, _tokenId, _data);
     if (cards[_tokenId].class == 1) {
       if (!seasons[seasonName].owners[_to]) revert Alpha_NotPlayingThisSeason();
     } else {
       if (cards[_tokenId].completion != 5) revert Alpha_AlbumNotCompleted();
     }
     transferCardOwnership(_from, _to, _tokenId);
+    super.safeTransferFrom(_from, _to, _tokenId, _data);
   }
 
   function transferFrom(
@@ -215,6 +221,12 @@ contract NofAlphaV3 is ERC721, ERC721URIStorage, Ownable, ContextMixinV2 {
       );
       emit Winner(msg.sender, albumSeason, winners[albumSeason].length);
     }
+  }
+
+  function editAuthorized(address _newAuthorized, bool _authorized) public onlyOwner {
+    if(authorized[_newAuthorized] == _authorized) revert Alpha_AuthorizedStatusAlreadySet();
+    authorized[_newAuthorized] = _authorized;
+    emit Authorized(_newAuthorized, _authorized);
   }
 
   function setBalanceReceiver(address _newBalanceReceiver) public onlyOwner {
