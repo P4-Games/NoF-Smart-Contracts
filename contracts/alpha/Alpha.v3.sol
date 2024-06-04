@@ -314,8 +314,8 @@ contract NofAlphaV3 is ERC721, ERC721URIStorage, Ownable, ContextMixinV2 {
     return cardsByUserBySeason[_user][_seasonName];
   }
 
-  function getAuthorized(address _authorized) public view returns (bool) {
-    return authorized[_authorized];
+  function getAuthorized(address _authorizedAddress) public view returns (bool) {
+    return authorized[_authorizedAddress];
   }
 
   function _baseURI() internal view override returns (string memory) {
