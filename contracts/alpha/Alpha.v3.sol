@@ -223,10 +223,10 @@ contract NofAlphaV3 is ERC721, ERC721URIStorage, Ownable, ContextMixinV2 {
     }
   }
 
-  function editAuthorized(address _newAuthorized, bool _authorized) public onlyOwner {
-    if(authorized[_newAuthorized] == _authorized) revert Alpha_AuthorizedStatusAlreadySet();
-    authorized[_newAuthorized] = _authorized;
-    emit Authorized(_newAuthorized, _authorized);
+  function setAuthorized(address _authorizedAddress, bool _status) public onlyOwner {
+    if(authorized[_authorizedAddress] == _status) revert Alpha_AuthorizedStatusAlreadySet();
+    authorized[_authorizedAddress] = _status;
+    emit Authorized(_authorizedAddress, _status);
   }
 
   function setBalanceReceiver(address _newBalanceReceiver) public onlyOwner {
@@ -312,6 +312,10 @@ contract NofAlphaV3 is ERC721, ERC721URIStorage, Ownable, ContextMixinV2 {
     string calldata _seasonName
   ) public view returns (Card[] memory) {
     return cardsByUserBySeason[_user][_seasonName];
+  }
+
+  function getAuthorized(address _authorized) public view returns (bool) {
+    return authorized[_authorized];
   }
 
   function _baseURI() internal view override returns (string memory) {
