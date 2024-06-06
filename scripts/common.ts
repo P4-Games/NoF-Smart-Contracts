@@ -20,6 +20,7 @@ export async function getInitData() {
 
   // ethers is available in the global scope
   const [deployer] = await ethers.getSigners()
+  console.log({deployer})
   const balance = (await deployer.getBalance()).toString()
   const acc = await deployer.getAddress()
   const addresses = await ethers.getSigners()
@@ -69,7 +70,7 @@ export async function deployContracts(wallets: SignerWithAddress[]) {
   dotenv.config() 
 
   const nofDaiContractName = process.env.NOF_DAI_CONTRACT_NAME ||  'NofTestDAIV3'
-  const nofAlphaContractName = process.env.NOF_ALPHA_CONTRACT_NAME || 'NofAlphaV3'
+  const nofAlphaContractName = process.env.NOF_ALPHA_CONTRACT_NAME || 'NofAlphaV4'
   const nofGammaCardsContractName = process.env.NOF_GAMMA_CARDS_CONTRACT_NAME || 'NofGammaCardsV5'
   const nofGammaCardsNftContractName = process.env.NOF_GAMMA_CARDS_NFT_CONTRACT_NAME || 'NofGammaCardsNFTV1'
   const nofGammaPacksContractName = process.env.NOF_GAMMA_PACKS_CONTRACT_NAME || 'NofGammaPacksV3'

@@ -22,7 +22,7 @@ error Alpha_NotEnoughPrizeBalance();
 error Alpha_NotAuthorized();
 error Alpha_AuthorizedStatusAlreadySet();
 
-contract NofAlphaV3 is ERC721, ERC721URIStorage, Ownable, ContextMixinV2 {
+contract NofAlphaV4 is ERC721, ERC721URIStorage, Ownable, ContextMixinV2 {
   using LibStringUtils for uint256;
 
   struct Season {
