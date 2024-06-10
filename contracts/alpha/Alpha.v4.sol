@@ -21,6 +21,7 @@ error Alpha_CardIsNotAnAlbum();
 error Alpha_NotEnoughPrizeBalance();
 error Alpha_NotAuthorized();
 error Alpha_AuthorizedStatusAlreadySet();
+error Alpha_SeasonAlreadyExists();
 
 contract NofAlphaV4 is ERC721, ERC721URIStorage, Ownable, ContextMixinV2 {
   using LibStringUtils for uint256;
@@ -136,6 +137,7 @@ contract NofAlphaV4 is ERC721, ERC721URIStorage, Ownable, ContextMixinV2 {
     uint _amount,
     string memory _folder
   ) public {
+    if(seasons[_name].price != 0) revert Alpha_SeasonAlreadyExists();
     if(!authorized[msg.sender]) revert Alpha_NotAuthorized();
     if (_price < 10e13) revert Alpha_PriceTooLow();
     if (_amount % 6 != 0) revert Alpha_AmountMustBeMultipleOf6();

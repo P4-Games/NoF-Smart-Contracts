@@ -20,7 +20,6 @@ export async function getInitData() {
 
   // ethers is available in the global scope
   const [deployer] = await ethers.getSigners()
-  console.log({deployer})
   const balance = (await deployer.getBalance()).toString()
   const acc = await deployer.getAddress()
   const addresses = await ethers.getSigners()
@@ -95,7 +94,10 @@ export async function deployContracts(wallets: SignerWithAddress[]) {
   const libStringUtils = await deployContract(nofGammaLibStringutilsCurrentAddress, nofGammaLibStringUtilsName)
   const libControlMgmt = await deployContract(nofGammaLibControlMgmtCurrentAddress, nofGammaLibControlMgmtName)
   const testDAIContract = await deployContract(nofDaiContractCurrentAddress, nofDaiContractName)
-  const alphaContract = await deployContract(nofAlphaContractCurrentAddress, nofAlphaContractName)
+  const alphaContract = await deployContract(nofAlphaContractCurrentAddress, nofAlphaContractName,
+  [
+    {libraryName: 'LibStringUtils', libraryAddress: libStringUtils.address}
+  ])
   const cardsNftContract = await deployContract(nofGammaCardsNftContractCurrentAddress, nofGammaCardsNftContractName)
 
   const cardsContract = await deployContract(nofGammaCardsContractCurrentAddress, nofGammaCardsContractName, 
