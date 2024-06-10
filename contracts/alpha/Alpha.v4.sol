@@ -31,6 +31,7 @@ contract NofAlphaV4 is ERC721, ERC721URIStorage, Ownable, ContextMixinV2 {
     uint[] cards;
     uint[] albums;
     mapping(address => bool) owners;
+    address[] players;
     string folder;
   }
 
@@ -77,6 +78,9 @@ contract NofAlphaV4 is ERC721, ERC721URIStorage, Ownable, ContextMixinV2 {
   function buyPack(uint256 _amount, string memory _name) public {
     if (seasons[_name].owners[msg.sender]) revert Alpha_AlreadyHaveAPack();
     if (_amount != seasons[_name].price) revert Alpha_NotCorrectPriceForPack();
+
+    seasons[_name].owners[msg.sender] = true;
+    seasons[_name].players.push(msg.sender);
 
     uint256 prizesAmount = (_amount * 75) / 100;
     prizesBalance += prizesAmount;
@@ -131,14 +135,9 @@ contract NofAlphaV4 is ERC721, ERC721URIStorage, Ownable, ContextMixinV2 {
     emit BuyPack(msg.sender, _name);
   }
 
-  function newSeason(
-    string memory _name,
-    uint _price,
-    uint _amount,
-    string memory _folder
-  ) public {
-    if(seasons[_name].price != 0) revert Alpha_SeasonAlreadyExists();
-    if(!authorized[msg.sender]) revert Alpha_NotAuthorized();
+  function newSeason(string memory _name, uint _price, uint _amount, string memory _folder) public {
+    if (seasons[_name].price != 0) revert Alpha_SeasonAlreadyExists();
+    if (!authorized[msg.sender]) revert Alpha_NotAuthorized();
     if (_price < 10e13) revert Alpha_PriceTooLow();
     if (_amount % 6 != 0) revert Alpha_AmountMustBeMultipleOf6();
 
@@ -226,7 +225,7 @@ contract NofAlphaV4 is ERC721, ERC721URIStorage, Ownable, ContextMixinV2 {
   }
 
   function setAuthorized(address _authorizedAddress, bool _status) public onlyOwner {
-    if(authorized[_authorizedAddress] == _status) revert Alpha_AuthorizedStatusAlreadySet();
+    if (authorized[_authorizedAddress] == _status) revert Alpha_AuthorizedStatusAlreadySet();
     authorized[_authorizedAddress] = _status;
     emit Authorized(_authorizedAddress, _status);
   }
@@ -303,6 +302,10 @@ contract NofAlphaV4 is ERC721, ERC721URIStorage, Ownable, ContextMixinV2 {
 
   function getSeasonAlbums(string memory _name) public view returns (uint[] memory) {
     return seasons[_name].albums;
+  }
+
+  function getSeasonPlayers(string memory _name) public view returns (address[] memory) {
+    return seasons[_name].players;
   }
 
   function getWinners(string calldata _seasonName) public view returns (address[] memory) {
