@@ -69,7 +69,7 @@ export async function deployContracts(wallets: SignerWithAddress[]) {
   dotenv.config() 
 
   const nofDaiContractName = process.env.NOF_DAI_CONTRACT_NAME ||  'NofTestDAIV3'
-  const nofAlphaContractName = process.env.NOF_ALPHA_CONTRACT_NAME || 'NofAlphaV3'
+  const nofAlphaContractName = process.env.NOF_ALPHA_CONTRACT_NAME || 'NofAlphaV4'
   const nofGammaCardsContractName = process.env.NOF_GAMMA_CARDS_CONTRACT_NAME || 'NofGammaCardsV5'
   const nofGammaCardsNftContractName = process.env.NOF_GAMMA_CARDS_NFT_CONTRACT_NAME || 'NofGammaCardsNFTV1'
   const nofGammaPacksContractName = process.env.NOF_GAMMA_PACKS_CONTRACT_NAME || 'NofGammaPacksV3'
@@ -94,7 +94,10 @@ export async function deployContracts(wallets: SignerWithAddress[]) {
   const libStringUtils = await deployContract(nofGammaLibStringutilsCurrentAddress, nofGammaLibStringUtilsName)
   const libControlMgmt = await deployContract(nofGammaLibControlMgmtCurrentAddress, nofGammaLibControlMgmtName)
   const testDAIContract = await deployContract(nofDaiContractCurrentAddress, nofDaiContractName)
-  const alphaContract = await deployContract(nofAlphaContractCurrentAddress, nofAlphaContractName)
+  const alphaContract = await deployContract(nofAlphaContractCurrentAddress, nofAlphaContractName,
+  [
+    {libraryName: 'LibStringUtils', libraryAddress: libStringUtils.address}
+  ])
   const cardsNftContract = await deployContract(nofGammaCardsNftContractCurrentAddress, nofGammaCardsNftContractName)
 
   const cardsContract = await deployContract(nofGammaCardsContractCurrentAddress, nofGammaCardsContractName, 

@@ -23,11 +23,19 @@ describe('NoF - Alpha Tests', function () {
       address9
     ]
 
+    const LibStringUtils = await ethers.getContractFactory("LibStringUtils");
+    const libStringUtils = await LibStringUtils.deploy();
+    await libStringUtils.deployed();
+
     const TestDAI = await ethers.getContractFactory(nofDaiContractName)
     const testDAI = await TestDAI.deploy()
     await testDAI.deployed()
 
-    const NofAlpha = await ethers.getContractFactory(nofAlphaContractName)
+    const NofAlpha = await ethers.getContractFactory(nofAlphaContractName, {
+      libraries: {
+        LibStringUtils: libStringUtils.address,
+      },
+    })
     const nofAlpha = await NofAlpha.deploy()
     await nofAlpha.deployed()
     await nofAlpha.init('https://www.example.com', testDAI.address, address0.address)
