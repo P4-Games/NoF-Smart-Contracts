@@ -6,7 +6,7 @@ dotenv.config()
 type getCardsByUserType = any[][]
 
 const nofDaiContractName = process.env.NOF_DAI_CONTRACT_NAME || 'NofTestDAIV3'
-const nofAlphaContractName = process.env.NOF_ALPHA_CONTRACT_NAME || 'NofAlphaV3'
+const nofAlphaContractName = process.env.NOF_ALPHA_CONTRACT_NAME || 'NofAlphaV4'
 const nofGammaPacksContractName = process.env.NOF_GAMMA_PACKS_CONTRACT_NAME || 'NofGammaPacksV3'
 const nofGammaCardsContractName = process.env.NOF_GAMMA_CARDS_CONTRACT_NAME || 'NofGammaCardsV5'
 const nofGammaCardsNftContractName = process.env.NOF_GAMMA_CARDS_NFT_CONTRACT_NAME || 'NofGammaCardsNFTV1'

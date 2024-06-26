@@ -2,7 +2,7 @@
 pragma solidity ^0.8.20;
 
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
-import {LibControlMgmt} from "./libs/LibControlMgmt.sol";
+import {LibControlMgmt} from "../libs/LibControlMgmt.sol";
 import {console} from "hardhat/console.sol";
 
 error OnlyCardsContract();
